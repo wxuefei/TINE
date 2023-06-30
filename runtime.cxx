@@ -337,7 +337,7 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
   // #ifdef __FreeBSD__
   static size_t ps = 0;
   if (!ps)
-    ps = getpagesize();
+    ps = sysconf(_SC_PAGESIZE);
   stk[0] /= ps; // align to
   stk[0] *= ps; // page boundary
   // https://archive.md/Aj0S4

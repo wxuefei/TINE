@@ -43,7 +43,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
 #ifndef _WIN32
   static size_t ps = 0;
   if (!ps)
-    ps = sysconf(_SC_PAGE_SIZE);
+    ps = sysconf(_SC_PAGESIZE);
   size_t pad = ps;
   void* ret;
   pad = sz % ps;
@@ -127,7 +127,7 @@ void FreeVirtualChunk(void* ptr, size_t s) {
 #else
   static size_t ps = 0;
   if (!ps)
-    ps = sysconf(_SC_PAGE_SIZE);
+    ps = sysconf(_SC_PAGESIZE);
   int64_t pad;
   pad = s % ps;
   if (pad)
