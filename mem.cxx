@@ -52,6 +52,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
   if (low32) { // code heap
     // sz / ps * ps seems meaningless
     // but its actually aligning sz to ps(page size)
+    // MAP_32BIT is actually 31 bits
     ret = mmap(nullptr, sz / ps * ps + pad, PROT_EXEC | PROT_WRITE | PROT_READ,
                MAP_PRIVATE | MAP_ANON | MAP_32BIT, -1, 0);
 #ifdef __linux__
@@ -76,7 +77,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
         down = upper;
       }
     found:
-      if (down > UINT32_MAX)
+      if (down > 0x7FFFffff)
         return nullptr;
       ret = mmap(reinterpret_cast<void*>(down), sz / ps * ps + pad,
                  PROT_EXEC | PROT_WRITE | PROT_READ,
@@ -101,7 +102,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
     }
     MEMORY_BASIC_INFORMATION ent;
     uint64_t alloc = dwAllocationGranularity, addr;
-    while (alloc <= UINT32_MAX) {
+    while (alloc <= 0x7FFFffff) {
       if (!VirtualQuery((void*)alloc, &ent, sizeof(ent)))
         return nullptr;
       alloc = (uint64_t)ent.BaseAddress + ent.RegionSize;
