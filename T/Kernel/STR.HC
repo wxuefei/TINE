@@ -19,8 +19,8 @@ U0 PutHex(I64 num,I64 width)
 U0 PutChars(U64 ch) {
     "%c",ch;
 }
-U0 PutS(U8 *str) {
-	"%s",str;
+U0 PutS(U8 *s) {
+	"%s",s;
 }
 asm {
 // IN:	RAX=NUM TO PRINT
