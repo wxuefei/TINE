@@ -1,6 +1,7 @@
 #include "vfs.hxx"
 #include "runtime.hxx"
 
+#include <array>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -78,7 +79,7 @@ uint64_t VFsDel(char const* p) {
   return 1;
 }
 
-static std::string mount_points['z' - 'a' + 1];
+static std::array<std::string, 'z' - 'a' + 1> mount_points;
 std::string VFsFileNameAbs(char const* name) {
   std::string ret;
   // thrd_drv is always uppercase
@@ -182,10 +183,10 @@ char** VFsDir(char const* fn) {
     if (s.size() <= 38 - 1)
       items.emplace_back((char*)HolyStrDup(s.c_str()));
   }
-  size_t sz = items.size() * sizeof(char*);
   char** ret;
   std::copy(items.begin(), items.end(),
-            ret = static_cast<char**>(HolyMAlloc(sz)));
+            ret =
+                static_cast<char**>(HolyMAlloc(items.size() * sizeof(char*))));
   return ret;
 }
 

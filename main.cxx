@@ -67,7 +67,7 @@ bool IsCmdLine() {
 
 static std::string boot_str;
 char const* CmdLineBootText() {
-  return boot_str.c_str();
+  return boot_str.size() == 0 ? nullptr : boot_str.c_str();
 }
 
 static bool prog_exit = false;
@@ -111,17 +111,17 @@ int main(int argc, char** argv) {
     VFsMountDrive('T', TDriveArg->filename[0]);
   } else {
     std::cerr << TDriveArg->filename[0] << " DOES NOT EXIST\n";
-    exit(1);
+    std::terminate();
   }
-  // make drive T
-  if (commandLineArg->count)
+  if (commandLineArg->count > 0) {
     VFsMountDrive('Z', ".");
+    is_cmd_line = true;
+  }
   VFsThrdInit();
   // This is called before LoadHCRT so TOSLoader will not be
   // all fucked up, fyi
   RegisterFuncPtrs();
-  if (commandLineArg->count > 0) {
-    is_cmd_line = true;
+  if (is_cmd_line) {
     boot_str += "Cd(\"Z:/\");\n";
     for (int i = 0; i < cmdLineFiles->count; ++i) {
       boot_str += "#include \"";
@@ -132,12 +132,12 @@ int main(int argc, char** argv) {
     std::replace(boot_str.begin(), boot_str.end(), '\\', '/');
 #endif
   }
+  if (sixty_fps->count)
+    boot_str += "SetFPS(60.);\n";
   if (ndebug->count == 0)
     boot_str += "__EnableDbg;\n";
   if (noans->count == 0)
     boot_str += "__EnableAns;\n";
-  if (sixty_fps->count)
-    boot_str += "SetFPS(60.);;\n";
   if (!is_cmd_line)
     NewDrawWindow();
   if (is_win || !is_cmd_line)
@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
     std::cerr << bin_path << " DOES NOT EXIST\n";
     return 1;
   }
+  // std::cout << boot_str;
   if (!is_cmd_line) {
 #ifdef _WIN32
     SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
