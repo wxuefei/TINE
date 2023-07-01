@@ -1479,4 +1479,8 @@ public extern I64 HashEntrySize(CHashSrcSym *tmph);
 public extern I64 HashEntrySize2(CHashSrcSym *tmph);
 public extern I64 HashTableSize2(CHashTable *table);
 
+#help_index "Profiler"
+#help_file "::Doc/Profiler"
+
 #help_index ""
+
