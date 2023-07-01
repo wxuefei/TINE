@@ -9,6 +9,8 @@
 #include "tos_aot.hxx"
 #include "vfs.hxx"
 
+#include "ext/linenoise/linenoise.h"
+
 #include <ios>
 #include <string>
 #include <vector>
@@ -38,7 +40,6 @@ using std::thread;
 #include <shlwapi.h>
 // clang-format on
 #else
-#include "ext/linenoise.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -471,20 +472,14 @@ static int64_t STK_SetClipboardText(int64_t* stk) {
   return 0;
 }
 
-static int64_t STK___GetStr(int64_t* stk) {
-  char *s = NULL, *r = NULL;
-#ifndef _WIN32
-  s = linenoise((char*)stk[0]);
-  if (!s)
-    return (uintptr_t) nullptr;
+static char* STK___GetStr(uintptr_t* stk) {
+  char *s = linenoise(reinterpret_cast<char const*>(stk[0])), *r;
+  if (s == nullptr)
+    return nullptr;
   linenoiseHistoryAdd(s);
   r = HolyStrDup(s);
   free(s);
-#else
-  fputs("COMMAND LINE MODE IS NOT SUPPORTED FOR WINDOWS AT THE MOMENT", stderr);
-  abort();
-#endif
-  return (int64_t)r;
+  return r;
 }
 
 static char* STK_GetClipboardText(int64_t* stk) {

@@ -66,6 +66,9 @@ set(CPP_EXECUTABLE_SOURCE_FILES
   multic.cxx
   vfs.cxx
   TOSPrint.cxx
+  ext/linenoise/linenoise.cpp
+  ext/linenoise/ConvertUTF.cpp
+  ext/linenoise/wcwidth.cpp
 )
 
 set(C_EXECUTABLE_SOURCE_FILES
@@ -149,7 +152,6 @@ if(WIN32)
   set(BIN_FORMAT "win64")
 elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR
        (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"))
-  target_sources("${PROJECT_NAME}" PRIVATE ext/linenoise.c)
   # ffi
   set(C_ABI_NAME "SYSV")
   set(BIN_FORMAT "elf64")
