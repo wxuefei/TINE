@@ -43,7 +43,8 @@ static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
 #include <signal.h>
 #endif
 
-static struct arg_lit *helpArg, *sixty_fps, *commandLineArg, *cb_sanitize;
+static struct arg_lit *helpArg, *sixty_fps, *commandLineArg, *cb_sanitize,
+    *ndebug, *noans;
 static struct arg_file *cmdLineFiles, *TDriveArg, *HCRTArg;
 
 static std::string bin_path{"HCRT.BIN"};
@@ -93,15 +94,10 @@ int main(int argc, char** argv) {
                                "Files for use with command "
                                "line mode."),
       cb_sanitize = arg_lit0("s", "sanitize-cb",
-                             "Sanitizes clipboard "
-                             "contents(disabled by "
-                             "default to allow "
-                             "pasting DolDoc contents,use "
-                             "this to allow possible page "
-                             "faults when pasting UTF-8 "
-                             "sequences due to collision "
-                             "with "
-                             "DolDoc control chars)"),
+                             "Remove characters in clipboard that may collide "
+                             "with DolDoc control chars)"),
+      ndebug = arg_lit0("n", "ndebug", "Silence compiler output"),
+      noans = arg_lit0("a", "noans", "Do not print expression results"),
       arg_end_(1),
   };
   int errs = arg_parse(argc, argv, argtable);
@@ -136,6 +132,10 @@ int main(int argc, char** argv) {
     std::replace(boot_str.begin(), boot_str.end(), '\\', '/');
 #endif
   }
+  if (ndebug->count == 0)
+    boot_str += "__EnableDbg;\n";
+  if (ndebug->count == 0)
+    boot_str += "__EnableAns;\n";
   if (sixty_fps->count)
     boot_str += "SetFPS(60.);;\n";
   if (!is_cmd_line)
@@ -145,7 +145,8 @@ int main(int argc, char** argv) {
   if (HCRTArg->count > 0)
     bin_path = HCRTArg->filename[0];
   if (fs::exists(bin_path)) {
-    std::cerr << "Using " << bin_path << " as the default binary.\n";
+    if (ndebug->count == 0)
+      std::cerr << "Using " << bin_path << " as the default binary.\n";
     LaunchCore0(Core0);
   } else {
     std::cerr << bin_path << " DOES NOT EXIST\n";

@@ -1,3 +1,11 @@
+Bool __dbg=OFF,__ans=OFF;
+U0 __EnableDbg() {
+  __dbg=ON;
+}
+U0 __EnableAns() {
+  __ans=ON;
+}
+
 U0 SPutChar(U8 **_dst,U8 ch,U8 **_buf)
 {
   I64 i;

@@ -146,13 +146,15 @@ CHashFun *PrsFunJoin(CCmpCtrl *cc,CHashClass *tmp_return,
   if (header_return) {
     if (GetOption(OPTf_WARN_HEADER_MISMATCH)) {
       if (tmpf->return_class!=header_return) {
-	PrintWarn("Fun Header return mismatch '%s'\n",tmpf->str);
+	if (__dbg) PrintWarn("Fun Header return mismatch '%s'\n",tmpf->str);
 	cc->warning_cnt++;
       }
       if (!MemberLstCmp(tmpf->member_lst_and_root,header_lst,header_arg_cnt)) {
       if(tmpf->arg_cnt!=header_arg_cnt)
-		PrintErr("Fun header args arity mismatch '%s'.\n",tmpf->str);
-	PrintWarn("Fun header args mismatch '%s'\n",tmpf->str);
+        if (__dbg) {
+          PrintErr("Fun header args arity mismatch '%s'.\n",tmpf->str);
+	  PrintWarn("Fun header args mismatch '%s'\n",tmpf->str);
+        }
 	cc->warning_cnt++;
       }
     }
@@ -218,11 +220,11 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
   while (tmpm) {
     if (tmpm->flags & MLF_NO_UNUSED_WARN) {
       if (tmpm->use_cnt>1&&StrCmp(tmpm->str,"_anon_"))
-	PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
+	if (__dbg) PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
 	      cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
 	      tmpm->str,cc->htc.fun->str);
     } else if (!tmpm->use_cnt && GetOption(OPTf_WARN_UNUSED_VAR))
-      PrintWarn("Unused var\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
+      if (__dbg) PrintWarn("Unused var\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
 	    cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
 	    tmpm->str,cc->htc.fun->str);
     tmpm=tmpm->next;
