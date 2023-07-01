@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
   }
   if (ndebug->count == 0)
     boot_str += "__EnableDbg;\n";
-  if (ndebug->count == 0)
+  if (noans->count == 0)
     boot_str += "__EnableAns;\n";
   if (sixty_fps->count)
     boot_str += "SetFPS(60.);;\n";
