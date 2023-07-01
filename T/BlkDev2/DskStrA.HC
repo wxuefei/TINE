@@ -318,8 +318,7 @@ returns default.
     Free(st);
     return st2;
   }
-//meh
-*/
+//meh*/
   while (StrOcc(st,'/')) {
     st2=StrNew(st);
     st3=StrNew(st);
