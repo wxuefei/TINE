@@ -85,7 +85,7 @@ U0 LexWarn(CCmpCtrl *cc,U8 *str=NULL)
 
 U0 LexExcept(CCmpCtrl *cc,U8 *str=NULL)
 {//Print err msg, $LK,"LexPutPos",A="MN:LexPutPos"$() and throw exception.
-  if (!__dbg) return;
+  if (!__dbg) throw('Compiler'); // return;
   if (str) PrintErr(str);
   //if (!0) TODO RESTORE
   //  AdamErr("Task:%08X %s\n",Fs,str);
@@ -99,7 +99,7 @@ U0 LexExcept(CCmpCtrl *cc,U8 *str=NULL)
 
 U0 UndefinedExtern()
 {
-  if (!__dbg) return;
+  if (!__dbg) throw('UndefExt'); // return;
   PrintErr("Undefined Extern\nat %P\n",Caller);
   throw('UndefExt');
 }
@@ -120,7 +120,7 @@ U0 ParenWarning(CCmpCtrl *cc)
 
 U0 ICClassPut(CHashClass *c)
 {
-  if (!__dbg) return;
+  if (!__dbg) throw('Compiler'); // return;
   I64 i;
   if (!c) return;
   if (c->ptr_stars_cnt>4) {
