@@ -482,21 +482,21 @@ static char* STK___GetStr(uintptr_t* stk) {
   return r;
 }
 
-static char* STK_GetClipboardText(int64_t* stk) {
+static char* STK_GetClipboardText(int64_t*) {
   std::string clip{ClipboardText()};
   return HolyStrDup(clip.c_str());
 }
 
-static int64_t STK_FUnixTime(int64_t* stk) {
+static int64_t STK_FUnixTime(uintptr_t* stk) {
   return VFsUnixTime((char*)stk[0]);
 }
 
-static uint64_t STK_VFsFTrunc(int64_t* stk) {
+static uint64_t STK_VFsFTrunc(uintptr_t* stk) {
   fs::resize_file(VFsFileNameAbs((char*)stk[0]), stk[1]);
   return 0;
 }
 
-static int64_t STK___FExists(int64_t* stk) {
+static int64_t STK___FExists(uintptr_t* stk) {
   return VFsFileExists((char*)stk[0]);
 }
 
