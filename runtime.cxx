@@ -58,7 +58,13 @@ void* HolyMAlloc(size_t sz) {
   static void* fptr = nullptr;
   if (!fptr)
     fptr = TOSLoader["_MALLOC"][0].val;
-  return (void*)FFI_CALL_TOS_2(fptr, (uint64_t)sz, (uintptr_t) nullptr);
+  return (void*)FFI_CALL_TOS_2(fptr, sz, (uintptr_t) nullptr);
+}
+
+void* HolyCAlloc(size_t sz) {
+  auto ret = static_cast<uint8_t*>(HolyMAlloc(sz));
+  std::fill(ret, ret + sz, 0);
+  return ret;
 }
 
 char* HolyStrDup(char const* str) {

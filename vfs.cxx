@@ -172,6 +172,7 @@ void* VFsFileRead(char const* name, uint64_t* const len) {
 
 char** VFsDir(char const* fn) {
   std::string file = VFsFileNameAbs("");
+  bool dot = false, dotdot = false;
   if (!FIsDir(file))
     return nullptr;
   std::vector<char*> items;
@@ -180,13 +181,27 @@ char** VFsDir(char const* fn) {
     // CDIR_FILENAME_LEN is 38(includes '\0')
     // do not touch, fat32 legacy
     // will break opening ISOs if touched
+    if (s == ".")
+      dot = true;
+    if (s == "..")
+      dotdot = true;
     if (s.size() <= 38 - 1)
-      items.emplace_back((char*)HolyStrDup(s.c_str()));
+      items.emplace_back(HolyStrDup(s.c_str()));
   }
-  char** ret;
-  std::copy(items.begin(), items.end(),
-            ret =
-                static_cast<char**>(HolyMAlloc(items.size() * sizeof(char*))));
+  /*
+   * Okay, this is embarassing... This is because fs::directory_iterator
+   * won't return . or .. for some reason so we have to check if it exists.
+   * It's unreal that I actually have to write such garbage code. I'm embarassed
+   * as fuck.
+   */
+  if (!dot)
+    items.emplace_back(HolyStrDup("."));
+  if (!dotdot)
+    items.emplace_back(HolyStrDup(".."));
+  // force null pointer terminator
+  auto ret =
+      static_cast<char**>(HolyCAlloc((items.size() + 1) * sizeof(char*)));
+  std::copy(items.begin(), items.end(), ret);
   return ret;
 }
 
