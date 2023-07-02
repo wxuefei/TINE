@@ -101,7 +101,7 @@ U8 *StrFirstOccNonEsc(U8 *str,U8 *occ) {
   loop:
   find=StrFirstOcc(str,occ);
   if(find!=ostr&&find&&find[-1]=='!') {
-    //Escaped
+    //Escaped
     str=find+1;
     goto loop;
   }
@@ -123,7 +123,7 @@ U8 *RemoveEscapedChars(U8 *t1) {
   for(;*t2;t2++) {
     if(t3!=t2)
       *t3=*t2;
-     if(*t2=='!'&&StrOcc("-_/*[}{|",t2[1]))
+     if(*t2=='!'&&StrOcc("-_/*[}+{|",t2[1]))
        ;
      else
        t3++;
