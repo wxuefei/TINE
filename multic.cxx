@@ -23,6 +23,7 @@
 #else
 #include <pthread.h>
 #include <signal.h>
+#include <sys/time.h>
 #endif
 
 #ifdef __linux__
@@ -103,6 +104,12 @@ struct CCore {
   // T* is potentially UB and
   // static_assert(std::is_layout_compatible_v<std::atomic<uint32_t>, uint32_t>)
   // failed on my machine
+
+  struct itimerval profile_timer;
+  // This is the "interrupt" routine used with SIGPROF to do profiling in the
+  // code
+  void* profiler_int;
+  size_t profiler_delay;
 #endif
   bool is_alive;
   void* fp;
@@ -111,6 +118,23 @@ struct CCore {
 static std::vector<CCore> cores;
 
 // have you ever died in a nightmare surprised you havent earned your fate?
+
+static void ProfRt(int sig) {
+#ifndef _WIN32
+  size_t c = core_num;
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGPROF);
+  pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+  if (!pthread_equal(pthread_self(), cores[c].thread))
+    return;
+  if (cores[c].profiler_int) {
+    FFI_CALL_TOS_1(cores[c].profiler_int, 0);
+    cores[c].profile_timer.it_value.tv_usec = cores[c].profiler_delay;
+    cores[c].profile_timer.it_interval.tv_usec = cores[c].profiler_delay;
+  }
+#endif
+}
 
 static void*
 #ifdef _WIN32
@@ -128,6 +152,7 @@ static void*
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });
+  signal(SIGPROF, ProfRt);
 #endif
   // CoreAPSethTask(...) (T/FULL_PACKAGE.HC)
   FFI_CALL_TOS_0_ZERO_BP(cores[core_num].fp);
@@ -299,5 +324,26 @@ void SleepHP(uint64_t us) {
   _umtx_op(&cores[core_num].is_sleeping, UMTX_OP_WAIT_UINT, 1,
            (void*)sizeof(struct timespec), &ts);
 #endif
+#endif
+}
+
+void MPSetProfilerInt(void* fp, size_t c, size_t delay_t) {
+#ifdef _WIN32
+  std::cerr << "Profiler not supported on Windows due to lack of SIGPROF.\n";
+#else
+  if (!fp) {
+    struct itimerval none;
+    none.it_value.tv_sec = 0;
+    none.it_value.tv_usec = 0;
+    setitimer(ITIMER_PROF, &none, NULL);
+  } else {
+    cores[c].profiler_int = fp;
+    cores[c].profiler_delay = delay_t;
+    cores[c].profile_timer.it_value.tv_sec = 0;
+    cores[c].profile_timer.it_value.tv_usec = delay_t;
+    cores[c].profile_timer.it_interval.tv_sec = 0;
+    cores[c].profile_timer.it_interval.tv_usec = delay_t;
+    setitimer(ITIMER_PROF, &cores[c].profile_timer, NULL);
+  }
 #endif
 }

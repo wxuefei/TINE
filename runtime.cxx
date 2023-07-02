@@ -382,6 +382,10 @@ static void STK_InterruptCore(int64_t* stk) {
   InterruptCore(stk[0]);
 }
 
+static void STK_MPSetProfilerInt(size_t* stk) {
+  MPSetProfilerInt((void*)stk[0], stk[1], stk[2]);
+}
+
 static void STK___BootstrapForeachSymbol(uintptr_t* stk) {
   for (auto& m : TOSLoader) {
     auto& [symname, vec] = m;
@@ -841,6 +845,7 @@ void RegisterFuncPtrs() {
   S_(VFsSetDrv, 1);
   S_(GetVolume, 0);
   S_(SetVolume, 1);
+  S_(MPSetProfilerInt, 3);
   S_(__GetTicksHP, 0);
   S_(_GrPaletteColorSet, 2);
   S_(UVBufBase, 1);

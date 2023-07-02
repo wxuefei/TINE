@@ -21,7 +21,7 @@ CHeapCtrl ahc,ahd;
 CTask _boot_task;
 SetFs(&_boot_task);
 HeapCtrlInit(&ahc,Fs,0);
-HeapCtrlInit(&ahd,Fs,1);
+HeapCtrlInit(&ahd,Fs,1);
 Fs->data_heap=&ahd;
 Fs->code_heap=&ahc;
 Fs->cur_dir=StrNew("T:/",&ahd);
@@ -79,6 +79,7 @@ CInit;
 #include "Kernel/KLOAD.HC"
 #include "Kernel/KEND.HC"
 #include "Kernel/EDLITE.HC"
+#include "Profiler.HC" 
 #ifdef COMPONENT_GRAPHICS
 #include "Adam/TASK_SETTINGS.HC"
 #include "Adam/ASND.HC"
