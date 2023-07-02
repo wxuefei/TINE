@@ -328,7 +328,7 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
   MEMORY_BASIC_INFORMATION mbi = {0};
   if (VirtualQuery((void*)stk[0], &mbi, sizeof(mbi))) {
     // https://archive.md/ehBq4
-    DWORD mask = (stk[0] <= UINT32_MAX)
+    DWORD mask = (stk[0] <= MAX_CODE_HEAP_ADDR)
                    ? (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
                       PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
                       PAGE_EXECUTE_WRITECOPY)
@@ -359,8 +359,7 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
         ret |= isalpha(c) ? toupper(c) - 'A' + 10 : c - '0';
         ++ptr;
       }
-      if (res)
-        *res = ptr;
+      *res = ptr;
       return ret;
     };
     std::ifstream map{"/proc/self/maps", ios::binary | ios::in};
