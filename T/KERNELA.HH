@@ -248,6 +248,7 @@ extern class CUVInterfaceAddr;*/
 extern class CUVRandom;
 extern class CUVLoop;
 #ifdef IMPORT_BUILTINS
+import U0 MPSetProfilerInt(U8(*prof)(I64),I64 core,I64 delay);
 import U0 _GrPaletteColorSet(I64i,I64i);
 import U0 __SleepHP(I64i);
 import U0 __AwakeCore(I64i);
@@ -4183,7 +4184,7 @@ public _intern IC_LBTS Bool LBts(
 public extern U8
    *rev_bits_table,//Table with U8 bits revd
    *set_bits_table;//Table with count of set bits in a U8
-public extern I64 BCnt(I64 d);//Count set bits in I64.
+public extern I64 BCnt(I64 d);//Count set bits in I64.
 #help_index ""
 
 public _intern IC_TOUPPER I64 ToUpper(U8 ch); //Cvt char to upper case.
@@ -7676,3 +7677,5 @@ extern I64 RedSeaISO(U8 *_iso_filename=NULL,U8 *_src_dir,U8 *_stage2_filename=NU
 extern U8 Mount2(U8 boot_drv_let,CDoc *_doc,Bool _caller_is_prtdsk);
 extern U0 __EnableDbg();
 extern U0 __EnableAns();
+extern U0 Prof(I64 depth=10,I64 cpu_num=0);
+extern U0 ProfRep(I64 filter_cnt=1,Bool leave_it=OFF);

@@ -62,16 +62,12 @@ U0 LoadImps() {
 
 U0 StartUpTasks()
 {
-  CTask *u;
-  u=User;
-  WinToTop(u);
-  WinTileVert;
+  WinMax(User);
   try {
     ExeFile("WallPaper.HC");
     ExePrint("WallPaperInit;;");
     ExePrint("#include \"AMOUSE.HC\";;");
   } catch PutExcept;
-  User;
   ACInit("KERNEL*.HH*");
   AutoComplete(ON);
 }

@@ -30,3 +30,6 @@ void ShutdownCores(int ec);
 void AwakeFromSleeping(size_t core);
 
 void SleepHP(uint64_t us);
+
+// This sets the profiler interrupt,with a delay of delay_t
+void MPSetProfilerInt(void* fp, size_t c, size_t delay_t);
