@@ -3343,7 +3343,7 @@ int linenoiseHistorySave(const char* filename) {
 #if _WIN32
   FILE* fp = fopen(filename, "wt");
 #else
-  int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+  int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY);
 
   if (fd < 0) {
     return -1;
