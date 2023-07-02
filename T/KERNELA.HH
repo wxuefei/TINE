@@ -7607,6 +7607,9 @@ extern Bool WinKeyNavMenu();
 extern U0 WinMgrTask(I64);
 extern U0 DrawIt(CTask *,CDC *dc);
 extern U0 CPURep(Bool full=FALSE);
+#help_index "Processor"
+public _intern IC_RDTSC I64 GetTSC();
+#help_index ""
 extern I64 FSize(CFile *);
 class CMeshEdVertex
 {
