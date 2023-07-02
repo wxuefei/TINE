@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   if (noans->count == 0)
     boot_str += "__EnableAns;\n";
   if (is_cmd_line) {
-    boot_str += "#exe {Cd(\"Z:/\");};;\n";
+    boot_str += "#exe {Drv('Z');};;\n";
     for (int i = 0; i < cmdLineFiles->count; ++i) {
       boot_str += "#include \"";
       boot_str += cmdLineFiles->filename[i];
@@ -152,7 +152,6 @@ int main(int argc, char** argv) {
     std::cerr << bin_path << " DOES NOT EXIST\n";
     return 1;
   }
-  // std::cout << boot_str;
   if (!is_cmd_line) {
 #ifdef _WIN32
     SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);

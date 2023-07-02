@@ -231,9 +231,9 @@ these will be explained later)
 ** Offset ![Reg!]
 ** Offset ![Reg+Reg*(1,2,4 or 8)]
 
-+All registers except for RBP/R13 can be used in [Reg+Reg*(1,2,4 or 8)] mode+
++All registers except for RBP/R13+ can be used in ![Reg+Reg*(1,2,4 or 8)] mode
 
-=== Addressing Mode Examples(Offset![Reg])
+=== Addressing Mode Examples(Offset[Reg])
 
 Because RBP points to an address on the stack and function arguments are pushed to the stack,we can get arguments from the RBP pointer like this
 
