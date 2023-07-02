@@ -768,7 +768,6 @@ U0 CInit()
     cmp.ic_nop.ic_code=IC_NOP1;
     AsmHashLoad;
     UAsmHashLoad;
-    Fs->last_cc=CmpCtrlNew;
     Fs->last_except=CAlloc(sizeof(CExcept));
     QueInit(Fs->last_except);
     QueInit(&(Fs->next_except));
