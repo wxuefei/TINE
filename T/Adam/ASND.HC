@@ -104,7 +104,7 @@ public CMusicGlbls music={NULL,NULL,4,1.0,{0,2,3,5,7,8,10},FALSE,4,4,2.5,0.9,0,0
 #help_index "Snd/Music;Time/Seconds"
 public F64 tM()
 {//Time in seconds synced to music subsystem.
-  return (__GetTicksHP*JIFFY_FREQ+music.tM_correction)/JIFFY_FREQ;
+  return (__GetTicksHP+music.tM_correction)/JIFFY_FREQ;
 }
 
 public F64 Beat()
