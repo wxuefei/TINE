@@ -17,15 +17,16 @@ Bool VirtFileFind(CDrv *dv,U8 *cur_dir,U8 *name,
   CDirEntry *buf,*buf2,*ptr;
   U8 dname[CDIR_FILENAME_LEN];
   I64 ch;
-  Bool res=FALSE,unlock;
+  Bool res=FALSE,unlock,is_root;
   U8 *vfs_pwd,*at;
   if (fuf_flags&~FUG_FILE_FIND)
     throw('FUF');
   MemSet(_res,0,sizeof(CDirEntry));
   DrvChk(dv);
+  is_root=!StrCmp(cur_dir,"/")&&!StrLen(name);
   if (dv->fs_type!=FSt_VIRT)
     PrintErr("Not Virt Drv\n");
-  else if (!CFileNameTo(dname,name))
+  else if (!CFileNameTo(dname,name)&&!is_root)
     PrintErr("Invalid FileName: \"%s\".\n",name);
   else
     try {
