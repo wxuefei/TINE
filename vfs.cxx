@@ -178,13 +178,13 @@ char** VFsDir(char const* fn) {
   std::vector<char*> items;
   for (auto const& e : fs::directory_iterator{file}) {
     auto const& s = e.path().filename().string();
-    // CDIR_FILENAME_LEN is 38(includes '\0')
-    // do not touch, fat32 legacy
-    // will break opening ISOs if touched
     if (s == ".")
       dot = true;
     if (s == "..")
       dotdot = true;
+    // CDIR_FILENAME_LEN is 38(includes '\0')
+    // do not touch, fat32 legacy
+    // will break opening ISOs if touched
     if (s.size() <= 38 - 1)
       items.emplace_back(HolyStrDup(s.c_str()));
   }
