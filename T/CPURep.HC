@@ -1,4 +1,3 @@
-public _intern IC_RDTSC I64 GetTSC();
 #help_index "Info;Time/CPU Cycles;Processor"
 class CCPURep {
   Bool mp_start,mp_end;
