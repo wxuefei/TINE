@@ -121,8 +121,12 @@ int main(int argc, char** argv) {
   // This is called before LoadHCRT so TOSLoader will not be
   // all fucked up, fyi
   RegisterFuncPtrs();
+  if (ndebug->count == 0)
+    boot_str += "__EnableDbg;\n";
+  if (noans->count == 0)
+    boot_str += "__EnableAns;\n";
   if (is_cmd_line) {
-    boot_str += "Cd(\"Z:/\");\n";
+    boot_str += "#exe {Cd(\"Z:/\");};;\n";
     for (int i = 0; i < cmdLineFiles->count; ++i) {
       boot_str += "#include \"";
       boot_str += cmdLineFiles->filename[i];
@@ -134,10 +138,6 @@ int main(int argc, char** argv) {
   }
   if (sixty_fps->count)
     boot_str += "SetFPS(60.);\n";
-  if (ndebug->count == 0)
-    boot_str += "__EnableDbg;\n";
-  if (noans->count == 0)
-    boot_str += "__EnableAns;\n";
   if (!is_cmd_line)
     NewDrawWindow();
   if (is_win || !is_cmd_line)

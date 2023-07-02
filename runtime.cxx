@@ -393,10 +393,6 @@ static void STK_TOSPrint(uint64_t* stk) {
   TOSPrint((char const*)stk[0], stk[1], (int64_t*)stk + 2);
 }
 
-static int64_t STK_IsDir(uint64_t* stk) {
-  return VFsIsDir((char const*)stk[0]);
-}
-
 static int64_t STK_DrawWindowUpdate(int64_t* stk) {
   DrawWindowUpdate((CDrawWindow*)stk[0], (int8_t*)stk[1], stk[2], stk[3]);
   return 0;
@@ -792,7 +788,6 @@ void RegisterFuncPtrs() {
   S_(SetMSCallback, 1);
   S_(__GetTicks, 0);
   S_(__BootstrapForeachSymbol, 1);
-  S_(IsDir, 1);
   S_(DrawWindowUpdate, 4);
   S_(UnblockSignals, 0);
   /*
