@@ -101,7 +101,7 @@ U8 *StrFirstOccNonEsc(U8 *str,U8 *occ) {
   loop:
   find=StrFirstOcc(str,occ);
   if(find!=ostr&&find&&find[-1]=='!') {
-    //Escaped
+    //Escaped
     str=find+1;
     goto loop;
   }
