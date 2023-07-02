@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <string_view>
 namespace fs = std::filesystem;
 #include <ios>
 #include <iostream>
@@ -129,6 +130,7 @@ static void LoadPass1(char* src, char* mod_base) {
       src = st_ptr - 5;
       LoadOneImport(&src, mod_base);
       break;
+    // 32bit addrs
     case IET_ABS_ADDR: {
       cnt = i;
       for (size_t j = 0; j < cnt; j++) {
@@ -192,7 +194,7 @@ void LoadHCRT(std::string const& name) {
   f.read(reinterpret_cast<char*>(bfh_addr = bfh =
                                      (CBinFile*)NewVirtualChunk(size, true)),
          size);
-  if (memcmp(bfh->bin_signature, "TOSB", 4) != 0) {
+  if (std::string_view{bfh->bin_signature, 4} != "TOSB") {
     std::cerr << "INVALID TEMPLEOS BINARY FILE " << name << std::endl;
     std::terminate();
   }
