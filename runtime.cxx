@@ -68,7 +68,7 @@ void* HolyCAlloc(size_t sz) {
 }
 
 char* HolyStrDup(char const* str) {
-  return strcpy((char*)HolyMAlloc(strlen(str) + 1), str);
+  return strcpy((char*)HolyCAlloc(strlen(str) + 1), str);
 }
 
 static FILE* VFsFOpen(char const* path, char const* m) {
