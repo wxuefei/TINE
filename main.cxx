@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   if (noans->count == 0)
     boot_str += "__EnableAns;\n";
   if (is_cmd_line) {
-    boot_str += "#exe {Drv('Z');};;\n";
+    boot_str += "#exe {Drv('Z');};\n";
     for (int i = 0; i < cmdLineFiles->count; ++i) {
       boot_str += "#include \"";
       boot_str += cmdLineFiles->filename[i];
