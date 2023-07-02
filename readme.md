@@ -31,8 +31,8 @@ mv T/HCRT.BIN .
 ```
 # caveats
 due to running in userspace, context switching is around 4 times slower(not that it matters anyway outside of flexing `CPURep(TRUE);` results) and ring 0 routines like In/OutU8 are not present <br>
-division by zero is not an exception, it will bring up the debugger(SIGFPE) <br>
-## PROFILER IS UNSUPPORTED ON WINDOWS DUE TO LACK OF SIGPROF
+division by zero is not an exception, it will bring up the debugger(SIGFPE)
+### PROFILER IS UNSUPPORTED ON WINDOWS DUE TO LACK OF SIGPROF
 
 # documentation
 ```C
