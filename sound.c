@@ -40,8 +40,7 @@ void InitSound(void) {
     SDL_Init(SDL_INIT_AUDIO);
   output = SDL_OpenAudioDevice(NULL, 0, &want, &have,
                                SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
-                                   SDL_AUDIO_ALLOW_CHANNELS_CHANGE |
-                                   SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+                                   SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
   SDL_PauseAudioDevice(output, 0);
 }
 
