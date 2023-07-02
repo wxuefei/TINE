@@ -67,6 +67,8 @@ Unzip("file.HC.Z");//unzip tos compression
 Zip("file.HC");
 Find("str",,"-i");//grep -rn . -e str
 FF("file.*");//find .|grep file
+Prof;
+ProfRep;
 MountFile("Something.ISO.C");//MountFile(U8 *f,U8 drv_let='M');
 Cd("M:/");//defaults to M
 INT3;//force raise debug situation
