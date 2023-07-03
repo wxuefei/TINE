@@ -47,19 +47,6 @@ static struct arg_lit *helpArg, *sixty_fps, *commandLineArg, *cb_sanitize,
     *ndebug, *noans;
 static struct arg_file *cmdLineFiles, *TDriveArg, *HCRTArg;
 
-static std::string bin_path{"HCRT.BIN"};
-static void* Core0(void*) {
-  VFsThrdInit();
-#ifndef _WIN32
-  signal(SIGUSR1, [](int) {
-    FFI_CALL_TOS_0(TOSLoader["__FreeCPUs"][0].val);
-    pthread_exit(nullptr);
-  });
-#endif
-  LoadHCRT(bin_path);
-  return nullptr;
-}
-
 static bool is_cmd_line = false;
 bool IsCmdLine() {
   return is_cmd_line;
@@ -77,6 +64,20 @@ void ShutdownTOS(int32_t ec) {
 }
 
 bool sanitize_clipboard = false;
+
+static std::string bin_path{"HCRT.BIN"};
+static void* __stdcall Core0(void*) {
+  VFsThrdInit();
+#ifndef _WIN32
+  signal(SIGUSR1, [](int) {
+    FFI_CALL_TOS_0(TOSLoader["__FreeCPUs"][0].val);
+    pthread_exit(nullptr);
+  });
+#endif
+  LoadHCRT(bin_path);
+  return nullptr;
+}
+
 int main(int argc, char** argv) {
   void* argtable[] = {
       helpArg = arg_lit0("h", "help", "Display this help message."),

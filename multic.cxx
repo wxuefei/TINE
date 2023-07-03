@@ -23,7 +23,6 @@
 #else
 #include <pthread.h>
 #include <signal.h>
-#include <sys/time.h>
 #endif
 
 #ifdef __linux__
@@ -81,6 +80,7 @@ size_t CoreNum() {
   return core_num;
 }
 
+// have you ever died in a nightmare surprised you havent earned your fate?
 struct CCore {
 #ifdef _WIN32
   HANDLE thread;
@@ -104,12 +104,6 @@ struct CCore {
   // T* is potentially UB and
   // static_assert(std::is_layout_compatible_v<std::atomic<uint32_t>, uint32_t>)
   // failed on my machine
-
-  struct itimerval profile_timer;
-  // This is the "interrupt" routine used with SIGPROF to do profiling in the
-  // code
-  void* profiler_int;
-  size_t profiler_delay;
 #endif
   bool is_alive;
   void* fp;
@@ -117,30 +111,7 @@ struct CCore {
 
 static std::vector<CCore> cores;
 
-// have you ever died in a nightmare surprised you havent earned your fate?
-
-#ifndef _WIN32
-static void ProfRt(int sig) {
-  auto& c = cores[core_num];
-  sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set, SIGPROF);
-  pthread_sigmask(SIG_UNBLOCK, &set, nullptr);
-  if (!pthread_equal(pthread_self(), c.thread))
-    return;
-  if (!c.profiler_int)
-    return;
-  FFI_CALL_TOS_0(c.profiler_int);
-  auto& t = c.profile_timer;
-  t.it_interval.tv_usec = t.it_value.tv_usec = c.profiler_delay;
-}
-#endif
-
-static void*
-#ifdef _WIN32
-    __stdcall
-#endif
-    LaunchCore(void* c) {
+static void* __stdcall LaunchCore(void* c) {
   SetupDebugger();
   VFsThrdInit();
   core_num = (uintptr_t)c;
@@ -152,7 +123,6 @@ static void*
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });
-  signal(SIGPROF, ProfRt);
 #endif
   // CoreAPSethTask(...) (T/FULL_PACKAGE.HC)
   FFI_CALL_TOS_0_ZERO_BP(cores[core_num].fp);
@@ -181,7 +151,7 @@ void InterruptCore(size_t core) {
 #endif
 }
 
-void LaunchCore0(void* (*fp)(void*)) {
+void LaunchCore0(ThreadCallback* fp) {
   cores.resize(mp_cnt(nullptr));
   cores[0].fp = nullptr;
 #ifdef _WIN32
@@ -324,26 +294,5 @@ void SleepHP(uint64_t us) {
   _umtx_op(&cores[core_num].is_sleeping, UMTX_OP_WAIT_UINT, 1,
            (void*)sizeof(struct timespec), &ts);
 #endif
-#endif
-}
-
-void MPSetProfilerInt(void* fp, size_t c, size_t delay_t) {
-#ifdef _WIN32
-  std::cerr << "Profiler not supported on Windows due to lack of SIGPROF.\n";
-#else
-  if (!fp) {
-    cores[c].profiler_int = nullptr;
-    struct itimerval none;
-    none.it_value.tv_sec = 0;
-    none.it_value.tv_usec = 0;
-    setitimer(ITIMER_PROF, &none, nullptr);
-  } else {
-    cores[c].profiler_int = fp;
-    cores[c].profiler_delay = delay_t;
-    auto& t = cores[c].profile_timer;
-    t.it_value.tv_sec = t.it_interval.tv_sec = 0;
-    t.it_value.tv_usec = t.it_interval.tv_usec = delay_t;
-    setitimer(ITIMER_PROF, &cores[c].profile_timer, nullptr);
-  }
 #endif
 }

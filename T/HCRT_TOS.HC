@@ -79,7 +79,6 @@ CInit;
 #include "Kernel/KLOAD.HC"
 #include "Kernel/KEND.HC"
 #include "Kernel/EDLITE.HC"
-#include "Profiler.HC" 
 #ifdef COMPONENT_GRAPHICS
 #include "Adam/TASK_SETTINGS.HC"
 #include "Adam/ASND.HC"
