@@ -578,8 +578,8 @@ static uint64_t STK_VFsDirMk(uintptr_t* stk) {
   return VFsDirMk((char*)stk[0], VFS_CDF_MAKE);
 }
 
-static uint64_t STK_VFsDir(uintptr_t* stk) {
-  return (uintptr_t)VFsDir((char*)stk[0]);
+static uintptr_t STK_VFsDir(void*) {
+  return (uintptr_t)VFsDir();
 }
 
 static uint64_t STK_VFsDel(uintptr_t* stk) {

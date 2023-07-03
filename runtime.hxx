@@ -9,9 +9,9 @@ template <class T = void, bool fill = false>
 __attribute__((always_inline)) inline T* HolyAlloc(size_t sz) {
   // I demand a constexpr ternary right now
   if constexpr (fill)
-    return static_cast<T*>(HolyCAlloc(sz));
+    return static_cast<T*>(HolyCAlloc(sizeof(T) * sz));
   else
-    return static_cast<T*>(HolyMAlloc(sz));
+    return static_cast<T*>(HolyMAlloc(sizeof(T) * sz));
 }
 void HolyFree(void* p);
 char* HolyStrDup(char const* s);
