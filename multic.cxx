@@ -175,6 +175,7 @@ void CreateCore(size_t core, void* fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
 #ifdef _WIN32
+  // sorry for the shitcode I just want clang to shut up
   cores[core].thread = CreateThread(
       nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>((void*)LaunchCore),
       (void*)core, 0, nullptr);
