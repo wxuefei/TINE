@@ -34,6 +34,12 @@ static constexpr bool is_win =
 #include <processthreadsapi.h>
 // clang-format on
 
+// for mingw
+// https://archive.md/HEZm2#selection-3667.0-3698.0
+#ifndef ERROR_CONTROL_C_EXIT
+#define ERROR_CONTROL_C_EXIT 0x23C
+#endif
+
 static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
 #define STR_(x) x, lstrlenA(x)
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), STR_("User Abort.\n"), nullptr,

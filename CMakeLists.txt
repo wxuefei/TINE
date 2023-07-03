@@ -147,7 +147,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES}) # uv)
 
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE
-    synchronization shlwapi shcore dbghelp winmm -static)
+    ssp synchronization shlwapi shcore dbghelp winmm -static)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  set(BUILD_SHARED_LIBS OFF)
+  set(CMAKE_EXE_LINKER_FLAGS "-static")
   # no winpthreads(i hate pthreads and SuspendThread() is rad)
   set(CMAKE_THREAD_PREFER_PTHREAD OFF)
   set(THREADS_PREFER_PTHREAD_FLAG OFF)
