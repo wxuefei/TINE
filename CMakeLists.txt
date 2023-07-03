@@ -31,7 +31,7 @@ if (NOT ARCH MATCHES "x86_64")
   message(FATAL_ERROR "CAN ONLY BUILD ON x86_64 ARCHITECTURE")
 endif ()
 
-if (NOT WIN32)
+if ((NOT WIN32) AND (NOT MINGW))
   # prefer clang instead of gcc (or whatever garbage compiler they're using) This can be disabled with
   # the NO_CLANG option
   option(NO_CLANG "Don't prefer clang for compilation" OFF)
@@ -45,7 +45,16 @@ if (NOT WIN32)
       set(CMAKE_CXX_COMPILER ${CLANGXX})
     endif (CLANGXX)
   endif (NOT NO_CLANG)
-endif (NOT WIN32)
+endif ()
+if (MINGW OR WIN32)
+  # no winpthreads(i hate pthreads and SuspendThread() is rad)
+  set(CMAKE_THREAD_PREFER_PTHREAD OFF)
+  set(THREADS_PREFER_PTHREAD_FLAG OFF)
+  set(LIBUV_USE_STATIC ON)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  set(BUILD_SHARED_LIBS OFF)
+  set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif ()
 
 project(tos
   VERSION ${VERSION_SIMPLE}
@@ -145,15 +154,11 @@ endif()
 include_directories(${LIBUV_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES}) # uv)
 
-if(WIN32)
+if(WIN32 OR MINGW)
+  # I literally gave up trying to build this shit(specifically SDL2) statically
+  # so you're on your own if you want to package this or something
   target_link_libraries(${PROJECT_NAME} PRIVATE
     ssp synchronization shlwapi shcore dbghelp winmm -static)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-  set(BUILD_SHARED_LIBS OFF)
-  set(CMAKE_EXE_LINKER_FLAGS "-static")
-  # no winpthreads(i hate pthreads and SuspendThread() is rad)
-  set(CMAKE_THREAD_PREFER_PTHREAD OFF)
-  set(THREADS_PREFER_PTHREAD_FLAG OFF)
   set(C_ABI_NAME "WIN64")
   set(BIN_FORMAT "win64")
 elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR
