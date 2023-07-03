@@ -247,6 +247,7 @@ void BackTrace() {
     ptr = rbp[1];
     rbp = (void**)*rbp;
   }
+  std::cerr << std::endl;
 }
 
 // great when you use gdb and get a fault

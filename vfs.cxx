@@ -100,7 +100,9 @@ int64_t VFsFSize(char const* name) {
     return -1;
   } else if (FIsDir(fn)) {
     fs::directory_iterator it{fn};
-    return std::distance(fs::begin(it), fs::end(it));
+    // https://archive.md/1Ojr3#7
+    // accounts for . and ..
+    return 2 + std::distance(fs::begin(it), fs::end(it));
   }
   return fs::file_size(fn);
 }
@@ -117,7 +119,7 @@ int64_t VFsUnixTime(char const* name) {
 #else
 
 static int64_t FILETIME2Unix(FILETIME* t) {
-  // https://archive.is/xl8qB
+  // https://archive.md/xl8qB
   int64_t time = t->dwLowDateTime | ((int64_t)t->dwHighDateTime << 32), adj;
   adj = 10000 * (int64_t)11644473600000ll;
   time -= adj;
@@ -153,7 +155,7 @@ void* VFsFileRead(char const* name, uint64_t* const len) {
     *len = 0;
   if (!name)
     return nullptr;
-  void* data = nullptr;
+  char* data = nullptr;
   std::string p = VFsFileNameAbs(name);
   if (!FExists(p))
     return nullptr;
@@ -163,44 +165,32 @@ void* VFsFileRead(char const* name, uint64_t* const len) {
   if (!f)
     return nullptr;
   size_t sz = fs::file_size(p);
-  f.read(static_cast<char*>(data = HolyMAlloc(sz + 1)), sz);
+  f.read(data = HolyAlloc<char, true>(sz + 1), sz);
   if (len)
     *len = sz;
-  static_cast<char*>(data)[sz] = '\0';
   return data;
 }
 
 char** VFsDir(char const* fn) {
   std::string file = VFsFileNameAbs("");
-  bool dot = false, dotdot = false;
   if (!FIsDir(file))
     return nullptr;
-  std::vector<char*> items;
+#define SD_(s) HolyStrDup(s)
+  // https://archive.md/1Ojr3#7
+  std::vector<char*> items{
+      SD_("."),
+      SD_(".."),
+  };
   for (auto const& e : fs::directory_iterator{file}) {
     auto const& s = e.path().filename().string();
-    if (s == ".")
-      dot = true;
-    if (s == "..")
-      dotdot = true;
     // CDIR_FILENAME_LEN is 38(includes '\0')
     // do not touch, fat32 legacy
     // will break opening ISOs if touched
     if (s.size() <= 38 - 1)
-      items.emplace_back(HolyStrDup(s.c_str()));
+      items.emplace_back(SD_(s.c_str()));
   }
-  /*
-   * Okay, this is embarassing... This is because fs::directory_iterator
-   * won't return . or .. for some reason so we have to check if it exists.
-   * It's unreal that I actually have to write such garbage code. I'm embarassed
-   * as fuck.
-   */
-  if (!dot)
-    items.emplace_back(HolyStrDup("."));
-  if (!dotdot)
-    items.emplace_back(HolyStrDup(".."));
   // force null pointer terminator
-  auto ret =
-      static_cast<char**>(HolyCAlloc((items.size() + 1) * sizeof(char*)));
+  auto ret = HolyAlloc<char*, true>(sizeof(char*) * (items.size() + 1));
   std::copy(items.begin(), items.end(), ret);
   return ret;
 }

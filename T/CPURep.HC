@@ -2,8 +2,8 @@
 class CCPURep {
   Bool mp_start,mp_end;
   I64 mp_not_done_flags,
-    **swaps,
-    **cycles;
+    *swaps,
+    *cycles;
 };
 
 U0 MPCPURep(CCPURep *cr) {

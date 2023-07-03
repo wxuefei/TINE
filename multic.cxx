@@ -119,22 +119,22 @@ static std::vector<CCore> cores;
 
 // have you ever died in a nightmare surprised you havent earned your fate?
 
-static void ProfRt(int sig) {
 #ifndef _WIN32
-  size_t c = core_num;
+static void ProfRt(int sig) {
+  auto& c = cores[core_num];
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPROF);
-  pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  if (!pthread_equal(pthread_self(), cores[c].thread))
+  pthread_sigmask(SIG_UNBLOCK, &set, nullptr);
+  if (!pthread_equal(pthread_self(), c.thread))
     return;
-  if (cores[c].profiler_int) {
-    FFI_CALL_TOS_1(cores[c].profiler_int, 0);
-    cores[c].profile_timer.it_value.tv_usec = cores[c].profiler_delay;
-    cores[c].profile_timer.it_interval.tv_usec = cores[c].profiler_delay;
-  }
-#endif
+  if (!c.profiler_int)
+    return;
+  FFI_CALL_TOS_0(c.profiler_int);
+  auto& t = c.profile_timer;
+  t.it_interval.tv_usec = t.it_value.tv_usec = c.profiler_delay;
 }
+#endif
 
 static void*
 #ifdef _WIN32
@@ -332,18 +332,18 @@ void MPSetProfilerInt(void* fp, size_t c, size_t delay_t) {
   std::cerr << "Profiler not supported on Windows due to lack of SIGPROF.\n";
 #else
   if (!fp) {
+    cores[c].profiler_int = nullptr;
     struct itimerval none;
     none.it_value.tv_sec = 0;
     none.it_value.tv_usec = 0;
-    setitimer(ITIMER_PROF, &none, NULL);
+    setitimer(ITIMER_PROF, &none, nullptr);
   } else {
     cores[c].profiler_int = fp;
     cores[c].profiler_delay = delay_t;
-    cores[c].profile_timer.it_value.tv_sec = 0;
-    cores[c].profile_timer.it_value.tv_usec = delay_t;
-    cores[c].profile_timer.it_interval.tv_sec = 0;
-    cores[c].profile_timer.it_interval.tv_usec = delay_t;
-    setitimer(ITIMER_PROF, &cores[c].profile_timer, NULL);
+    auto& t = cores[c].profile_timer;
+    t.it_value.tv_sec = t.it_interval.tv_sec = 0;
+    t.it_value.tv_usec = t.it_interval.tv_usec = delay_t;
+    setitimer(ITIMER_PROF, &cores[c].profile_timer, nullptr);
   }
 #endif
 }
