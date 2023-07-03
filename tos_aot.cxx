@@ -205,7 +205,6 @@ void LoadHCRT(std::string const& name) {
 #ifndef _WIN32
   signal(SIGUSR2, (void (*)(int))TOSLoader["__InterruptCoreRoutine"][0].val);
 #endif
-  SetupDebugger();
   LoadPass2(bfh_addr + bfh->patch_table_offset, mod_base);
 }
 

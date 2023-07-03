@@ -112,8 +112,8 @@ struct CCore {
 static std::vector<CCore> cores;
 
 static void* __stdcall LaunchCore(void* c) {
-  SetupDebugger();
   VFsThrdInit();
+  SetupDebugger();
   core_num = (uintptr_t)c;
 #ifndef _WIN32
   static void* fp = nullptr;

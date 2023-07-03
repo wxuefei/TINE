@@ -1,4 +1,5 @@
 #include "main.hxx"
+#include "dbg.hxx"
 #include "ffi.h"
 #include "multic.hxx"
 #include "runtime.hxx"
@@ -68,13 +69,14 @@ bool sanitize_clipboard = false;
 static std::string bin_path{"HCRT.BIN"};
 static void* __stdcall Core0(void*) {
   VFsThrdInit();
+  LoadHCRT(bin_path);
+  SetupDebugger();
 #ifndef _WIN32
   signal(SIGUSR1, [](int) {
     FFI_CALL_TOS_0(TOSLoader["__FreeCPUs"][0].val);
     pthread_exit(nullptr);
   });
 #endif
-  LoadHCRT(bin_path);
   return nullptr;
 }
 
