@@ -87,7 +87,7 @@ loop:;
     FMT_CH(PRIo64, uint64_t, );
     break;
   case 'n':
-    static_assert(alignof(double) == alignof(uint64_t), "?");
+    static_assert(sizeof(double) == sizeof(uint64_t));
     FMT_CH("f", double, );
     break;
   case 'p':

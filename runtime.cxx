@@ -621,7 +621,7 @@ static int64_t STK_VFsSetDrv(int64_t* stk) {
 }
 
 static int64_t STK_SetVolume(int64_t* stk) {
-  static_assert(alignof(double) == alignof(uint64_t));
+  static_assert(sizeof(double) == sizeof(uint64_t));
   union {
     double flt;
     int64_t i;
