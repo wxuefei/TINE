@@ -19,7 +19,7 @@ int64_t VFsUnixTime(char const* name);
 int64_t VFsFSize(char const* name);
 uint64_t VFsFileWrite(char const* name, char const* data, size_t const len);
 void* VFsFileRead(char const* name, uint64_t* len);
-char** VFsDir(char const* fn);
+char** VFsDir();
 uint64_t VFsIsDir(char const* path);
 uint64_t VFsFileExists(char const* path);
 void VFsMountDrive(char const let, char const* path);

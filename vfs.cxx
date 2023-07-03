@@ -171,13 +171,14 @@ void* VFsFileRead(char const* name, uint64_t* len) {
   return data;
 }
 
-char** VFsDir(char const*) {
+char** VFsDir() {
   std::string file = VFsFileNameAbs("");
   if (!FIsDir(file))
     return nullptr;
 #define SD_(s) HolyStrDup(s)
   // https://archive.md/1Ojr3#7
-  std::vector<char*> items{
+  using DirEnt = char*;
+  std::vector<DirEnt> items{
       SD_("."),
       SD_(".."),
   };
@@ -190,7 +191,7 @@ char** VFsDir(char const*) {
       items.emplace_back(SD_(s.c_str()));
   }
   // force null pointer terminator
-  auto ret = HolyAlloc<char*, true>(sizeof(char*) * (items.size() + 1));
+  auto ret = HolyAlloc<DirEnt, true>(items.size() + 1);
   std::copy(items.begin(), items.end(), ret);
   return ret;
 }
