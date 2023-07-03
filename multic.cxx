@@ -135,7 +135,8 @@ static void* __stdcall LaunchCore(void* c) {
 // when CTRL+ALT+C is pressed inside TempleOS
 void InterruptCore(size_t core) {
 #ifdef _WIN32
-  CONTEXT ctx = {0};
+  CONTEXT ctx;
+  memset(&ctx, 0, sizeof ctx);
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
@@ -155,8 +156,9 @@ void LaunchCore0(ThreadCallback* fp) {
   cores.resize(mp_cnt(nullptr));
   cores[0].fp = nullptr;
 #ifdef _WIN32
-  cores[0].thread =
-      CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)fp, nullptr, 0, nullptr);
+  cores[0].thread = CreateThread(
+      nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>((void*)fp), nullptr,
+      0, nullptr);
   cores[0].mtx = CreateMutex(nullptr, FALSE, nullptr);
   cores[0].event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[0].thread, THREAD_PRIORITY_HIGHEST);
@@ -174,7 +176,8 @@ void CreateCore(size_t core, void* fp) {
   cores[core].fp = fp;
 #ifdef _WIN32
   cores[core].thread = CreateThread(
-      nullptr, 0, (LPTHREAD_START_ROUTINE)LaunchCore, (void*)core, 0, nullptr);
+      nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>((void*)LaunchCore),
+      (void*)core, 0, nullptr);
   cores[core].mtx = CreateMutex(nullptr, FALSE, nullptr);
   cores[core].event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);

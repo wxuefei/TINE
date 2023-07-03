@@ -119,7 +119,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
 #endif
 }
 
-void FreeVirtualChunk(void* ptr, size_t s) {
+void FreeVirtualChunk(void* ptr, [[maybe_unused]] size_t s) {
 #ifdef _WIN32
   VirtualFree(ptr, 0, MEM_RELEASE);
 #else

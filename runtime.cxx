@@ -333,7 +333,8 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
   // wtf IsBadReadPtr gives me a segfault so i just have to use this
   // polyfill lmfao
   // #ifdef __WINE__
-  MEMORY_BASIC_INFORMATION mbi = {0};
+  MEMORY_BASIC_INFORMATION mbi;
+  memset(&mbi, 0, sizeof mbi);
   if (VirtualQuery((void*)stk[0], &mbi, sizeof(mbi))) {
     // https://archive.md/ehBq4
     DWORD mask = (stk[0] <= MAX_CODE_HEAP_ADDR)
@@ -520,7 +521,6 @@ static uint64_t STK_UnixNow(void*) {
 #else
 
 static uint64_t STK_UnixNow(void*) {
-  int64_t r;
   FILETIME ft;
   GetSystemTimeAsFileTime(&ft);
   // https://archive.md/xl8qB
@@ -567,7 +567,7 @@ static int64_t STK_VFsFSize(int64_t* stk) {
 }
 
 static uint64_t STK_VFsFRead(uintptr_t* stk) {
-  return (uintptr_t)VFsFileRead((char const*)stk[0], (uint64_t* const)stk[1]);
+  return (uintptr_t)VFsFileRead((char const*)stk[0], (uint64_t*)stk[1]);
 }
 
 static uint64_t STK_VFsFWrite(uintptr_t* stk) {

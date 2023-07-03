@@ -159,7 +159,7 @@ static char* UnescapeString(char* str, char* where) {
       // printing a 8 bit wide octal value to get the correct digits
       // probably it's typical GNU bullshittery or there's something
       // deep inside the Standard that I'm missing, either way, this works
-      char buf[5];
+      char buf[5]{};
       snprintf(where, sizeof buf, "\\%" PRIo8, (uint8_t)*str);
       memcpy(where, buf, 4);
       where += 4;
