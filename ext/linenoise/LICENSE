@@ -36,6 +36,7 @@ wcwidth.cpp
 ===========
 
 Markus Kuhn -- 2007-05-26 (Unicode 5.0)
+Enzymical(Me) -- 2023-07-03
 
 Permission to use, copy, modify, and distribute this software
 for any purpose and without fee is hereby granted. The author
@@ -47,6 +48,7 @@ ConvertUTF.cpp
 ==============
 
 Copyright 2001-2004 Unicode, Inc.
+Copyright 2023 Enzymical(Me) C++17 fixes
  
 Disclaimer
  

@@ -26,7 +26,7 @@ MapCHashVec TOSLoader;
 // and does not look very C++-y
 static void LoadOneImport(char** src_, char* mod_base) {
   char *src = *src_, *st_ptr, *ptr = nullptr;
-  uintptr_t i, etype;
+  uintptr_t i = 0, etype;
   char first = 1;
   while ((etype = *src++)) {
     ptr = mod_base + *(int32_t*)src;

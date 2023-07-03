@@ -150,7 +150,7 @@ uint64_t VFsFileWrite(char const* name, char const* data, size_t const len) {
   return !!name;
 }
 
-void* VFsFileRead(char const* name, uint64_t* const len) {
+void* VFsFileRead(char const* name, uint64_t* len) {
   if (len)
     *len = 0;
   if (!name)
@@ -171,7 +171,7 @@ void* VFsFileRead(char const* name, uint64_t* const len) {
   return data;
 }
 
-char** VFsDir(char const* fn) {
+char** VFsDir(char const*) {
   std::string file = VFsFileNameAbs("");
   if (!FIsDir(file))
     return nullptr;
