@@ -101,7 +101,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
     MEMORY_BASIC_INFORMATION ent;
     uint64_t alloc = dwAllocationGranularity, addr;
     while (alloc <= MAX_CODE_HEAP_ADDR) {
-      if (!VirtualQuery((void*)alloc, &ent, sizeof(ent)))
+      if (!VirtualQuery((void*)alloc, &ent, sizeof ent))
         return nullptr;
       alloc = (uint64_t)ent.BaseAddress + ent.RegionSize;
       // Fancy code to round up because

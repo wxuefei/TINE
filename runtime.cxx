@@ -335,7 +335,7 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
   // #ifdef __WINE__
   MEMORY_BASIC_INFORMATION mbi;
   memset(&mbi, 0, sizeof mbi);
-  if (VirtualQuery((void*)stk[0], &mbi, sizeof(mbi))) {
+  if (VirtualQuery((void*)stk[0], &mbi, sizeof mbi)) {
     // https://archive.md/ehBq4
     DWORD mask = (stk[0] <= MAX_CODE_HEAP_ADDR)
                    ? (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
