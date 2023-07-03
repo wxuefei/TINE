@@ -205,8 +205,7 @@ void ShutdownCore(size_t core) {
 }
 
 void ShutdownCores(int ec) {
-  int c;
-  for (c = 0; c < mp_cnt(nullptr); ++c)
+  for (size_t c = 0; c < mp_cnt(nullptr); ++c)
     if (c != core_num)
       ShutdownCore(c);
   FFI_CALL_TOS_0(TOSLoader["__FreeCPUs"][0].val);
@@ -283,8 +282,8 @@ void SleepHP(uint64_t us) {
   ReleaseMutex(cores[core_num].mtx);
   WaitForSingleObject(cores[core_num].event, INFINITE);
 #else
-
-  struct timespec ts = {0};
+  struct timespec ts;
+  memset(&ts, 0, sizeof ts);
   ts.tv_nsec = us * 1000;
   __atomic_store_n(&cores[core_num].is_sleeping, 1, __ATOMIC_SEQ_CST);
 #ifdef __linux__

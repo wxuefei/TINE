@@ -91,7 +91,7 @@ void SetupDebugger() {
   REG_CR2,
 };*/
 
-static void routine(int sig, siginfo_t* info, ucontext_t* ctx) {
+static void routine(int sig, siginfo_t*, ucontext_t* ctx) {
   BackTrace();
   uint64_t sig_i64 = sig;
 #ifdef __linux__

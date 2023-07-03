@@ -121,6 +121,9 @@ target_compile_options(${PROJECT_NAME}
     -fno-omit-frame-pointer
     -m64
     -fno-exceptions
+    -Wall
+    -Wextra
+    -Wno-frame-address
 )
 
 

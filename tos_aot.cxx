@@ -22,7 +22,8 @@ using std::ios;
 
 MapCHashVec TOSLoader;
 
-// This code looks like utter garbage and it is. Sorry for that
+// This code is mostly copied from TempleOS
+// and does not look very C++-y
 static void LoadOneImport(char** src_, char* mod_base) {
   char *src = *src_, *st_ptr, *ptr = nullptr;
   uint64_t i, etype;
@@ -32,8 +33,8 @@ static void LoadOneImport(char** src_, char* mod_base) {
     src += 4;
     st_ptr = src;
     src += strlen(st_ptr) + 1;
-    // First occurance of a string means "repeat this until another name is
-    // found"
+    // First occurance of a string means
+    // "repeat this until another name is found"
     if (*st_ptr) {
       if (!first) {
         *src_ = st_ptr - 5;
@@ -91,14 +92,15 @@ static void LoadOneImport(char** src_, char* mod_base) {
 
 static void SysSymImportsResolve(char* st_ptr) {
   char* ptr;
-  for (auto& tmp : TOSLoader) {
-    auto& syms = std::get<std::vector<CHash>>(tmp);
-    for (auto& sym : syms)
-      if (sym.type == HTT_IMPORT_SYS_SYM) {
-        ptr = sym.mod_header_entry;
-        LoadOneImport(&ptr, sym.mod_base);
-        sym.type = HTT_INVALID;
-      }
+  if (TOSLoader.find(st_ptr) == TOSLoader.end())
+    return;
+  auto& v = TOSLoader[st_ptr];
+  for (auto& sym : v) {
+    if (sym.type != HTT_IMPORT_SYS_SYM)
+      continue;
+    ptr = sym.mod_header_entry;
+    LoadOneImport(&ptr, sym.mod_base);
+    sym.type = HTT_INVALID;
   }
 }
 
@@ -188,23 +190,23 @@ void LoadHCRT(std::string const& name) {
     std::cerr << "CANNOT FIND TEMPLEOS BINARY FILE " << name << std::endl;
     std::terminate();
   }
-  char* mod_base;
-  CBinFile *bfh, *bfh_addr;
-  size_t size = fs::file_size(name);
-  f.read(reinterpret_cast<char*>(bfh_addr = bfh =
-                                     (CBinFile*)NewVirtualChunk(size, true)),
-         size);
+  char* bfh_addr;
+  auto sz = fs::file_size(name);
+  f.read(bfh_addr = VirtAlloc<char>(sz), sz);
+  // I think this breaks strict aliasing but
+  // I dont think it matters because its packed(?)
+  auto bfh = reinterpret_cast<CBinFile*>(bfh_addr);
   if (std::string_view{bfh->bin_signature, 4} != "TOSB") {
     std::cerr << "INVALID TEMPLEOS BINARY FILE " << name << std::endl;
     std::terminate();
   }
-  mod_base = (char*)bfh_addr + sizeof(CBinFile);
-  LoadPass1((char*)bfh_addr + bfh_addr->patch_table_offset, mod_base);
+  char* mod_base = bfh_addr + sizeof(CBinFile);
+  LoadPass1(bfh_addr + bfh->patch_table_offset, mod_base);
 #ifndef _WIN32
   signal(SIGUSR2, (void (*)(int))TOSLoader["__InterruptCoreRoutine"][0].val);
 #endif
   SetupDebugger();
-  LoadPass2((char*)bfh_addr + bfh_addr->patch_table_offset, mod_base);
+  LoadPass2(bfh_addr + bfh->patch_table_offset, mod_base);
 }
 
 void BackTrace() {
