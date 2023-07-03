@@ -9,10 +9,6 @@
 #endif
 }
 
-U0 EnableSSE() { // thanks Alec Murphy!
-}
-EnableSSE();
-
 #include "Assets"
 #include "PlayfieldDraw"
 #include "PlayfieldInput"

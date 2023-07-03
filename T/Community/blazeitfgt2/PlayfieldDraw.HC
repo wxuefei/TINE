@@ -25,8 +25,12 @@ class BombData {
   U8 *backbuffer;
 };
 
-// Variables
-U0 (*BombVFX)(BombData *bd) = FileRead("Asm/Bomb.BIN");
+I64 bomb_sz;
+U8 *BombBIN=FileRead("Asm/Bomb.BIN",&bomb_sz);
+U0 (*BombVFX)(BombData *bd)=NewVirtualChunk(bomb_sz,TRUE);
+MemCpy(BombVFX,BombBIN,bomb_sz);
+Free(BombBIN);
+
 
 #define SCORESCR_X 192
 #define SCORESCR_Y 8
@@ -309,7 +313,7 @@ U0 DrawPlayfield(CTask *task, CDC *dc) {
     bd.bombPos.y = bombPos.y;
     bd.old_fb = old_fb;
     bd.backbuffer = backbuffer;
-    (BombVFX)(&bd);
+    (*BombVFX)(&bd);
   } else {
     MemCpy(old_fb+PIX_TOP*SCR_W,backbuffer+PIX_TOP*SCR_W,SCR_W*FB_H);
   }
