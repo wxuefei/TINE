@@ -295,7 +295,7 @@ void SleepHP(uint64_t us) {
           0);
 #elif defined(__FreeBSD__)
   _umtx_op(&cores[core_num].is_sleeping, UMTX_OP_WAIT_UINT, 1,
-           (void*)alignof(struct timespec), &ts);
+           (void*)sizeof(struct timespec), &ts);
 #endif
 #endif
 }
