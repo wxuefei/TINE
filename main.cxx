@@ -29,6 +29,7 @@ static constexpr bool is_win =
 #include <windows.h>
 #include <winbase.h>
 #include <wincon.h>
+#include <winerror.h>
 #include <processenv.h>
 #include <processthreadsapi.h>
 // clang-format on
@@ -37,6 +38,7 @@ static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
 #define STR_(x) x, lstrlenA(x)
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), STR_("User Abort.\n"), nullptr,
                 nullptr);
+  ExitProcess(ERROR_CONTROL_C_EXIT);
   return TRUE;
 }
 
