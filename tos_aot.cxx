@@ -26,7 +26,7 @@ MapCHashVec TOSLoader;
 // and does not look very C++-y
 static void LoadOneImport(char** src_, char* mod_base) {
   char *src = *src_, *st_ptr, *ptr = nullptr;
-  uint64_t i, etype;
+  uintptr_t i, etype;
   char first = 1;
   while ((etype = *src++)) {
     ptr = mod_base + *(int32_t*)src;
@@ -106,7 +106,7 @@ static void SysSymImportsResolve(char* st_ptr) {
 
 static void LoadPass1(char* src, char* mod_base) {
   char *ptr, *st_ptr;
-  int64_t i;
+  uintptr_t i;
   size_t cnt;
   uint8_t etype;
   CHash tmpex;
@@ -124,7 +124,7 @@ static void LoadPass1(char* src, char* mod_base) {
       if (etype == IET_IMM32_EXPORT || etype == IET_IMM64_EXPORT)
         tmpex.val = (void*)i;
       else
-        tmpex.val = i + mod_base;
+        tmpex.val = mod_base + i;
       TOSLoader[st_ptr].emplace_back(tmpex);
       SysSymImportsResolve(st_ptr);
       break;

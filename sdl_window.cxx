@@ -579,16 +579,15 @@ static int SDLCALL MSCallback(void*, SDL_Event* e) {
       x2 = 0;
     else if (x > win.margin_x + static_cast<Sint32>(win.sz_x))
       x2 = 640 - 1;
-    else {
+    else
       x2 = (x - win.margin_x) * 640. / win.sz_x;
-    }
+
     if (y < win.margin_y)
       y2 = 0;
     else if (y > win.margin_y + static_cast<Sint32>(win.sz_y))
       y2 = 480 - 1;
-    else {
+    else
       y2 = (y - win.margin_y) * 480. / win.sz_y;
-    }
     FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
   default:;
   }
