@@ -18,7 +18,8 @@ static struct CDrawWindow {
   SDL_Palette* palette;
   SDL_Surface* surf;
   SDL_Renderer* rend;
-  uint64_t sz_x, sz_y, margin_x, margin_y;
+  Uint32 sz_x, sz_y;
+  Sint32 margin_x, margin_y;
   ~CDrawWindow() {
     if (!win_init)
       return;
@@ -102,18 +103,17 @@ CDrawWindow* NewDrawWindow() {
   return &win;
 }
 
-static void DrawWindowUpdate_pre(CDrawWindow* ul, uint8_t* colors,
-                                 uint64_t internal_width, uint64_t h) {
+static void DrawWindowUpdate_EV(uint8_t* colors, uint64_t internal_width) {
   if (!SDL_WasInit(SDL_INIT_EVERYTHING))
     return;
   if (!win_init)
     return;
   SDL_Surface* s = win.surf;
-  uint64_t x, y;
+  uint64_t y;
   uint8_t *src = colors, *dst = (uint8_t*)s->pixels;
   SDL_LockSurface(s);
-  for (y = 0; y < h; ++y) {
-    memcpy(dst, src, 640);
+  for (y = 0; y < 480; ++y) {
+    std::copy(src, src + 640, dst);
     src += internal_width;
     dst += s->pitch;
   }
@@ -152,8 +152,7 @@ static void DrawWindowUpdate_pre(CDrawWindow* ul, uint8_t* colors,
   SDL_CondBroadcast(win.screen_done_cond);
 }
 
-void DrawWindowUpdate(struct CDrawWindow* w, int8_t* colors,
-                      int64_t internal_width, int64_t h) {
+void DrawWindowUpdate(uint8_t* colors, uintptr_t internal_width) {
   // https://archive.md/yD5QL
   SDL_Event event;
   SDL_UserEvent userevent;
@@ -166,7 +165,7 @@ void DrawWindowUpdate(struct CDrawWindow* w, int8_t* colors,
   userevent.type = SDL_USEREVENT;
   userevent.code = 0;
   userevent.data1 = colors;
-  userevent.data2 = (void*)(uintptr_t)internal_width;
+  userevent.data2 = (void*)internal_width;
 
   event.type = SDL_USEREVENT;
   event.user = userevent;
@@ -180,9 +179,9 @@ void DrawWindowUpdate(struct CDrawWindow* w, int8_t* colors,
   return;
 }
 
-static void UserEvHandler(void* a, SDL_UserEvent* ev) {
+static void UserEvHandler(SDL_UserEvent* ev) {
   if (ev->type == SDL_USEREVENT)
-    DrawWindowUpdate_pre(NULL, (uint8_t*)ev->data1, (uintptr_t)ev->data2, 480);
+    DrawWindowUpdate_EV((uint8_t*)ev->data1, (uintptr_t)ev->data2);
 }
 
 enum : uint8_t {
@@ -319,7 +318,7 @@ static inline constexpr uint64_t K2SC(char ch) {
   __builtin_unreachable();
 }
 
-static int32_t ScanKey(int64_t* ch, int64_t* sc, SDL_Event* ev) {
+static int32_t ScanKey(uint64_t* sc, SDL_Event* ev) {
   SDL_Event e = *ev;
   int64_t mod = 0;
   if (e.type == SDL_KEYDOWN) {
@@ -526,19 +525,14 @@ static int32_t ScanKey(int64_t* ch, int64_t* sc, SDL_Event* ev) {
   return -1;
 }
 
-static uint32_t TimerCb(uint32_t interval, void* data) {
-  FFI_CALL_TOS_1(data, interval);
-  return interval;
-}
-
 static void* kb_cb = nullptr;
 static void* kb_cb_data = nullptr;
 static bool kb_init = false;
 static bool ms_init = false;
-static int SDLCALL KBCallback(void* d, SDL_Event* e) {
-  int64_t c, s;
-  if (kb_cb && (-1 != ScanKey(&c, &s, e)))
-    FFI_CALL_TOS_2(kb_cb, c, s);
+static int SDLCALL KBCallback(void*, SDL_Event* e) {
+  uint64_t s;
+  if (kb_cb && (-1 != ScanKey(&s, e)))
+    FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
   return 0;
 }
 void SetKBCallback(void* fptr, void* data) {
@@ -551,7 +545,7 @@ void SetKBCallback(void* fptr, void* data) {
 }
 // x,y,z,(l<<1)|r
 static void* ms_cb = nullptr;
-static int SDLCALL MSCallback(void* d, SDL_Event* e) {
+static int SDLCALL MSCallback(void*, SDL_Event* e) {
   static Sint32 x, y;
   static int state;
   static int z;
@@ -583,14 +577,14 @@ static int SDLCALL MSCallback(void* d, SDL_Event* e) {
   ent:;
     if (x < win.margin_x)
       x2 = 0;
-    else if (x > win.margin_x + win.sz_x)
+    else if (x > win.margin_x + static_cast<Sint32>(win.sz_x))
       x2 = 640 - 1;
     else {
       x2 = (x - win.margin_x) * 640. / win.sz_x;
     }
     if (y < win.margin_y)
       y2 = 0;
-    else if (y > win.margin_y + win.sz_y)
+    else if (y > win.margin_y + static_cast<Sint32>(win.sz_y))
       y2 = 480 - 1;
     else {
       y2 = (y - win.margin_y) * 480. / win.sz_y;
@@ -622,7 +616,7 @@ void InputLoop(bool* off) {
     if (!SDL_WaitEvent(&e))
       continue;
     if (e.type == SDL_USEREVENT)
-      UserEvHandler(NULL, (SDL_UserEvent*)&e);
+      UserEvHandler(reinterpret_cast<SDL_UserEvent*>(&e));
   }
 }
 

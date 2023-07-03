@@ -106,32 +106,14 @@ static FILE* VFsFOpen(char const* path, char const* m) {
  *
  * */
 
+#if 0
 static void UVUDPSendCB(uv_udp_t* h, ssize_t nread, uv_buf_t const* buf,
                         struct sockaddr const* addr, unsigned flags) {
-}
-static void UVRandomCB(uv_random_t* req, int status, void* buf, size_t buflen) {
-  FFI_CALL_TOS_4(req->data, (uintptr_t)req, status, (uintptr_t)buf, buflen);
-}
-
-static int64_t STK_UVRandom(int64_t* stk) {
-  ((uv_random_t*)stk[1])->data = (void*)(uintptr_t)stk[5];
-  return uv_random((uv_loop_t*)stk[0], (uv_random_t*)stk[1], (void*)stk[2],
-                   (size_t)stk[3], stk[4], &UVRandomCB);
-}
-static void* STK_UVRandomNew() {
-  return new uv_random_t;
-}
-
-static void STK_UVRandomDel(int64_t* stk) {
-  delete (uv_random_t*)stk[0];
-}
-
-static int64_t STK_UVBufLen(int64_t* stk) {
-  return ((uv_buf_t*)stk[0])->len;
-}
-
-static int64_t STK_UVBufBase(int64_t* stk) {
-  return (uintptr_t)((uv_buf_t*)stk[0])->base;
+  (void)h;
+  (void)nread;
+  (void)buf;
+  (void)addr;
+  (void)flags;
 }
 
 static int64_t STK_UVIP4Addr(int64_t* stk) {
@@ -159,22 +141,6 @@ static int64_t STK_UVIPName(int64_t* stk) {
                     (size_t)stk[2]);
 }
 
-static void* STK_UVLoopNew() {
-  auto ret = new uv_loop_t;
-  if (uv_loop_init(ret))
-    return NULL;
-  return ret;
-}
-
-static void STK_UVLoopDel(int64_t* stk) {
-  auto l = (uv_loop_t*)stk[0];
-  uv_stop(l);
-  delete l;
-}
-
-static int64_t STK_UVRun(int64_t* stk) {
-  return uv_run((uv_loop_t*)stk[0], (uv_run_mode)stk[1]);
-}
 static void* STK_UVUDPNew(int64_t* stk) {
   auto ret = new uv_udp_t;
   if (uv_udp_init((uv_loop_t*)stk[0], ret))
@@ -198,6 +164,48 @@ static int64_t STK_UVUDPBind(int64_t* stk) {
 static int64_t STK_UVUDPConnect(int64_t* stk) {
   return (uintptr_t)uv_udp_connect((uv_udp_t*)stk[0],
                                    (struct sockaddr const*)stk[1]);
+}
+#endif
+
+static void UVRandomCB(uv_random_t* req, int status, void* buf, size_t buflen) {
+  FFI_CALL_TOS_4(req->data, (uintptr_t)req, status, (uintptr_t)buf, buflen);
+}
+
+static int64_t STK_UVRandom(uintptr_t* stk) {
+  ((uv_random_t*)stk[1])->data = (void*)stk[5];
+  return uv_random((uv_loop_t*)stk[0], (uv_random_t*)stk[1], (void*)stk[2],
+                   stk[3], stk[4], &UVRandomCB);
+}
+static void* STK_UVRandomNew() {
+  return new uv_random_t;
+}
+
+static void STK_UVRandomDel(int64_t* stk) {
+  delete (uv_random_t*)stk[0];
+}
+
+static int64_t STK_UVBufLen(int64_t* stk) {
+  return ((uv_buf_t*)stk[0])->len;
+}
+
+static int64_t STK_UVBufBase(int64_t* stk) {
+  return (uintptr_t)((uv_buf_t*)stk[0])->base;
+}
+static void* STK_UVLoopNew() {
+  auto ret = new uv_loop_t;
+  if (uv_loop_init(ret))
+    return NULL;
+  return ret;
+}
+
+static void STK_UVLoopDel(int64_t* stk) {
+  auto l = (uv_loop_t*)stk[0];
+  uv_stop(l);
+  delete l;
+}
+
+static int64_t STK_UVRun(int64_t* stk) {
+  return uv_run((uv_loop_t*)stk[0], (uv_run_mode)stk[1]);
 }
 
 static void STK_DyadInit() {
@@ -398,8 +406,8 @@ static void STK_TOSPrint(uint64_t* stk) {
   TOSPrint((char const*)stk[0], stk[1], (int64_t*)stk + 2);
 }
 
-static int64_t STK_DrawWindowUpdate(int64_t* stk) {
-  DrawWindowUpdate((CDrawWindow*)stk[0], (int8_t*)stk[1], stk[2], stk[3]);
+static int64_t STK_DrawWindowUpdate(uintptr_t* stk) {
+  DrawWindowUpdate((uint8_t*)stk[0], stk[1]);
   return 0;
 }
 
@@ -505,13 +513,13 @@ static int64_t STK___FExists(uintptr_t* stk) {
 
 #include <time.h>
 
-static uint64_t STK_UnixNow(int64_t* stk) {
+static uint64_t STK_UnixNow(void*) {
   return time(nullptr);
 }
 
 #else
 
-static uint64_t STK_UnixNow(int64_t* stk) {
+static uint64_t STK_UnixNow(void*) {
   int64_t r;
   FILETIME ft;
   GetSystemTimeAsFileTime(&ft);
@@ -623,7 +631,7 @@ static int64_t STK_SetVolume(int64_t* stk) {
   return 0;
 }
 
-static uint64_t STK_GetVolume(int64_t* stk) {
+static uint64_t STK_GetVolume(void*) {
   union {
     double flt;
     int64_t i;
@@ -850,7 +858,8 @@ void RegisterFuncPtrs() {
   S_(UVLoopNew, 0);
   S_(UVLoopDel, 1);
   S_(UVRun, 2);
-  auto blob = static_cast<char*>(NewVirtualChunk(ffi_blob.size(), true));
+  S_(UVRandom, 0);
+  auto blob = VirtAlloc<char>(ffi_blob.size());
   std::copy(ffi_blob.begin(), ffi_blob.end(), blob);
   for (auto& m : TOSLoader) {
     auto& [symname, vec] = m;
