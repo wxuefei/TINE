@@ -8,7 +8,7 @@ I64 pf_cpu=0;
 I64 pf_buf_in_ptr=0,pf_depth;
 I64 pf_prof_active=0;
 
-U0 ProfTimerInt(U8 *cur_rip)
+U0 ProfTimerInt()
 {//See $LK,"profiler_timer_irq",A="FF:::/Kernel/KInts.HC,profiler_timer_irq"$.
   I64 i,k;
   CTask *task=Fs;

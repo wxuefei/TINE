@@ -5,6 +5,14 @@
 
 void* HolyMAlloc(size_t sz);
 void* HolyCAlloc(size_t sz);
+template <class T = void, bool fill = false>
+__attribute__((always_inline)) inline T* HolyAlloc(size_t sz) {
+  // I demand a constexpr ternary right now
+  if constexpr (fill)
+    return static_cast<T*>(HolyCAlloc(sz));
+  else
+    return static_cast<T*>(HolyMAlloc(sz));
+}
 void HolyFree(void* p);
 char* HolyStrDup(char const* s);
 void RegisterFuncPtrs();

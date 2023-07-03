@@ -120,6 +120,7 @@ target_compile_options(${PROJECT_NAME}
     -Werror=shadow
     -fno-omit-frame-pointer
     -m64
+    -fno-exceptions
 )
 
 
