@@ -801,7 +801,7 @@ void RegisterFuncPtrs() {
   S_(SetMSCallback, 1);
   S_(__GetTicks, 0);
   S_(__BootstrapForeachSymbol, 1);
-  S_(DrawWindowUpdate, 4);
+  S_(DrawWindowUpdate, 2);
   S_(UnblockSignals, 0);
   /*
    * In TempleOS variadics, functions follow __cdecl, whereas normally
