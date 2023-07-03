@@ -133,12 +133,20 @@ GLOBAL FFI_CALL_TOS_0_ZERO_BP
 FFI_CALL_TOS_0_ZERO_BP:
 PUSH RBP
 PUSH RBX
+PUSH R12 ; i save everything because
+PUSH R13 ; variadics are __cdecl
+PUSH R14
+PUSH R15
 PUSH 0 ;Align stack to 16
 PUSH 0 ;"Empty enter function"
 PUSH 0 ;"old RBP"
 MOV RBP,RSP 
 CALL RDI
 ADD RSP,24
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 POP RBP
 RET

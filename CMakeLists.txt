@@ -80,7 +80,7 @@ set(C_EXECUTABLE_SOURCE_FILES
 set_source_files_properties(CPP_EXECUTABLE_SOURCE_FILES
   PROPERTIES
     LANGUAGE CXX
-    COMPILE_FLAGS "-fno-rtti -fno-exceptions"
+    COMPILE_FLAGS -fno-rtti
 )
 
 set_source_files_properties(C_EXECUTABLE_SOURCE_FILES}
