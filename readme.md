@@ -32,7 +32,6 @@ mv T/HCRT.BIN .
 # caveats
 due to running in userspace, context switching is around 4 times slower(not that it matters anyway outside of flexing `CPURep(TRUE);` results) and ring 0 routines like In/OutU8 are not present <br>
 division by zero is not an exception, it will bring up the debugger(SIGFPE)
-### PROFILER IS UNSUPPORTED ON WINDOWS DUE TO LACK OF SIGPROF
 
 # documentation
 ```C
@@ -67,8 +66,6 @@ Unzip("file.HC.Z");//unzip tos compression
 Zip("file.HC");
 Find("str",,"-i");//grep -rn . -e str
 FF("file.*");//find .|grep file
-Prof;
-ProfRep;
 MountFile("Something.ISO.C");//MountFile(U8 *f,U8 drv_let='M');
 Cd("M:/");//defaults to M
 INT3;//force raise debug situation
