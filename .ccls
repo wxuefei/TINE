@@ -1,4 +1,7 @@
 clang
-%c -std=c11
-%cpp -std=c++17
--Werror=shadow
+%c -std=gnu17
+%cpp -std=gnu++17
+-Wall
+-Wextra
+-Wno-frame-address
+-Werror=shadow,implicit-function-declarations
