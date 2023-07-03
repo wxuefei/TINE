@@ -51,12 +51,11 @@ void* NewVirtualChunk(size_t sz, bool low32) {
   if (low32) { // code heap
     // sz / ps * ps seems meaningless
     // but its actually aligning sz to ps(page size)
-    // MAP_32BIT is actually 31 bits
+    // MAP_32BIT is actually 31 bits(which is actually lucky for us)
     ret = mmap(nullptr, sz / ps * ps + pad, PROT_EXEC | PROT_WRITE | PROT_READ,
                MAP_PRIVATE | MAP_ANON | MAP_32BIT, -1, 0);
 #ifdef __linux__
     // I hear that linux doesn't like addresses within the first 16bits
-    // maybe its the stack space?
     if (ret == MAP_FAILED) {
       uintptr_t down = 0x1000;
       std::ifstream map{"/proc/self/maps", ios::binary | ios::in};
