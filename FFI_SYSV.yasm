@@ -4,10 +4,15 @@ FFI_CALL_TOS_0:
 PUSH RBP
 MOV RBP,RSP;save current stack
 PUSH RBX;register that must be saved
-        ;why i dont save other registers: Terry's compiler pushes
-        ;r12~r15 when it uses them anyway(not rbx)
-        ;maybe terry did have some ffi in mind or something(idk)
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 CALL RDI;1st arg
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -18,8 +23,16 @@ FFI_CALL_TOS_1:
 PUSH RBP
 MOV RBP,RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH RSI;2nd arg
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -29,9 +42,17 @@ FFI_CALL_TOS_2:
 PUSH RBP
 MOV RBP,RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -41,10 +62,18 @@ FFI_CALL_TOS_3:
 PUSH RBP
 MOV RBP,RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -54,11 +83,19 @@ FFI_CALL_TOS_4:
 PUSH RBP
 MOV RBP,RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH R8
 PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -68,12 +105,20 @@ FFI_CALL_TOS_5:
 PUSH RBP
 MOV RBP, RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH R9
 PUSH R8
 PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -83,6 +128,10 @@ FFI_CALL_TOS_6:
 PUSH RBP
 MOV RBP, RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH QWORD [RBP + 16]
 PUSH R9
 PUSH R8
@@ -90,6 +139,10 @@ PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -99,6 +152,10 @@ FFI_CALL_TOS_7:
 PUSH RBP
 MOV RBP, RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH QWORD [RBP + 0x18]
 PUSH QWORD [RBP + 0x10]
 PUSH R9
@@ -107,6 +164,10 @@ PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -116,6 +177,10 @@ FFI_CALL_TOS_8:
 PUSH RBP
 MOV RBP, RSP
 PUSH RBX
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
+PUSH R14
+PUSH R15
 PUSH QWORD [RBP + 0x20]
 PUSH QWORD [RBP + 0x18]
 PUSH QWORD [RBP + 0x10]
@@ -125,6 +190,10 @@ PUSH RCX
 PUSH RDX
 PUSH RSI
 CALL RDI
+POP R15
+POP R14
+POP R13
+POP R12
 POP RBX
 LEAVE
 RET
@@ -138,8 +207,8 @@ PUSH R13 ; to be safe
 PUSH R14
 PUSH R15
 PUSH 0 ;Align stack to 16
-PUSH 0 ;"Empty enter function"
-PUSH 0 ;"old RBP"
+PUSH 0 ;return address
+PUSH 0 ;make it look like it was called from null
 MOV RBP,RSP 
 CALL RDI
 ADD RSP,24
