@@ -1,13 +1,9 @@
 # If dreams can come true what does that say about nightmares?
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-if (WIN32 OR MINGW)
-  message(FATAL_ERROR "Use StaticWin.make, rtfm")
-endif ()
-
 # thank you justin
 if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR} AND NOT WIN32)
-	message(FATAL_ERROR "You cannot use CMake to build from the root of it's source tree! Remove the CMakeCache.txt file from this directory, then create a separate directory (either below this directory or elsewhere), and then re-run CMake from there.")
+	message(FATAL_ERROR "You can not use CMake to build from the root of it's source tree! Remove the CMakeCache.txt file from this directory, then create a separate directory (either below this directory or elsewhere), and then re-run CMake from there.")
 endif(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR} AND NOT WIN32)
 
 # lmao lol
@@ -15,18 +11,6 @@ set(PROJECT_MAJOR_VERSION 4)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_LEVEL   0)
 set(VERSION_SIMPLE "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_LEVEL}")
-
-project(tos
-  VERSION ${VERSION_SIMPLE}
-  DESCRIPTION "TempleOS in userspace"
-  LANGUAGES C CXX
-)
-
-
-if ((NOT CMAKE_SYSTEM_NAME STREQUAL "Linux") AND
-    (NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"))
-  message(FATAL_ERROR "Unsupported system")
-endif ()
 
 # set a default build type if none was specified
 set(default_build_type "Release")
@@ -47,20 +31,32 @@ if (NOT ARCH MATCHES "x86_64")
   message(FATAL_ERROR "CAN ONLY BUILD ON x86_64 ARCHITECTURE")
 endif ()
 
-# prefer clang instead of gcc (or whatever garbage compiler they're using) This can be disabled with
-# the NO_CLANG option
-option(NO_CLANG "Don't prefer clang for compilation" OFF)
-find_program(CLANG   clang)
-find_program(CLANGXX clang++)
-if (NOT NO_CLANG)
-  if (CLANG)
-    set(CMAKE_C_COMPILER ${CLANG})
-  endif (CLANG)
-  if (CLANGXX)
-    set(CMAKE_CXX_COMPILER ${CLANGXX})
-  endif (CLANGXX)
-endif (NOT NO_CLANG)
+if ((NOT WIN32) AND (NOT MINGW))
+  # prefer clang instead of gcc (or whatever garbage compiler they're using) This can be disabled with
+  # the NO_CLANG option
+  option(NO_CLANG "Don't prefer clang for compilation" OFF)
+  find_program(CLANG   clang)
+  find_program(CLANGXX clang++)
+  if (NOT NO_CLANG)
+    if (CLANG)
+      set(CMAKE_C_COMPILER ${CLANG})
+    endif (CLANG)
+    if (CLANGXX)
+      set(CMAKE_CXX_COMPILER ${CLANGXX})
+    endif (CLANGXX)
+  endif (NOT NO_CLANG)
+endif ()
 
+if (MINGW OR WIN32)
+  set(CMAKE_THREAD_PREFER_PTHREAD OFF)
+  set(THREADS_PREFER_PTHREAD_FLAG OFF)
+endif ()
+
+project(tos
+  VERSION ${VERSION_SIMPLE}
+  DESCRIPTION "TempleOS in userspace"
+  LANGUAGES C CXX
+)
 
 message(STATUS "${PROJECT_NAME} version: ${VERSION_SIMPLE}")
 option(WARNINGS_AS_ERRORS "Set certain warnings to be treated as errors by the compiler" ON)
@@ -152,31 +148,47 @@ else()
   message(FATAL_ERROR install libuv)
 endif()
 include_directories(${LIBUV_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES}) # uv)
 
-# uses this because cmake cant detect builtins
-include(CheckCXXSourceCompiles)
-check_cxx_source_compiles(
-  "#include <stdint.h>
-   int main() {
-     uint32_t i = 1, j = 1;
-     __atomic_compare_exchange_n(
-       &i, &j, 0, false,
-       __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
-    );
-    return !(i == 0 && j == 1);
-  }" HAS_ATOMIC_LOAD_N)
-if (NOT HAS_ATOMIC_LOAD_N)
-  message(FATAL_ERROR "No builtin atomics, wtf are you using as your compiler?")
+if(WIN32 OR MINGW)
+  # I literally gave up trying to build this shit(specifically SDL2) statically
+  # so you're on your own if you want to package this or something
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    ssp synchronization shlwapi shcore dbghelp winmm -static)
+  set(C_ABI_NAME "WIN64")
+  set(BIN_FORMAT "win64")
+elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR
+       (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"))
+  # ffi
+  set(C_ABI_NAME "SYSV")
+  set(BIN_FORMAT "elf64")
+  # uses this because cmake cant detect builtins
+  include(CheckCXXSourceCompiles)
+  check_cxx_source_compiles(
+    "#include <stdint.h>
+     int main() {
+       uint32_t i = 1, j = 1;
+       __atomic_compare_exchange_n(
+         &i, &j, 0, false,
+         __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
+      );
+      return !(i == 0 && j == 1);
+    }" HAS_ATOMIC_LOAD_N)
+  if (NOT HAS_ATOMIC_LOAD_N)
+    message(FATAL_ERROR "No builtin atomics, wtf are you using as your compiler?")
+  endif()
+else()
+    message(FATAL_ERROR "Unsupported system")
 endif()
 
 # ffi
-add_custom_command(OUTPUT FFI_SYSV.obj
+set(FFI_NAME "FFI_${C_ABI_NAME}")
+add_custom_command(OUTPUT "${FFI_NAME}.obj"
     COMMAND yasm
-    ARGS -f elf64 -o "${CMAKE_CURRENT_BINARY_DIR}/FFI_SYSV.obj" "${CMAKE_CURRENT_SOURCE_DIR}/FFI_SYSV.yasm"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/FFI_SYSV.yasm"
+    ARGS -f ${BIN_FORMAT} -o "${CMAKE_CURRENT_BINARY_DIR}/${FFI_NAME}.obj" "${CMAKE_CURRENT_SOURCE_DIR}/${FFI_NAME}.yasm"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${FFI_NAME}.yasm"
 )
-add_library(FFI FFI_SYSV.obj)
+add_library(FFI "${FFI_NAME}.obj")
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(${PROJECT_NAME} PRIVATE FFI)
 
