@@ -1,6 +1,7 @@
 * text=auto
 *.HH linguist-language=HolyC
 *.HC linguist-language=HolyC
+*.make linguist-language=Makefile
 ext/** linguist-vendored
 cmake/** linguist-vendored
 T/Community/blazeitfgt2/** linguist-vendored
