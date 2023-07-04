@@ -55,7 +55,7 @@ uint64_t GetTicks() {
  * Segment registers. (https://archive.md/pf2td)
  */
 
-thread_local std::atomic<void*> Fs;
+thread_local std::atomic<void*> Fs = nullptr;
 
 void* GetFs() {
   return Fs;
@@ -65,7 +65,7 @@ void SetFs(void* f) {
   Fs = f;
 }
 
-thread_local std::atomic<void*> Gs;
+thread_local std::atomic<void*> Gs = nullptr;
 
 void* GetGs() {
   return Gs;
@@ -135,8 +135,7 @@ static void* __stdcall LaunchCore(void* c) {
 // when CTRL+ALT+C is pressed inside TempleOS
 void InterruptCore(size_t core) {
 #ifdef _WIN32
-  CONTEXT ctx;
-  memset(&ctx, 0, sizeof ctx);
+  CONTEXT ctx{};
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
@@ -286,8 +285,7 @@ void SleepHP(uint64_t us) {
   ReleaseMutex(cores[core_num].mtx);
   WaitForSingleObject(cores[core_num].event, INFINITE);
 #else
-  struct timespec ts;
-  memset(&ts, 0, sizeof ts);
+  struct timespec ts{};
   ts.tv_nsec = us * 1000;
   __atomic_store_n(&cores[core_num].is_sleeping, 1, __ATOMIC_SEQ_CST);
 #ifdef __linux__

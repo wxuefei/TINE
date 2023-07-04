@@ -323,6 +323,7 @@ public import U0i __Sleep(I64i mS);
 import U8i *__CmdLineBootText();
 import U0i UnblockSignals();
 import U64i __GetTicksHP(); 
+import U8 *_BootDrv();
 #else
 extern U0 __SleepHP(I64i);
 extern U64i __GetTicksHP(); 
@@ -406,6 +407,7 @@ public extern Bool FBlkRead(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
 public extern Bool FBlkWrite(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
 public extern U0 FClose(CFile *f);
 public extern U8i *FOpen(U8i *filename,U8i *flags,I64i cnt=0,U8i *mem_task=0);
+extern U8 *_BootDrv();
 #endif
 public extern I64 MSize(U8 *src);   //size of heap object
 public extern I64 MSize2(U8 *src); //Internal size

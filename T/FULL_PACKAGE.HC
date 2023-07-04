@@ -62,7 +62,8 @@ U0 LoadImps() {
 
 U0 StartUpTasks()
 {
-  WinMax(User);
+  CTask *u=User;
+  WinMax(u);
   try {
     ExeFile("WallPaper.HC");
     ExePrint("WallPaperInit;;");
@@ -72,9 +73,9 @@ U0 StartUpTasks()
   AutoComplete(ON);
 }
 U0 __FreeCPUs() {
-	Free(cpu_structs),
-	Free(mp_cores);
-	Free(_boot_gs);
+  Free(cpu_structs),
+  Free(mp_cores);
+  Free(_boot_gs);
 }
 
 cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
@@ -83,33 +84,30 @@ SetFs(adam_task);
 LoadImps;
 //Load symbols into adam_task
 if(FileFind("HCRT.DBG.Z"))
-	DbgInfoRead("HCRT.DBG.Z");
+  DbgInfoRead("HCRT.DBG.Z");
 //Our entering thread doesnt have a cur_thrd,so spawn one
 Gs->seth_task=Spawn(&CoreAPSethTask,NULL,"Seth");
 
 U0 __InitCPUs() {
-	I64 idx;
-	for(idx=Gs->num+1;idx<mp_cnt;++idx) {
-		__SpawnCore(idx,&CoreAPSethTask);
-		while (!Bt(&seth_tasks_ready,idx))
-			PAUSE;
-	}
+  I64 idx;
+  for (idx=Gs->num+1;idx<mp_cnt;++idx) {
+    __SpawnCore(idx,&CoreAPSethTask);
+    while (!Bt(&seth_tasks_ready,idx))
+      PAUSE;
+  }
 }
 __InitCPUs;
-if(__CmdLineBootText) {
-	try {
-		ExePrint("%s;\n",__CmdLineBootText);
-	} catch PutExcept;
-}
+try {
+  ExePrint("%s;\n",__CmdLineBootText);
+} catch PutExcept;
 if (__IsCmdLine) {
   CTask *u=User;
   DeathWait(&u);
   ExitTOS;
+} else {
+  sys_winmgr_task=Spawn(&WinMgrTask);
+  Refresh; //Wait for window manager.
+  StartUpTasks;
+  SrvTaskCont;
 }
-sys_winmgr_task=Spawn(&WinMgrTask);
-//Grab pointer
-
-Refresh; //Wait for window manager.
-StartUpTasks;
-SrvTaskCont;
 #include "PUBLIC.HC";;

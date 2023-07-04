@@ -4,14 +4,13 @@
 .PHONY: all clean
 all: tos
 
-CC := x86_64-w64-mingw32-cc
-CXX := x86_64-w64-mingw32-c++
-SDL2CONFIG := x86_64-w64-mingw32-sdl2-config
-PKGCONFIG := x86_64-w64-mingw32-pkg-config
+CC := cc
+CXX := c++
+SDL2CONFIG := sdl2-config
+PKGCONFIG := pkg-config
 YASM := yasm
-FLAGS := -O3 -Wall -Werror=shadow -fno-exceptions -fno-omit-frame-pointer \
-        -m64 -Wextra -Wno-frame-address
-# I use nonstandard flag var names because mingw overrides them lmao
+FLAGS := -O3 -Wall -Werror=shadow -fno-exceptions -fno-omit-frame-pointer           \
+        -m64 -Wextra -Wno-frame-address -DTOS_STATIC_BUILD
 CFLAGS := $(FLAGS) -std=gnu17 -Werror=implicit-function-declaration
 CXXFLAGS := $(FLAGS) -std=gnu++17 -fno-rtti
 YASMFLAGS := -f win64
