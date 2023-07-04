@@ -1,5 +1,8 @@
 # templeos in ring 3
-### you ***must*** already know the basics of templeos before attempting to use this
+## skills required to use this
+ - knowledge of TempleOS
+ - knowledge of C
+ - knowledge of GDB/LLDB usage(for debugging the loader)
 "tos" in lowercase in this project's codebase and Wiki does not refer to TempleOS' abbreviation, it refers to this project(runtime/loader) <br>
 it's hard to describe what this exactly is because it doesn't "emulate" anything in the traditional sense, though it loads a mostly orthodox kernel and can compile/run HolyC software as you would on a real bare metal machine as it runs Terry's compiler and emits machine code that's executed directly on the host CPU
 
@@ -60,7 +63,6 @@ MakeMyISO("/TempleOSLite.ISO.C","/MyDistro.ISO.C");
 //ExitTOS; optionally exit tos idk
 //Run the ISO using qemu -m 512M -cdrom T/MyDistro.ISO.C
 ```
-
 # ref
 ```C
 DirMk("folder");
@@ -75,7 +77,7 @@ Find("str",,"-i");//grep -rn . -e str
 FF("file.*");//find .|grep file
 MountFile("Something.ISO.C");//MountFile(U8 *f,U8 drv_let='M');
 Cd("M:/");//defaults to M
-INT3;//force raise debug situation
+INT3;//force raise debugger
 DbgHelp;//help on how to debug
 ExitTOS(I32i ec=0);
 ```
