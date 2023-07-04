@@ -17,8 +17,15 @@ install SDL2, cmake, make, yasm, gcc/clang and libuv
 ```
 mkdir build;
 cd build;
-cmake ..;
+cmake ..; # *nix
+cmake .. -G 'MSYS Makefiles' # ***WINDOWS***
 make -j$(nproc);
+```
+### statically build the loader(WINDOWS ONLY)
+```
+make -f StaticWin.make -j$(nproc)
+make -f StaticWin.make clean
+# KEEP IN MIND COMMAND LINE MODE WILL NOT WORK WITH STATIC BUILDS(IDK WHY)
 ```
 # build runtime
 ```
