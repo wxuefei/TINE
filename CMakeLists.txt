@@ -16,6 +16,18 @@ set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_LEVEL   0)
 set(VERSION_SIMPLE "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_LEVEL}")
 
+project(tos
+  VERSION ${VERSION_SIMPLE}
+  DESCRIPTION "TempleOS in userspace"
+  LANGUAGES C CXX
+)
+
+
+if ((NOT CMAKE_SYSTEM_NAME STREQUAL "Linux") AND
+    (NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"))
+  message(FATAL_ERROR "Unsupported system")
+endif ()
+
 # set a default build type if none was specified
 set(default_build_type "Release")
 
@@ -49,11 +61,6 @@ if (NOT NO_CLANG)
   endif (CLANGXX)
 endif (NOT NO_CLANG)
 
-project(tos
-  VERSION ${VERSION_SIMPLE}
-  DESCRIPTION "TempleOS in userspace"
-  LANGUAGES C CXX
-)
 
 message(STATUS "${PROJECT_NAME} version: ${VERSION_SIMPLE}")
 option(WARNINGS_AS_ERRORS "Set certain warnings to be treated as errors by the compiler" ON)
