@@ -2,7 +2,8 @@
 ## skills required to use this
  - knowledge of TempleOS
  - knowledge of C
- - knowledge of GDB/LLDB usage(for debugging the loader)
+ - knowledge of GDB/LLDB(for debugging the loader)
+
 "tos" in lowercase in this project's codebase and Wiki does not refer to TempleOS' abbreviation, it refers to this project(runtime/loader) <br>
 it's hard to describe what this exactly is because it doesn't "emulate" anything in the traditional sense, though it loads a mostly orthodox kernel and can compile/run HolyC software as you would on a real bare metal machine as it runs Terry's compiler and emits machine code that's executed directly on the host CPU
 
