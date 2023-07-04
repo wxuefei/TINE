@@ -9,13 +9,11 @@ S_(FunctionName, function arg cnt);
 T/KERNELA.HH
 ```C
 ...after #ifdef IMPORT_BUILTINS
-import U64i FunctionName(....);
+import U64 FunctionName(....);
 ...#else then lots of extern
 extern <same function prototype>;
-//F64 -> ok
-//U64 -> bad, use U64i
 ```
-build hcrt and loader again
+build hcrt and loader again, copy HCRT.BIN to HCRT\_BOOTSTRAP.BIN and commit
 # extending the kernel
 T/KERNELA.HH
 ```C
@@ -25,6 +23,7 @@ T/HCRT\_TOS.HC
 ```C
 #include "<desired holyc file>"
 ```
+rebuild hcrt, copy HCRT.BIN to HCRT\_BOOTSTRAP.BIN and commit
 # header generation
 T/FULL\_PACKAGE.HC
 ```C

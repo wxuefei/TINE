@@ -39,6 +39,9 @@ mv T/HCRT.BIN .
 due to running in userspace, context switching is around 4 times slower(not that it matters anyway outside of flexing `CPURep(TRUE);` results) and ring 0 routines like In/OutU8 are not present <br>
 division by zero is not an exception, it will bring up the debugger(SIGFPE)
 
+# contributing
+[read this](./contrib.md)
+
 # documentation
 ```C
 Cd("T:/Server");
