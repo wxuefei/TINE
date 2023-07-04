@@ -156,7 +156,7 @@ FFI_CALL_TOS_0_ZERO_BP:
 PUSH RBP
 PUSH RBX
 PUSH RDI ; i save everything here
-PUSH RSI ; because variadics are __cdecl
+PUSH RSI ; just to be safe
 PUSH R12
 PUSH R13
 PUSH R14

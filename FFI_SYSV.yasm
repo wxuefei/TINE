@@ -133,8 +133,8 @@ GLOBAL FFI_CALL_TOS_0_ZERO_BP
 FFI_CALL_TOS_0_ZERO_BP:
 PUSH RBP
 PUSH RBX
-PUSH R12 ; i save everything because
-PUSH R13 ; variadics are __cdecl
+PUSH R12 ; i save everything just
+PUSH R13 ; to be safe
 PUSH R14
 PUSH R15
 PUSH 0 ;Align stack to 16

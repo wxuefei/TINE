@@ -26,10 +26,11 @@ MapCHashVec TOSLoader;
 // and does not look very C++-y
 static void LoadOneImport(char** src_, char* mod_base) {
   char *src = *src_, *st_ptr, *ptr = nullptr;
-  uintptr_t i = 0, etype;
+  uintptr_t i = 0;
+  uint8_t etype;
   char first = 1;
   while ((etype = *src++)) {
-    ptr = mod_base + *(int32_t*)src;
+    ptr = mod_base + *(uint32_t*)src;
     src += 4;
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -62,10 +63,10 @@ static void LoadOneImport(char** src_, char* mod_base) {
     // probably breaks strict aliasing :(
     switch (etype) {
     case IET_REL_I8:
-      *ptr = (char*)i - ptr - 1;
+      *(int8_t*)ptr = (char*)i - ptr - 1;
       break;
     case IET_IMM_U8:
-      *ptr = i;
+      *(uint8_t*)ptr = i;
       break;
     case IET_REL_I16:
       *(int16_t*)ptr = (char*)i - ptr - 2;
@@ -74,10 +75,10 @@ static void LoadOneImport(char** src_, char* mod_base) {
       *(int16_t*)ptr = i;
       break;
     case IET_REL_I32:
-      *(int32_t*)ptr = (char*)i - ptr - 4;
+      *(uint32_t*)ptr = (char*)i - ptr - 4;
       break;
     case IET_IMM_U32:
-      *(int32_t*)ptr = i;
+      *(uint32_t*)ptr = i;
       break;
     case IET_REL_I64:
       *(int64_t*)ptr = (char*)i - ptr - 8;
@@ -111,7 +112,7 @@ static void LoadPass1(char* src, char* mod_base) {
   uint8_t etype;
   CHash tmpex;
   while ((etype = *src++)) {
-    i = *(int32_t*)src;
+    i = *(uint32_t*)src;
     src += 4;
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -136,9 +137,9 @@ static void LoadPass1(char* src, char* mod_base) {
     case IET_ABS_ADDR: {
       cnt = i;
       for (size_t j = 0; j < cnt; j++) {
-        ptr = mod_base + *(int32_t*)src;
+        ptr = mod_base + *(uint32_t*)src;
         src += 4;
-        *(int32_t*)ptr += (uintptr_t)mod_base;
+        *(uint32_t*)ptr += (uintptr_t)mod_base;
       }
     } break;
     default:; // the other ones wont be used
@@ -149,9 +150,10 @@ static void LoadPass1(char* src, char* mod_base) {
 
 static void LoadPass2(char* src, char* mod_base) {
   char* st_ptr;
-  int64_t i, etype;
+  uint32_t i;
+  uint8_t etype;
   while ((etype = *src++)) {
-    i = *(int32_t*)src;
+    i = *(uint32_t*)src;
     src += 4;
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -182,6 +184,8 @@ extern "C" struct __attribute__((packed)) CBinFile {
     uint32_t sig;
   };
   int64_t org, patch_table_offset, file_size;
+  char data[]; // FAMs are technically illegal in
+               // standard c++ but whatever
 };
 
 void LoadHCRT(std::string const& name) {
@@ -200,12 +204,11 @@ void LoadHCRT(std::string const& name) {
     std::cerr << "INVALID TEMPLEOS BINARY FILE " << name << std::endl;
     std::terminate();
   }
-  char* mod_base = bfh_addr + sizeof(CBinFile);
-  LoadPass1(bfh_addr + bfh->patch_table_offset, mod_base);
+  LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
 #ifndef _WIN32
   signal(SIGUSR2, (void (*)(int))TOSLoader["__InterruptCoreRoutine"][0].val);
 #endif
-  LoadPass2(bfh_addr + bfh->patch_table_offset, mod_base);
+  LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
 }
 
 void BackTrace() {
