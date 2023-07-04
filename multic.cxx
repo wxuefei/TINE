@@ -285,7 +285,7 @@ void SleepHP(uint64_t us) {
   ReleaseMutex(cores[core_num].mtx);
   WaitForSingleObject(cores[core_num].event, INFINITE);
 #else
-  struct timespec ts{};
+  struct timespec ts {};
   ts.tv_nsec = us * 1000;
   __atomic_store_n(&cores[core_num].is_sleeping, 1, __ATOMIC_SEQ_CST);
 #ifdef __linux__

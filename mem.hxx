@@ -5,7 +5,7 @@
 
 void* NewVirtualChunk(size_t sz, bool low32);
 // use with caution as its executable by default
-template <typename T = void, bool exec = true>
+template <class T = void, bool exec = true>
 __attribute__((always_inline)) inline T* VirtAlloc(size_t sz) {
   return static_cast<T*>(NewVirtualChunk(sizeof(T) * sz, exec));
 }
