@@ -3,6 +3,6 @@
 *.HC linguist-language=HolyC
 ext/** linguist-vendored
 cmake/** linguist-vendored
-T/Community/blazeitfgt2 linguist-vendored
-T/Community/blazeitfgt linguist-vendored
-T/Community/DigGaym linguist-vendored
+T/Community/blazeitfgt2/** linguist-vendored
+T/Community/blazeitfgt/** linguist-vendored
+T/Community/DigGaym/** linguist-vendored
