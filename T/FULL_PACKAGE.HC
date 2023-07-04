@@ -62,8 +62,8 @@ U0 LoadImps() {
 
 U0 StartUpTasks()
 {
-  CTask *u=User;
-  WinMax(u);
+  User;
+  WinTileVert;
   try {
     ExeFile("WallPaper.HC");
     ExePrint("WallPaperInit;;");
@@ -80,7 +80,7 @@ U0 __FreeCPUs() {
 
 cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
 SetFs(adam_task);
-//DEBUGGING INFORMATION WILL BE APPENDED TO THESE SYMBOLS
+//DEBUGGING INFORMATION WILL BE APPENDED TO THESE SYMBOLS
 LoadImps;
 //Load symbols into adam_task
 if(FileFind("HCRT.DBG.Z"))
