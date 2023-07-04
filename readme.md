@@ -17,7 +17,7 @@ install SDL2, cmake, make, yasm, gcc/clang and libuv
 ```
 mkdir build;
 cd build;
-cmake ..; # *nix **THIS LINE ISNT FOR WINDOWS***
+cmake ..; # *nix ***THIS LINE ISNT FOR WINDOWS***
 cmake .. -G 'MSYS Makefiles' # ***WINDOWS***
 make -j$(nproc);
 ```
