@@ -63,7 +63,7 @@ bool IsCmdLine() {
 
 static std::string boot_str;
 char const* CmdLineBootText() {
-  return boot_str.size() == 0 ? nullptr : boot_str.c_str();
+  return boot_str.c_str();
 }
 
 static bool prog_exit = false;
@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
   if (noans->count == 0)
     boot_str += "__EnableAns;\n";
   if (is_cmd_line) {
+    VFsSetDrv('Z');
     boot_str += "#exe {Drv('Z');};\n";
     for (int i = 0; i < cmdLineFiles->count; ++i) {
       boot_str += "#include \"";

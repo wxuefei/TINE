@@ -3,10 +3,10 @@
 #include "KERNELA.HH"
 Bool dol_doc_inited=FALSE;
 Bool IsRaw() {
-	return __IsCmdLine;
+  return __IsCmdLine;
 }
 asm {
-    ALIGN 16,0; //MUST ALIGN SYS_FIXED_AREA TO 16 TO AVOID SEGUALTS WITH FXSAVE
+  ALIGN 16,0; //MUST ALIGN SYS_FIXED_AREA TO 16 TO AVOID SEGUALTS WITH FXSAVE
 };
 CSysFixedArea sys_fixed_area,*SYS_FIXED_AREA;
 SYS_FIXED_AREA=&sys_fixed_area;
@@ -24,19 +24,19 @@ HeapCtrlInit(&ahc,Fs,0);
 HeapCtrlInit(&ahd,Fs,1);
 Fs->data_heap=&ahd;
 Fs->code_heap=&ahc;
-Fs->cur_dir=StrNew("T:/",&ahd);
+Fs->cur_dir=StrNew(_BootDrv,&ahd);
 U32 SYS_CTRL_ALT_FLAGS=0;
 CCPU **mp_cores=CAlloc(mp_cnt*sizeof CCPU*,&ahd);
 CCPU *_boot_gs;
 CCPU *Gs() {
-	if(!GetGs) // this part only will be executed on boot
-		SetGs(_boot_gs=CAlloc(sizeof CCPU,&ahd));
-	return GetGs;
+  if(!GetGs) // this part only will be executed on boot
+    SetGs(_boot_gs=CAlloc(sizeof CCPU,&ahd));
+  return GetGs;
 }
 mp_cores[0]=Gs;
 QueInit(&(Gs->next_dying));
 CTask *Fs() {
-	return GetFs;
+  return GetFs;
 }
 TaskInit(Fs,0);
 #include "Kernel/KGLBLS.HC"

@@ -13,6 +13,7 @@ using std::ios;
 
 #include <ctype.h>
 #include <time.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <processthreadsapi.h>
@@ -33,6 +34,13 @@ using std::ios;
 
 thread_local std::string thrd_pwd;
 thread_local char thrd_drv;
+
+char* BootDrv() {
+  auto ret = new char[4]{};
+  ret[0] = thrd_drv;
+  strcpy(ret + 1, ":/");
+  return ret;
+}
 
 void VFsThrdInit() {
   thrd_pwd = "/";

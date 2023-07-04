@@ -11,9 +11,11 @@
 
 #include "ext/linenoise/linenoise.h"
 
+#include <iostream>
 #include <ios>
 #include <string>
 #include <vector>
+#include <utility>
 using std::ios;
 #include <filesystem>
 #include <fstream>
@@ -333,8 +335,7 @@ static uint64_t STK___IsValidPtr(uintptr_t* stk) {
   // wtf IsBadReadPtr gives me a segfault so i just have to use this
   // polyfill lmfao
   // #ifdef __WINE__
-  MEMORY_BASIC_INFORMATION mbi;
-  memset(&mbi, 0, sizeof mbi);
+  MEMORY_BASIC_INFORMATION mbi{};
   if (VirtualQuery((void*)stk[0], &mbi, sizeof mbi)) {
     // https://archive.md/ehBq4
     DWORD mask = (stk[0] <= MAX_CODE_HEAP_ADDR)
@@ -482,7 +483,8 @@ static int64_t STK_SetClipboardText(int64_t* stk) {
   return 0;
 }
 
-static char* STK___GetStr(uintptr_t* stk) {
+static char* STK___GetStr([[maybe_unused]] uintptr_t* stk) {
+#ifndef TOS_STATIC_BUILD
   char *s = linenoise(reinterpret_cast<char const*>(stk[0])), *r;
   if (s == nullptr)
     return nullptr;
@@ -490,6 +492,10 @@ static char* STK___GetStr(uintptr_t* stk) {
   r = HolyStrDup(s);
   free(s);
   return r;
+#else
+  std::cerr << "STATIC WINDOWS BUILDS DO NOT WORK WITH COMMAND LINE MODE\n";
+  std::terminate();
+#endif
 }
 
 static char* STK_GetClipboardText(int64_t*) {
@@ -552,6 +558,10 @@ static uint64_t STK_FreeVirtualChunk(int64_t* stk) {
 static uint64_t STK_VFsSetPwd(int64_t* stk) {
   VFsSetPwd((char*)stk[0]);
   return 1;
+}
+
+static char* STK__BootDrv(void*) {
+  return BootDrv();
 }
 
 static uint64_t STK_VFsExists(int64_t* stk) {
@@ -830,6 +840,7 @@ void RegisterFuncPtrs() {
   S_(DyadSetOnDestroyCallback, 3);
   S_(DyadSetTimeout, 2);
   S_(DyadSetNoDelay, 2);
+  S_(_BootDrv, 0);
   S_(VFsFTrunc, 2);
   S_(VFsSetPwd, 1);
   S_(VFsExists, 1);
