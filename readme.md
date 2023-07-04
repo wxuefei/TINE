@@ -25,7 +25,7 @@ cmake ..; # *nix ***THIS LINE ISNT FOR WINDOWS***
 cmake .. -G 'MSYS Makefiles' # ***WINDOWS***
 make -j$(nproc);
 ```
-### statically building on windows is impossible(idk why)
+side note: there used to be a makefile to completely statically build an exe on windows but it seems like windows doesnt like it(doesnt output anything, just hangs) so i removed it, so make sure to run the built binary in the mingw terminal
 ## build runtime
 ```
 ./tos -f HCRT_BOOTSTRAP.BIN -ctT BuildHCRT.HC
