@@ -2,6 +2,7 @@
 *.HH linguist-language=HolyC
 *.HC linguist-language=HolyC
 *.make linguist-language=Makefile
+*.yasm linguist-language=Assembly
 ext/** linguist-vendored
 cmake/** linguist-vendored
 T/Community/blazeitfgt2/** linguist-vendored
