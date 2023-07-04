@@ -98,7 +98,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
       GetSystemInfo(&si);
       dwAllocationGranularity = si.dwAllocationGranularity;
     }
-    MEMORY_BASIC_INFORMATION ent;
+    MEMORY_BASIC_INFORMATION ent{};
     uint64_t alloc = dwAllocationGranularity, addr;
     while (alloc <= MAX_CODE_HEAP_ADDR) {
       if (!VirtualQuery((void*)alloc, &ent, sizeof ent))

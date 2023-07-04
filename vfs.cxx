@@ -12,8 +12,8 @@ namespace fs = std::filesystem;
 using std::ios;
 
 #include <ctype.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <processthreadsapi.h>
