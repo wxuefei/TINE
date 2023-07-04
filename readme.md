@@ -25,12 +25,7 @@ cmake ..; # *nix ***THIS LINE ISNT FOR WINDOWS***
 cmake .. -G 'MSYS Makefiles' # ***WINDOWS***
 make -j$(nproc);
 ```
-### statically build the loader(WINDOWS ONLY)
-```
-make -f StaticWin.make -j$(nproc)
-make -f StaticWin.make clean
-# KEEP IN MIND COMMAND LINE MODE WILL NOT WORK WITH STATIC BUILDS(IDK WHY)
-```
+### statically building on windows is impossible(idk why)
 ## build runtime
 ```
 ./tos -f HCRT_BOOTSTRAP.BIN -ctT BuildHCRT.HC

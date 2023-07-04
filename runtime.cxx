@@ -654,12 +654,14 @@ static void STK_ExitTOS(int64_t* stk) {
   ShutdownTOS(stk[0]);
 }
 
+// arity must be <= 0xffFF/sizeof U64
 static void RegisterFunctionPtr(std::string& blob, char const* name, void* fp,
-                                size_t arity) {
+                                uint16_t arity) {
   // Function entry point offset from the code blob
   uintptr_t off = blob.size();
 #ifdef _WIN32
   // clang-format off
+  // https://defuse.ca/online-x86-assembler.htm
   /*
   PUSH RBP
   MOV RBP,RSP
