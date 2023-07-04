@@ -1,7 +1,6 @@
 * text=auto
 *.HH linguist-language=HolyC
 *.HC linguist-language=HolyC
-*.make linguist-language=Makefile
 *.yasm linguist-language=Assembly
 ext/** linguist-vendored
 cmake/** linguist-vendored
