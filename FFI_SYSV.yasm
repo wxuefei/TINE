@@ -207,7 +207,7 @@ PUSH R13 ; to be safe
 PUSH R14
 PUSH R15
 PUSH 0 ;Align stack to 16
-PUSH 0 ;return address
+PUSH 0 ;fake return address so the stack trace deliberately ends here(doesn't matter since it'll be reset to normal after the function returns and rbp is popped)
 PUSH 0 ;make it look like it was called from null
 MOV RBP,RSP 
 CALL RDI
@@ -217,5 +217,5 @@ POP R14
 POP R13
 POP R12
 POP RBX
-POP RBP
+POP RBP ; no need to leave because rbp == rsp(__cdecl)
 RET

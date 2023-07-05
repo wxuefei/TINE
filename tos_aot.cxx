@@ -1,4 +1,5 @@
 #include "tos_aot.hxx"
+#include "alloc.hxx"
 #include "dbg.hxx"
 #include "ffi.h"
 #include "mem.hxx"
