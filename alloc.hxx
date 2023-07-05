@@ -8,12 +8,11 @@
 // so I'm going to do some template fuckery just to be safe
 // in case GCC deprecates the sizeof(void) == 1 behavior
 namespace detail {
-template <class> struct size_of;
-template <> struct size_of<void> {
-  static constexpr size_t sz = 1;
-};
 template <class T> struct size_of {
   static constexpr size_t sz = sizeof(T);
+};
+template <> struct size_of<void> {
+  static constexpr size_t sz = 1;
 };
 } // namespace detail
 
