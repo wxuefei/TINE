@@ -1,5 +1,6 @@
 #include "runtime.hxx"
 #include "TOSPrint.hxx"
+#include "alloc.hxx"
 #include "ffi.h"
 #include "main.hxx"
 #include "mem.hxx"
