@@ -140,8 +140,7 @@ if (NOT SDL2_FOUND)
   message(FATAL_ERROR "INSTALL SDL2")
 endif ()
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_directories(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARY_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
 
 # libuv dep
 include (Findlibuv)
