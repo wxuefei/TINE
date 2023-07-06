@@ -6,7 +6,7 @@
 #include <vector>
 
 extern "C" struct CHash {
-  int64_t type;
+  uint64_t type;
   union {
     void* val;
     struct {
@@ -19,7 +19,7 @@ using MapCHashVec = std::unordered_map<std::string, std::vector<CHash>>;
 extern MapCHashVec TOSLoader;
 
 // clang-format off
-// copied from TOS, DO NOT TOUCH
+// copied from TempleOS, DO NOT TOUCH
 
 #define HTT_INVALID		0
 #define HTT_EXPORT_SYS_SYM	0x00001 //CHashExport
