@@ -4,6 +4,7 @@
 #include <ios>
 using std::ios;
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <limits.h>

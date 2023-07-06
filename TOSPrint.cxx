@@ -70,7 +70,7 @@ loop:;
 #define FMT_CH(x, T, ...)                                             \
   do {                                                                \
     size_t sz = snprintf(NULL, 0, "%" x, __VA_ARGS__((T*)argv)[arg]); \
-    char* tmp = new char[sz + 1]{};                                   \
+    char* tmp = new (std::nothrow) char[sz + 1]{};                    \
     snprintf(tmp, sz + 1, "%" x, __VA_ARGS__((T*)argv)[arg]);         \
     ret += tmp;                                                       \
     delete[] tmp;                                                     \
@@ -111,7 +111,8 @@ loop:;
     }
   } break;
   case 'q': {
-    char *str = ((char**)argv)[arg], *buf = new char[strlen(str) * 4 + 1]{};
+    char *str = ((char**)argv)[arg],
+         *buf = new (std::nothrow) char[strlen(str) * 4 + 1]{};
     UnescapeString(str, buf);
     ret += buf;
     delete[] buf;

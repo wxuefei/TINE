@@ -145,7 +145,7 @@ static int64_t STK_UVIPName(int64_t* stk) {
 }
 
 static void* STK_UVUDPNew(int64_t* stk) {
-  auto ret = new uv_udp_t;
+  auto ret = new(std::nothrow) uv_udp_t;
   if (uv_udp_init((uv_loop_t*)stk[0], ret))
     return NULL;
   return ret;
@@ -180,7 +180,7 @@ static int64_t STK_UVRandom(uintptr_t* stk) {
                    stk[3], stk[4], &UVRandomCB);
 }
 static void* STK_UVRandomNew() {
-  return new uv_random_t;
+  return new (std::nothrow) uv_random_t;
 }
 
 static void STK_UVRandomDel(int64_t* stk) {
@@ -195,7 +195,7 @@ static int64_t STK_UVBufBase(int64_t* stk) {
   return (uintptr_t)((uv_buf_t*)stk[0])->base;
 }
 static void* STK_UVLoopNew() {
-  auto ret = new uv_loop_t;
+  auto ret = new (std::nothrow) uv_loop_t;
   if (uv_loop_init(ret))
     return NULL;
   return ret;

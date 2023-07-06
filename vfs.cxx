@@ -36,7 +36,7 @@ thread_local std::string thrd_pwd;
 thread_local char thrd_drv;
 
 char* BootDrv() {
-  auto ret = new char[4]{};
+  auto ret = new (std::nothrow) char[4]{};
   ret[0] = thrd_drv;
   strcpy(ret + 1, ":/");
   return ret;
