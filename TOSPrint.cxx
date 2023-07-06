@@ -28,7 +28,7 @@ static std::string MStrPrint(char const* fmt, uint64_t, int64_t* argv) {
 loop:;
   arg++;
   end = strchr(start, '%');
-  if (end == NULL)
+  if (end == nullptr)
     end = start + strlen(start);
   ret.append(start, end - start);
   if (*end == '\0')
@@ -67,13 +67,13 @@ loop:;
       start++;
     }
   }
-#define FMT_CH(x, T, ...)                                             \
-  do {                                                                \
-    size_t sz = snprintf(NULL, 0, "%" x, __VA_ARGS__((T*)argv)[arg]); \
-    char* tmp = new (std::nothrow) char[sz + 1]{};                    \
-    snprintf(tmp, sz + 1, "%" x, __VA_ARGS__((T*)argv)[arg]);         \
-    ret += tmp;                                                       \
-    delete[] tmp;                                                     \
+#define FMT_CH(x, T, ...)                                                \
+  do {                                                                   \
+    size_t sz = snprintf(nullptr, 0, "%" x, __VA_ARGS__((T*)argv)[arg]); \
+    char* tmp = new (std::nothrow) char[sz + 1]{};                       \
+    snprintf(tmp, sz + 1, "%" x, __VA_ARGS__((T*)argv)[arg]);            \
+    ret += tmp;                                                          \
+    delete[] tmp;                                                        \
   } while (false);
   switch (*start) {
   case 'd':
@@ -154,7 +154,7 @@ static char* UnescapeString(char* str, char* where) {
 
   check_us_key:; // you bear a striking resemblance
     if (isalnum(*str) == 0 &&
-        strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == NULL) {
+        strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == nullptr) {
       // Note: this was giving me bizarre buffer overflow
       // errors and it turns out you MUST use uint8_t when
       // printing a 8 bit wide octal value to get the correct digits

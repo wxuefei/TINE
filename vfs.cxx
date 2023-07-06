@@ -139,9 +139,9 @@ int64_t VFsUnixTime(char const* name) {
   if (!FExists(fn))
     return 0;
   FILETIME t;
-  HANDLE fh = CreateFileA(fn.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  GetFileTime(fh, NULL, NULL, &t);
+  HANDLE fh = CreateFileA(fn.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+  GetFileTime(fh, nullptr, nullptr, &t);
   CloseHandle(fh);
   return FILETIME2Unix(&t);
 }

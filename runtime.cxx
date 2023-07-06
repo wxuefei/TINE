@@ -147,7 +147,7 @@ static int64_t STK_UVIPName(int64_t* stk) {
 static void* STK_UVUDPNew(int64_t* stk) {
   auto ret = new(std::nothrow) uv_udp_t;
   if (uv_udp_init((uv_loop_t*)stk[0], ret))
-    return NULL;
+    return nullptr;
   return ret;
 }
 // 0suc
@@ -196,18 +196,18 @@ static int64_t STK_UVBufBase(int64_t* stk) {
 }
 static void* STK_UVLoopNew() {
   auto ret = new (std::nothrow) uv_loop_t;
-  if (uv_loop_init(ret))
-    return NULL;
+  if (uv_loop_init(ret) != 0)
+    return nullptr;
   return ret;
 }
 
-static void STK_UVLoopDel(int64_t* stk) {
+static void STK_UVLoopDel(uintptr_t* stk) {
   auto l = (uv_loop_t*)stk[0];
   uv_stop(l);
   delete l;
 }
 
-static int64_t STK_UVRun(int64_t* stk) {
+static int64_t STK_UVRun(uintptr_t* stk) {
   return uv_run((uv_loop_t*)stk[0], (uv_run_mode)stk[1]);
 }
 
@@ -232,19 +232,19 @@ static void* STK_DyadNewStream() {
   return dyad_newStream();
 }
 
-static int64_t STK_DyadListen(int64_t* stk) {
+static int64_t STK_DyadListen(uintptr_t* stk) {
   return dyad_listen((dyad_Stream*)stk[0], stk[1]);
 }
 
-static int64_t STK_DyadConnect(int64_t* stk) {
+static int64_t STK_DyadConnect(uintptr_t* stk) {
   return dyad_connect((dyad_Stream*)stk[0], (char const*)stk[1], stk[2]);
 }
 
-static void STK_DyadWrite(int64_t* stk) {
+static void STK_DyadWrite(intptr_t* stk) {
   dyad_write((dyad_Stream*)stk[0], (void*)stk[1], (int)stk[2]);
 }
 
-static void STK_DyadEnd(int64_t* stk) {
+static void STK_DyadEnd(uintptr_t* stk) {
   dyad_end((dyad_Stream*)stk[0]);
 }
 
@@ -320,7 +320,7 @@ static void STK_UnblockSignals() {
 #ifndef _WIN32
   sigset_t all;
   sigfillset(&all);
-  sigprocmask(SIG_UNBLOCK, &all, NULL);
+  sigprocmask(SIG_UNBLOCK, &all, nullptr);
 #endif
 }
 
