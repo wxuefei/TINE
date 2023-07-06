@@ -49,19 +49,12 @@
 .tmp_versions/
 modules.order
 Module.symvers
-Mkfile.old
-dkms.conf
-epm
-*.bsd~
+
 *~
-chroot/*
-proot
-stagedir/**
-debian/usr/**
 T/T/**
-iso_dir/**
 T/TempleOS.ISO.C
 T/HCRT.BIN
+T/HCRT.DBG.Z
 T/Registry.HC.Z
 T/WikiBackups
 HCRT.BIN
@@ -70,4 +63,3 @@ T/Headers.HH
 T/unfound.DD
 build
 tos
-T/HCRT.DBG.Z

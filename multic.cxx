@@ -19,6 +19,7 @@
 #include <synchapi.h>
 #include <sysinfoapi.h>
 #include <timeapi.h>
+using WinCB = LPTHREAD_START_ROUTINE;
 // clang-format on
 #else
 #include <pthread.h>
@@ -155,9 +156,9 @@ void LaunchCore0(ThreadCallback* fp) {
   cores.resize(mp_cnt(nullptr));
   cores[0].fp = nullptr;
 #ifdef _WIN32
-  cores[0].thread = CreateThread(
-      nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>((void*)fp), nullptr,
-      0, nullptr);
+  auto fp_win = (void*)fp; // silence compiler warnings
+  cores[0].thread =
+      CreateThread(nullptr, 0, (WinCB)fp_win, nullptr, 0, nullptr);
   cores[0].mtx = CreateMutex(nullptr, FALSE, nullptr);
   cores[0].event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[0].thread, THREAD_PRIORITY_HIGHEST);
@@ -174,10 +175,9 @@ void CreateCore(size_t core, void* fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
 #ifdef _WIN32
-  // sorry for the shitcode I just want clang to shut up
-  cores[core].thread = CreateThread(
-      nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>((void*)LaunchCore),
-      (void*)core, 0, nullptr);
+  auto lc_win = (void*)LaunchCore; // silence compiler warnings
+  cores[core].thread =
+      CreateThread(nullptr, 0, (WinCB)lc_win, (void*)core, 0, nullptr);
   cores[core].mtx = CreateMutex(nullptr, FALSE, nullptr);
   cores[core].event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);

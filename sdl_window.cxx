@@ -146,7 +146,7 @@ static void DrawWindowUpdate_EV(uint8_t* colors, uint64_t internal_width) {
   rct.h = h2;
   SDL_Texture* t = SDL_CreateTextureFromSurface(win.rend, s);
   SDL_RenderClear(win.rend);
-  SDL_RenderCopy(win.rend, t, NULL, &rct);
+  SDL_RenderCopy(win.rend, t, nullptr, &rct);
   SDL_RenderPresent(win.rend);
   SDL_DestroyTexture(t);
   SDL_CondBroadcast(win.screen_done_cond);
@@ -599,7 +599,7 @@ void SetMSCallback(void* fptr) {
   if (ms_init)
     return;
   ms_init = true;
-  SDL_AddEventWatch(MSCallback, NULL);
+  SDL_AddEventWatch(MSCallback, nullptr);
 }
 
 static int ExitCb(void* off, SDL_Event* event) {

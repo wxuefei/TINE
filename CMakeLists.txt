@@ -2,9 +2,9 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # thank you justin
-if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR} AND NOT WIN32)
-	message(FATAL_ERROR "You can not use CMake to build from the root of it's source tree! Remove the CMakeCache.txt file from this directory, then create a separate directory (either below this directory or elsewhere), and then re-run CMake from there.")
-endif(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR} AND NOT WIN32)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+  message(FATAL_ERROR "You cannot use CMake to build from the root of it's source tree! Remove the CMakeCache.txt file and CMakeFiles directory from this directory, then create a separate directory (either below this directory or elsewhere), and then re-run CMake from there.")
+endif ()
 
 # lmao lol
 set(PROJECT_MAJOR_VERSION 4)
@@ -12,54 +12,43 @@ set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_LEVEL   0)
 set(VERSION_SIMPLE "${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_LEVEL}")
 
+project(tos
+  VERSION ${VERSION_SIMPLE}
+  DESCRIPTION "TempleOS emulator"
+  LANGUAGES C CXX
+)
+
 # set a default build type if none was specified
 set(default_build_type "Release")
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-	  STRING "Choose the type of build." FORCE)
+  set(CMAKE_BUILD_TYPE "${default_build_type}"
+    CACHE
+      STRING "Choose the type of build." FORCE
+  )
   # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-	"Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set_property(CACHE CMAKE_BUILD_TYPE
+    PROPERTY
+      STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo"
+  )
+endif ()
+message(STATUS "${PROJECT_NAME} version: ${VERSION_SIMPLE}")
+option(WARNINGS_AS_ERRORS "Set certain warnings to be treated as errors by the compiler" ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 include (DetectArch)
 target_architecture(ARCH)
 if (NOT ARCH MATCHES "x86_64")
   message(FATAL_ERROR "CAN ONLY BUILD ON x86_64 ARCHITECTURE")
 endif ()
 
-if ((NOT WIN32) AND (NOT MINGW))
-  # prefer clang instead of gcc (or whatever garbage compiler they're using) This can be disabled with
-  # the NO_CLANG option
-  option(NO_CLANG "Don't prefer clang for compilation" OFF)
-  find_program(CLANG   clang)
-  find_program(CLANGXX clang++)
-  if (NOT NO_CLANG)
-    if (CLANG)
-      set(CMAKE_C_COMPILER ${CLANG})
-    endif (CLANG)
-    if (CLANGXX)
-      set(CMAKE_CXX_COMPILER ${CLANGXX})
-    endif (CLANGXX)
-  endif (NOT NO_CLANG)
-endif ()
-
-if (MINGW OR WIN32)
+if (WIN32)
   set(CMAKE_THREAD_PREFER_PTHREAD OFF)
   set(THREADS_PREFER_PTHREAD_FLAG OFF)
 endif ()
-
-project(tos
-  VERSION ${VERSION_SIMPLE}
-  DESCRIPTION "TempleOS in userspace"
-  LANGUAGES C CXX
-)
-
-message(STATUS "${PROJECT_NAME} version: ${VERSION_SIMPLE}")
-option(WARNINGS_AS_ERRORS "Set certain warnings to be treated as errors by the compiler" ON)
 
 set(CPP_EXECUTABLE_SOURCE_FILES
   main.cxx
@@ -94,7 +83,10 @@ set_source_files_properties(C_EXECUTABLE_SOURCE_FILES}
     COMPILE_FLAGS -Werror=implicit-function-declaration
 )
 
-add_executable(${PROJECT_NAME} ${C_EXECUTABLE_SOURCE_FILES} ${CPP_EXECUTABLE_SOURCE_FILES})
+add_executable(${PROJECT_NAME}
+  ${C_EXECUTABLE_SOURCE_FILES}
+  ${CPP_EXECUTABLE_SOURCE_FILES}
+)
 
 # outputs bin to src tree dir
 set_target_properties(${PROJECT_NAME}
@@ -117,6 +109,15 @@ target_compile_features(${PROJECT_NAME}
     cxx_auto_type
     cxx_nullptr
     cxx_alignas
+    cxx_constexpr
+    cxx_variadic_macros
+    cxx_uniform_initialization
+    cxx_strong_enums
+    cxx_static_assert
+    cxx_lambdas
+    cxx_generalized_initializers
+    cxx_attributes
+    cxx_aggregate_default_initializers
 )
 
 target_compile_options(${PROJECT_NAME}
@@ -130,40 +131,40 @@ target_compile_options(${PROJECT_NAME}
     -Wno-frame-address
 )
 
-
 # libm
 target_link_libraries(${PROJECT_NAME} PRIVATE m)
 
 # sdl2 dep
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+if (NOT SDL2_FOUND)
+  message(FATAL_ERROR "INSTALL SDL2")
+endif ()
+target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+target_link_directories(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARY_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
 
 # libuv dep
-include(Findlibuv)
-if(LIBUV_FOUND)
-  add_library(libuv INTERFACE)
-  target_link_libraries(libuv INTERFACE PkgConfig::LIBUV)
-else()
-  message(FATAL_ERROR install libuv)
-endif()
-include_directories(${LIBUV_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES}) # uv)
+include (Findlibuv)
+if (NOT LIBUV_FOUND)
+  message(FATAL_ERROR "INSTALL LIBUV")
+endif ()
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBUV_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBUV_LIBRARIES})
 
-if(WIN32 OR MINGW)
-  # I literally gave up trying to build this shit(specifically SDL2) statically
-  # so you're on your own if you want to package this or something
+if (WIN32)
+  # I literally gave up trying to build this shit statically
+  # so bundle your own dlls when you want to package it
   target_link_libraries(${PROJECT_NAME} PRIVATE
     ssp synchronization shlwapi shcore dbghelp winmm -static)
   set(C_ABI_NAME "WIN64")
   set(BIN_FORMAT "win64")
-elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR
-       (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"))
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+        CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   # ffi
   set(C_ABI_NAME "SYSV")
   set(BIN_FORMAT "elf64")
   # uses this because cmake cant detect builtins
-  include(CheckCXXSourceCompiles)
+  include (CheckCXXSourceCompiles)
   check_cxx_source_compiles(
     "#include <stdint.h>
      int main() {
@@ -176,10 +177,10 @@ elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR
     }" HAS_ATOMIC_LOAD_N)
   if (NOT HAS_ATOMIC_LOAD_N)
     message(FATAL_ERROR "No builtin atomics, wtf are you using as your compiler?")
-  endif()
-else()
+  endif ()
+else ()
     message(FATAL_ERROR "Unsupported system")
-endif()
+endif ()
 
 # ffi
 set(FFI_NAME "FFI_${C_ABI_NAME}")
@@ -189,7 +190,10 @@ add_custom_command(OUTPUT "${FFI_NAME}.obj"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${FFI_NAME}.yasm"
 )
 add_library(FFI "${FFI_NAME}.obj")
-set_target_properties(FFI PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(FFI
+  PROPERTIES
+    LINKER_LANGUAGE C
+)
 target_link_libraries(${PROJECT_NAME} PRIVATE FFI)
 
 find_package(Threads REQUIRED)
