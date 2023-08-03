@@ -128,8 +128,8 @@ void *NewVirtualChunk(size_t sz, bool low32) {
       addr = ((uintptr_t)mbi.BaseAddress + dwAllocationGranularity - 1) &
              ~(dwAllocationGranularity - 1);
       if (mbi.State & MEM_FREE && sz <= alloc - addr)
-        return VirtualAlloc((void*)addr), sz,
-                            MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        return VirtualAlloc((void *)addr, sz, MEM_COMMIT | MEM_RESERVE,
+                            PAGE_EXECUTE_READWRITE);
     }
     return nullptr;
   } else // data heap
