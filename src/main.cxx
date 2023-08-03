@@ -64,7 +64,11 @@ std::string bin_path{"HCRT.BIN"};
 int  exit_code = 0;
 bool prog_exit = false;
 
-void* __stdcall Core0(void*) {
+#ifndef _WIN32
+void* Core0(void*) {
+#else
+DWORD WINAPI Core0(LPVOID) {
+#endif
   VFsThrdInit();
   LoadHCRT(bin_path);
   SetupDebugger();
@@ -72,8 +76,10 @@ void* __stdcall Core0(void*) {
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });
-#endif
   return nullptr;
+#else
+  return 0;
+#endif
 }
 
 } // namespace

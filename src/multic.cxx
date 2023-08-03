@@ -4,7 +4,6 @@
   #include <synchapi.h>
   #include <sysinfoapi.h>
   #include <timeapi.h>
-using WinCB = LPTHREAD_START_ROUTINE;
 #else
   #ifdef __linux__
     #include <linux/futex.h>
@@ -74,7 +73,11 @@ struct CCore {
 std::vector<CCore>  cores;
 thread_local size_t core_num;
 
-void* __stdcall LaunchCore(void* c) {
+#ifndef _WIN32
+void* LaunchCore(void* c) {
+#else
+DWORD WINAPI LaunchCore(LPVOID c) {
+#endif
   VFsThrdInit();
   SetupDebugger();
   core_num = reinterpret_cast<uintptr_t>(c);
@@ -91,7 +94,11 @@ void* __stdcall LaunchCore(void* c) {
   // ZERO_BP so the return addr&rbp is 0 and
   // stack traces don't climb up the C++ stack
   FFI_CALL_TOS_0_ZERO_BP(cores[core_num].fp);
+#ifdef _WIN32
+  return 0;
+#else
   return nullptr;
+#endif
 }
 
 /*
@@ -160,10 +167,7 @@ void LaunchCore0(ThreadCallback* fp) {
   cores.resize(proc_cnt);
   cores[0].fp = nullptr;
 #ifdef _WIN32
-  // sorry for this piece of utter garbage code, I wanted it to compile
-  // without warnings
-  #define C_(x) ((WinCB)((void*)x))
-  cores[0].thread = CreateThread(nullptr, 0, C_(fp), nullptr, 0, nullptr);
+  cores[0].thread = CreateThread(nullptr, 0, fp, nullptr, 0, nullptr);
   cores[0].mtx    = CreateMutex(nullptr, FALSE, nullptr);
   cores[0].event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[0].thread, THREAD_PRIORITY_HIGHEST);
@@ -178,15 +182,14 @@ void LaunchCore0(ThreadCallback* fp) {
 void CreateCore(size_t core, void* fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
+  auto core_n    = reinterpret_cast<void*>(core);
 #ifdef _WIN32
-  cores[core].thread = CreateThread(nullptr, 0, C_(LaunchCore),
-                                    reinterpret_cast<void*>(core), 0, nullptr);
+  cores[core].thread = CreateThread(nullptr, 0, LaunchCore, core_n, 0, nullptr);
   cores[core].mtx    = CreateMutex(nullptr, FALSE, nullptr);
   cores[core].event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
 #else
-  pthread_create(&cores[core].thread, nullptr, LaunchCore,
-                 reinterpret_cast<void*>(core));
+  pthread_create(&cores[core].thread, nullptr, LaunchCore, core_n);
   pthread_setname_np(cores[core].thread, "Seth");
 #endif
 }

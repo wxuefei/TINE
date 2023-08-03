@@ -3,11 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Technically UB by the standard but... meh
-#ifndef _WIN32
-  #define __stdcall
-#endif
-
 uint64_t GetTicks();
 
 void* GetFs();
@@ -20,8 +15,12 @@ size_t CoreNum();
 
 void InterruptCore(size_t core);
 
-// https://archive.md/nKvoK
-typedef void* __stdcall ThreadCallback(void*);
+using ThreadCallback =
+#ifdef _WIN32
+    long unsigned /*DWORD*/ __stdcall(void*);
+#else
+    void*(void*);
+#endif
 void LaunchCore0(ThreadCallback* fp);
 void WaitForCore0();
 
