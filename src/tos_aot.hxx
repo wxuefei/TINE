@@ -8,7 +8,7 @@
 extern "C" struct CHash {
   uint64_t type;
   union {
-    uint8_t* val;
+    uint8_t *val;
     struct {
       char *mod_header_entry, *mod_base;
     };
@@ -68,6 +68,6 @@ extern std::unordered_map<std::string, CHash> TOSLoader;
 // clang-format on
 
 void BackTrace();
-void LoadHCRT(std::string const&);
+void LoadHCRT(std::string const &);
 
 // vim: set expandtab ts=2 sw=2 :

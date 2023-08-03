@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 void        ShutdownTINE(int);
-char const* CmdLineBootText();
+char const *CmdLineBootText();
 
 extern bool sanitize_clipboard;
 extern bool is_cmd_line;

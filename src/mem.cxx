@@ -22,7 +22,7 @@ extern DWORD dwAllocationGranularity;
 #include "mem.hxx"
 
 #ifdef __linux__
-static inline uint64_t Hex2U64(char const* ptr, char const** res) {
+static inline uint64_t Hex2U64(char const *ptr, char const **res) {
   uint64_t ret = 0;
   char     c;
   while (isxdigit(c = *ptr)) {
@@ -35,12 +35,12 @@ static inline uint64_t Hex2U64(char const* ptr, char const** res) {
 }
 #endif
 
-void* NewVirtualChunk(size_t sz, bool low32) {
+void *NewVirtualChunk(size_t sz, bool low32) {
 #ifndef _WIN32
   // explanation of (x+y-1)&~(y-1) on the bottom windows code
   // page_size is a power of 2 so this works
   size_t padded_sz = (sz + page_size - 1) & ~(page_size - 1);
-  void*  ret;
+  void  *ret;
   if (low32) { // code heap
     // MAP_32BIT is actually MAP_31BIT(which is actually lucky for us)
     ret = mmap(nullptr, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
@@ -52,13 +52,13 @@ void* NewVirtualChunk(size_t sz, bool low32) {
       // for the code heap than on Windows or maybe FreeBSD(I don't have it
       // installed) but it won't really matter since machine code doesn't take
       // up a lot of space
-      char*     buffer  = nullptr;
+      char     *buffer  = nullptr;
       size_t    line_sz = 0;
       uintptr_t down    = 0;
-      FILE* map = fopen("/proc/self/maps", "rb"); // assumes its always there
+      FILE *map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
       while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline
-        char const* ptr   = buffer;
+        char const *ptr   = buffer;
         uint64_t    lower = Hex2U64(ptr, &ptr);
         // MAP_FIXED wants us to align `down` to the page size
         down = (down + page_size - 1) & ~(page_size - 1);
@@ -79,8 +79,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
       fclose(map);
       if (down > MAX_CODE_HEAP_ADDR)
         return nullptr;
-      ret = mmap(reinterpret_cast<void*>(down), padded_sz,
-                 PROT_EXEC | PROT_WRITE | PROT_READ,
+      ret = mmap((void *)down, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                  MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
     } else
       return ret;
@@ -100,9 +99,9 @@ void* NewVirtualChunk(size_t sz, bool low32) {
     // from a reasonable small value
     uintptr_t alloc = dwAllocationGranularity, addr;
     while (alloc <= MAX_CODE_HEAP_ADDR) {
-      if (0 == VirtualQuery(reinterpret_cast<void*>(alloc), &mbi, sizeof mbi))
+      if (0 == VirtualQuery((void *)alloc, &mbi, sizeof mbi))
         return nullptr;
-      alloc = reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize;
+      alloc = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
       // clang-format off
       //
       // Fancy code to align to round up to the nearest allocation granularity unit
@@ -126,11 +125,10 @@ void* NewVirtualChunk(size_t sz, bool low32) {
       // It'll be the same if it's already aligned
       //
       // clang-format on
-      addr = (reinterpret_cast<uintptr_t>(mbi.BaseAddress) +
-              dwAllocationGranularity - 1) &
+      addr = ((uintptr_t)mbi.BaseAddress + dwAllocationGranularity - 1) &
              ~(dwAllocationGranularity - 1);
       if (mbi.State & MEM_FREE && sz <= alloc - addr)
-        return VirtualAlloc(reinterpret_cast<void*>(addr), sz,
+        return VirtualAlloc((void*)addr), sz,
                             MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     }
     return nullptr;
@@ -140,7 +138,7 @@ void* NewVirtualChunk(size_t sz, bool low32) {
 #endif
 }
 
-void FreeVirtualChunk(void* ptr, [[maybe_unused]] size_t sz) {
+void FreeVirtualChunk(void *ptr, [[maybe_unused]] size_t sz) {
 #ifdef _WIN32
   VirtualFree(ptr, 0, MEM_RELEASE);
 #else

@@ -10,7 +10,7 @@ static uint64_t          sample, freq;
 static SDL_AudioSpec     have;
 static double            vol = .1;
 
-static void AudioCB(void* userdata, Uint8* out, int len) {
+static void AudioCB(void *userdata, Uint8 *out, int len) {
   (void)userdata;
   for (int i = 0; i < len / have.channels; ++i) {
     double t     = (double)++sample / have.freq;

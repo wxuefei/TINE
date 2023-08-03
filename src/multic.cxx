@@ -67,14 +67,14 @@ struct CCore {
   // static_assert(std::is_layout_compatible_v<std::atomic<uint32_t>, uint32_t>)
   // failed on my machine
 #endif
-  void* fp;
+  void *fp;
 };
 
 std::vector<CCore>  cores;
 thread_local size_t core_num;
 
 #ifndef _WIN32
-void* LaunchCore(void* c) {
+void *LaunchCore(void *c) {
 #else
 DWORD WINAPI LaunchCore(LPVOID c) {
 #endif
@@ -82,7 +82,7 @@ DWORD WINAPI LaunchCore(LPVOID c) {
   SetupDebugger();
   core_num = reinterpret_cast<uintptr_t>(c);
 #ifndef _WIN32
-  static void* fp = nullptr;
+  static void *fp = nullptr;
   if (fp == nullptr)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   signal(SIGUSR2, (void (*)(int))fp);
@@ -112,24 +112,24 @@ DWORD WINAPI LaunchCore(LPVOID c) {
  * ThisCPU repectively but it's because they are stored in the F Segment and G
  * Segment registers. (https://archive.md/pf2td)
  */
-thread_local std::atomic<void*> Fs = nullptr;
-thread_local std::atomic<void*> Gs = nullptr;
+thread_local std::atomic<void *> Fs = nullptr;
+thread_local std::atomic<void *> Gs = nullptr;
 
 } // namespace
 
-void* GetFs() {
+void *GetFs() {
   return Fs;
 }
 
-void SetFs(void* f) {
+void SetFs(void *f) {
   Fs = f;
 }
 
-void* GetGs() {
+void *GetGs() {
   return Gs;
 }
 
-void SetGs(void* g) {
+void SetGs(void *g) {
   Gs = g;
 }
 
@@ -149,9 +149,9 @@ void InterruptCore(size_t core) {
   GetThreadContext(cores[core].thread, &ctx);
   // push rip
   ctx.Rsp -= 8;
-  reinterpret_cast<DWORD64*>(ctx.Rsp)[0] = ctx.Rip;
+  reinterpret_cast<DWORD64 *>(ctx.Rsp)[0] = ctx.Rip;
   //
-  static void* fp = nullptr;
+  static void *fp = nullptr;
   if (fp == nullptr)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   // movabs rip, <fp>
@@ -163,7 +163,7 @@ void InterruptCore(size_t core) {
 #endif
 }
 
-void LaunchCore0(ThreadCallback* fp) {
+void LaunchCore0(ThreadCallback *fp) {
   cores.resize(proc_cnt);
   cores[0].fp = nullptr;
 #ifdef _WIN32
@@ -179,10 +179,10 @@ void LaunchCore0(ThreadCallback* fp) {
 #endif
 }
 
-void CreateCore(size_t core, void* fp) {
+void CreateCore(size_t core, void *fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
-  auto core_n    = reinterpret_cast<void*>(core);
+  auto core_n    = reinterpret_cast<void *>(core);
 #ifdef _WIN32
   cores[core].thread = CreateThread(nullptr, 0, LaunchCore, core_n, 0, nullptr);
   cores[core].mtx    = CreateMutex(nullptr, FALSE, nullptr);
@@ -265,7 +265,7 @@ uint64_t GetTicksHP() {
         tick_inc, tick_inc,
         [](auto, auto, auto, auto, auto) {
           ticks += tick_inc;
-          for (auto& c : cores) {
+          for (auto &c : cores) {
             WaitForSingleObject(c.mtx, INFINITE);
             // check if ticks reached awake_at
             if (ticks >= c.awake_at && c.awake_at > 0) {
@@ -300,7 +300,7 @@ void SleepHP(uint64_t us) {
           0);
   #elif defined(__FreeBSD__)
   _umtx_op(&cores[core_num].is_sleeping, UMTX_OP_WAIT_UINT, 1u,
-           (void*)sizeof(struct timespec), &ts);
+           (void *)sizeof(struct timespec), &ts);
   #endif
 #endif
 }

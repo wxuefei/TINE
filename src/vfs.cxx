@@ -34,11 +34,11 @@ namespace {
 thread_local std::string thrd_pwd;
 thread_local uint8_t     thrd_drv;
 
-inline bool FExists(std::string const& path) {
+inline bool FExists(std::string const &path) {
   return fs::exists(path);
 }
 
-inline bool FIsDir(std::string const& path) {
+inline bool FIsDir(std::string const &path) {
   return fs::is_directory(path);
 }
 
@@ -61,13 +61,13 @@ uint8_t VFsGetDrv() {
   return thrd_drv;
 }
 
-void VFsSetPwd(char const* pwd) {
+void VFsSetPwd(char const *pwd) {
   if (!pwd)
     pwd = "/";
   thrd_pwd = pwd;
 }
 
-std::string VFsFileNameAbs(char const* name) {
+std::string VFsFileNameAbs(char const *name) {
   std::string ret;
   // thrd_drv is always uppercase
   ret += mount_points[thrd_drv - 'A']; // T
@@ -81,7 +81,7 @@ std::string VFsFileNameAbs(char const* name) {
   return ret;
 }
 
-bool VFsDirMk(char const* to, int const flags) {
+bool VFsDirMk(char const *to, int const flags) {
   std::string p = VFsFileNameAbs(to);
   if (FExists(p) && FIsDir(p)) {
     return true;
@@ -92,7 +92,7 @@ bool VFsDirMk(char const* to, int const flags) {
   return false;
 }
 
-uint64_t VFsDel(char const* p) {
+uint64_t VFsDel(char const *p) {
   std::string path = VFsFileNameAbs(p);
   bool        e    = FExists(path);
   if (!e)
@@ -101,7 +101,7 @@ uint64_t VFsDel(char const* p) {
   return 1;
 }
 
-int64_t VFsFSize(char const* name) {
+int64_t VFsFSize(char const *name) {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn)) {
     return -1;
@@ -112,7 +112,7 @@ int64_t VFsFSize(char const* name) {
   return fs::file_size(fn);
 }
 
-uint64_t VFsUnixTime(char const* name) {
+uint64_t VFsUnixTime(char const *name) {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn))
     return 0;
@@ -121,10 +121,10 @@ uint64_t VFsUnixTime(char const* name) {
   return s.st_mtime;
 }
 
-uint64_t VFsFileWrite(char const* name, char const* data, size_t len) {
+uint64_t VFsFileWrite(char const *name, char const *data, size_t len) {
   std::string p = VFsFileNameAbs(name);
   if (name) {
-    FILE* fp = fopen(p.c_str(), "wb");
+    FILE *fp = fopen(p.c_str(), "wb");
     if (fp != nullptr) {
       fwrite(data, 1, len, fp);
       fclose(fp);
@@ -133,7 +133,7 @@ uint64_t VFsFileWrite(char const* name, char const* data, size_t len) {
   return !!name;
 }
 
-void* VFsFileRead(char const* name, uint64_t* len_ptr) {
+void *VFsFileRead(char const *name, uint64_t *len_ptr) {
   if (len_ptr)
     *len_ptr = 0;
   if (!name)
@@ -143,8 +143,8 @@ void* VFsFileRead(char const* name, uint64_t* len_ptr) {
     return nullptr;
   if (FIsDir(p))
     return nullptr;
-  char* data = nullptr;
-  FILE* fp   = fopen(p.c_str(), "rb");
+  char *data = nullptr;
+  FILE *fp   = fopen(p.c_str(), "rb");
   if (fp == nullptr)
     return nullptr;
   size_t sz = fs::file_size(p);
@@ -155,19 +155,19 @@ void* VFsFileRead(char const* name, uint64_t* len_ptr) {
   return data;
 }
 
-char** VFsDir() {
+char **VFsDir() {
   std::string file = VFsFileNameAbs("");
   if (!FIsDir(file))
     return nullptr;
 #define SD_(s) HolyStrDup(s)
   // https://archive.md/1Ojr3#7
-  using DirEnt = char*;
+  using DirEnt = char *;
   std::vector<DirEnt> items{
       SD_("."),
       SD_(".."),
   };
-  for (auto const& e : fs::directory_iterator{file}) {
-    auto const& s = e.path().filename().string();
+  for (auto const &e : fs::directory_iterator{file}) {
+    auto const &s = e.path().filename().string();
     // CDIR_FILENAME_LEN is 38(includes '\0')
     // do not touch, fat32 legacy
     // will break opening ISOs if touched
@@ -180,15 +180,15 @@ char** VFsDir() {
   return ret;
 }
 
-bool VFsIsDir(char const* path) {
+bool VFsIsDir(char const *path) {
   return FIsDir(VFsFileNameAbs(path));
 }
 
-bool VFsFileExists(char const* path) {
+bool VFsFileExists(char const *path) {
   return FExists(VFsFileNameAbs(path));
 }
 
-void VFsMountDrive(char const let, char const* path) {
+void VFsMountDrive(char const let, char const *path) {
   mount_points[toupper(let) - 'A'] = path;
 }
 

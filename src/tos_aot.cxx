@@ -28,14 +28,12 @@ std::unordered_map<std::string, CHash> TOSLoader;
 namespace {
 // This code is mostly copied from TempleOS
 // and does not look very C++-y
-void LoadOneImport(char** src_, char* mod_base) {
-  char*     src   = *src_;
-  char*     ptr   = nullptr;
+void LoadOneImport(char **src_, char *mod_base) {
+  char     *src = *src_, *ptr = nullptr, *st_ptr;
   uintptr_t i     = 0;
   bool      first = true;
-  char*     st_ptr;
   uint8_t   etype;
-#define AS_(x, T) (*reinterpret_cast<T*>(x))
+#define AS_(x, T) (*(T *)x) // yuck
   while ((etype = *src++)) {
     ptr = mod_base + AS_(src, uint32_t);
     src += sizeof(uint32_t);
@@ -58,14 +56,14 @@ void LoadOneImport(char** src_, char* mod_base) {
           tmpiss.mod_base         = mod_base;
           TOSLoader[st_ptr]       = tmpiss;
         } else {
-          auto& tmp_sym = it->second;
+          auto &tmp_sym = it->second;
           if (tmp_sym.type != HTT_IMPORT_SYS_SYM)
             i = reinterpret_cast<uintptr_t>(tmp_sym.val);
         }
       }
     }
     // probably breaks strict aliasing :(
-#define OFF_(T) (reinterpret_cast<char*>(i) - ptr - sizeof(T))
+#define OFF_(T) ((char *)i - ptr - sizeof(T))
     switch (etype) {
     case IET_REL_I8:
       AS_(ptr, int8_t) = OFF_(int8_t);
@@ -89,7 +87,7 @@ void LoadOneImport(char** src_, char* mod_base) {
       AS_(ptr, int64_t) = OFF_(int64_t);
       break;
     case IET_IMM_I64:
-      AS_(ptr, int64_t) = static_cast<int64_t>(i);
+      AS_(ptr, int64_t) = (int64_t)i;
       break;
     default:;
     }
@@ -98,19 +96,19 @@ void LoadOneImport(char** src_, char* mod_base) {
   *src_ = src - 1;
 }
 
-void SysSymImportsResolve(char* st_ptr) {
+void SysSymImportsResolve(char *st_ptr) {
   decltype(TOSLoader)::iterator it;
   if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end())
     return;
-  auto& sym = it->second;
+  auto &sym = it->second;
   if (sym.type != HTT_IMPORT_SYS_SYM)
     return;
   LoadOneImport(&sym.mod_header_entry, sym.mod_base);
   sym.type = HTT_INVALID;
 }
 
-void LoadPass1(char* src, char* mod_base) {
-  char *    ptr, *st_ptr;
+void LoadPass1(char *src, char *mod_base) {
+  char     *ptr, *st_ptr;
   uintptr_t i;
   size_t    cnt;
   uint8_t   etype;
@@ -126,9 +124,9 @@ void LoadPass1(char* src, char* mod_base) {
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
       tmpex.type = HTT_EXPORT_SYS_SYM;
-      tmpex.val  = reinterpret_cast<uint8_t*>(i);
+      tmpex.val  = (uint8_t *)i;
       if (etype != IET_IMM32_EXPORT && etype != IET_IMM64_EXPORT)
-        tmpex.val += reinterpret_cast<uintptr_t>(mod_base);
+        tmpex.val += (ptrdiff_t)mod_base;
       TOSLoader[st_ptr] = tmpex;
       SysSymImportsResolve(st_ptr);
       break;
@@ -160,8 +158,8 @@ void LoadPass1(char* src, char* mod_base) {
   }
 }
 
-void LoadPass2(char* src, char* mod_base) {
-  char*    st_ptr;
+void LoadPass2(char *src, char *mod_base) {
+  char    *st_ptr;
   uint32_t i;
   uint8_t  etype;
   while ((etype = *src++)) {
@@ -202,26 +200,26 @@ extern "C" struct [[gnu::packed]] CBinFile {
 
 } // namespace
 
-void LoadHCRT(std::string const& name) {
-  FILE* f = fopen(name.c_str(), "rb");
+void LoadHCRT(std::string const &name) {
+  FILE *f = fopen(name.c_str(), "rb");
   if (f == nullptr) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
-  char* bfh_addr;
+  char *bfh_addr;
   auto  sz = fs::file_size(name);
   fread(bfh_addr = VirtAlloc<char>(sz), 1, sz, f);
   fclose(f);
   // I think this breaks strict aliasing but
   // I dont think it matters because its packed(?)
-  auto bfh = reinterpret_cast<CBinFile*>(bfh_addr);
+  auto bfh = reinterpret_cast<CBinFile *>(bfh_addr);
   if (std::string_view{bfh->bin_signature, 4} != "TOSB") {
     fprintf(stderr, "INVALID TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
 #ifndef _WIN32
-  static void* fp = nullptr;
+  static void *fp = nullptr;
   if (fp == nullptr)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   signal(SIGUSR2, (void (*)(int))fp);
@@ -235,31 +233,31 @@ void BackTrace() {
   static std::vector<std::string> sorted;
   static bool                     init = false;
   if (!init) {
-    for (auto const& e : TOSLoader)
+    for (auto const &e : TOSLoader)
       sorted.emplace_back(e.first);
     sz = sorted.size();
-    std::sort(sorted.begin(), sorted.end(), [](auto const& a, auto const& b) {
+    std::sort(sorted.begin(), sorted.end(), [](auto const &a, auto const &b) {
       return TOSLoader[a].val < TOSLoader[b].val;
     });
     init = true;
   }
   putchar('\n');
-  auto  rbp = static_cast<void**>(__builtin_frame_address(0));
-  void* oldp;
+  auto  rbp = static_cast<void **>(__builtin_frame_address(0));
+  void *oldp;
   // its 1 because we want to know the return
   // addr of BackTrace()'s caller
-  void* ptr = __builtin_return_address(1);
+  void *ptr = __builtin_return_address(1);
   while (rbp) {
     oldp = nullptr;
     last = "UNKOWN";
     size_t idx;
     for (idx = 0; idx < sz; idx++) {
-      void* curp = TOSLoader[sorted[idx]].val;
+      void *curp = TOSLoader[sorted[idx]].val;
       if (curp == ptr) {
         fprintf(stderr, "%s\n", sorted[idx].c_str());
       } else if (curp > ptr) {
         fprintf(stderr, "%s [%p+%#" PRIx64 "]\n", last.c_str(), ptr,
-                (char*)ptr - (char*)oldp);
+                (char *)ptr - (char *)oldp);
         goto next;
       }
       oldp = curp;
@@ -267,7 +265,7 @@ void BackTrace() {
     }
   next:;
     ptr = rbp[1];
-    rbp = static_cast<void**>(*rbp);
+    rbp = (void **)*rbp; // yuck
   }
   putchar('\n');
 }
@@ -281,22 +279,22 @@ void BackTrace() {
 
 // great when you use lldb and get a fault
 // (lldb) p (char*)WhichFun($pc)
-[[gnu::used, gnu::visibility("default")]] char* WhichFun(void* ptr) {
+[[gnu::used, gnu::visibility("default")]] char *WhichFun(void *ptr) {
   std::string                     last;
   static size_t                   sz = 0;
   static std::vector<std::string> sorted;
   static bool                     init = false;
   if (!init) {
-    for (auto const& e : TOSLoader)
+    for (auto const &e : TOSLoader)
       sorted.emplace_back(e.first);
     sz = sorted.size();
-    std::sort(sorted.begin(), sorted.end(), [](auto const& a, auto const& b) {
+    std::sort(sorted.begin(), sorted.end(), [](auto const &a, auto const &b) {
       return TOSLoader[a].val < TOSLoader[b].val;
     });
     init = true;
   }
   for (size_t idx = 0; idx < sz; idx++) {
-    void* curp = TOSLoader[sorted[idx]].val;
+    void *curp = TOSLoader[sorted[idx]].val;
     if (curp == ptr) {
       fprintf(stderr, "%s\n", sorted[idx].c_str());
     } else if (curp > ptr) {

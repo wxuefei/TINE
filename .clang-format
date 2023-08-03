@@ -3,7 +3,8 @@ BasedOnStyle: LLVM
 TabWidth: '2'
 UseTab: Never
 Language: Cpp
-PointerAlignment: Left
+PointerAlignment: Right
+ReferenceAlignment: Right
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Left
 AlignConsecutiveMacros: Consecutive

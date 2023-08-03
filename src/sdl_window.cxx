@@ -15,12 +15,12 @@ namespace {
 
 static bool win_init = false;
 struct CDrawWindow {
-  SDL_mutex*    screen_mutex;
-  SDL_cond*     screen_done_cond;
-  SDL_Window*   window;
-  SDL_Palette*  palette;
-  SDL_Surface*  surf;
-  SDL_Renderer* rend;
+  SDL_mutex    *screen_mutex;
+  SDL_cond     *screen_done_cond;
+  SDL_Window   *window;
+  SDL_Palette  *palette;
+  SDL_Surface  *surf;
+  SDL_Renderer *rend;
   Uint32        sz_x, sz_y;
   Sint32        margin_x, margin_y;
   ~CDrawWindow() noexcept {
@@ -38,11 +38,11 @@ struct CDrawWindow {
   }
 } win;
 
-void DrawWindowUpdate_EV(uint8_t* colors, uint64_t internal_width) {
+void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
   if (!win_init)
     return;
-  SDL_Surface* s   = win.surf;
-  auto         src = colors, dst = static_cast<uint8_t*>(s->pixels);
+  SDL_Surface *s   = win.surf;
+  auto         src = colors, dst = static_cast<uint8_t *>(s->pixels);
   SDL_LockSurface(s);
   for (size_t y = 0; y < 480; ++y) {
     std::copy(src, src + 640, dst);
@@ -76,7 +76,7 @@ void DrawWindowUpdate_EV(uint8_t* colors, uint64_t internal_width) {
   rct.x          = margin;
   rct.w          = w2;
   rct.h          = h2;
-  SDL_Texture* t = SDL_CreateTextureFromSurface(win.rend, s);
+  SDL_Texture *t = SDL_CreateTextureFromSurface(win.rend, s);
   SDL_RenderClear(win.rend);
   SDL_RenderCopy(win.rend, t, nullptr, &rct);
   SDL_RenderPresent(win.rend);
@@ -84,15 +84,15 @@ void DrawWindowUpdate_EV(uint8_t* colors, uint64_t internal_width) {
   SDL_CondBroadcast(win.screen_done_cond);
 }
 
-void UserEvHandler(SDL_UserEvent* ev) {
+void UserEvHandler(SDL_UserEvent *ev) {
   if (ev->type == SDL_USEREVENT)
-    DrawWindowUpdate_EV(static_cast<uint8_t*>(ev->data1),
+    DrawWindowUpdate_EV(static_cast<uint8_t *>(ev->data1),
                         reinterpret_cast<uintptr_t>(ev->data2));
 }
 
-int ExitCb(void* off, SDL_Event* event) {
+int ExitCb(void *off, SDL_Event *event) {
   if (event->type == SDL_QUIT)
-    *static_cast<bool*>(off) = true;
+    *static_cast<bool *>(off) = true;
   return 0;
 }
 
@@ -230,7 +230,7 @@ uint64_t constexpr K2SC(uint8_t ch) {
   __builtin_unreachable();
 }
 
-int ScanKey(uint64_t* sc, SDL_Event* ev) {
+int ScanKey(uint64_t *sc, SDL_Event *ev) {
   uint64_t mod = 0;
   if (ev->type == SDL_KEYDOWN) {
   ent:
@@ -453,12 +453,12 @@ int ScanKey(uint64_t* sc, SDL_Event* ev) {
   return -1;
 }
 
-static void* kb_cb      = nullptr;
-static void* kb_cb_data = nullptr;
+static void *kb_cb      = nullptr;
+static void *kb_cb_data = nullptr;
 static bool  kb_init    = false;
 static bool  ms_init    = false;
 
-int SDLCALL KBCallback(void*, SDL_Event* e) {
+int SDLCALL KBCallback(void *, SDL_Event *e) {
   uint64_t s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
     FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
@@ -466,9 +466,9 @@ int SDLCALL KBCallback(void*, SDL_Event* e) {
 }
 
 // x,y,z,(l<<1)|r
-static void* ms_cb = nullptr;
+static void *ms_cb = nullptr;
 
-int SDLCALL MSCallback(void*, SDL_Event* e) {
+int SDLCALL MSCallback(void *, SDL_Event *e) {
   static Sint32 x, y;
   static int    state;
   static int    z;
@@ -519,23 +519,23 @@ int SDLCALL MSCallback(void*, SDL_Event* e) {
 
 } // namespace
 
-void InputLoop(bool* off) {
+void InputLoop(bool *off) {
   SDL_Event e;
   SDL_AddEventWatch(&ExitCb, off);
   while (!*off) {
     if (!SDL_WaitEvent(&e))
       continue;
     if (e.type == SDL_USEREVENT)
-      UserEvHandler((SDL_UserEvent*)&e);
+      UserEvHandler((SDL_UserEvent *)&e);
   }
 }
 
-void SetClipboard(char const* text) {
+void SetClipboard(char const *text) {
   SDL_SetClipboardText(text);
 }
 
 std::string ClipboardText() {
-  char* sdl_clip = SDL_GetClipboardText();
+  char *sdl_clip = SDL_GetClipboardText();
   if (sdl_clip == nullptr)
     return {};
   std::string s = sdl_clip;
@@ -568,7 +568,7 @@ void NewDrawWindow() {
   win.window =
       SDL_CreateWindow("TINE Is Not an Emulator", SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_RESIZABLE);
-  SDL_Surface* icon = SDL_CreateRGBSurfaceWithFormat(
+  SDL_Surface *icon = SDL_CreateRGBSurfaceWithFormat(
       0, TINELogo.width, TINELogo.height,
       8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
   SDL_LockSurface(icon);
@@ -577,7 +577,7 @@ void NewDrawWindow() {
   auto constexpr bytes =
       TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
   std::copy(TINELogo.pixel_data, TINELogo.pixel_data + bytes,
-            static_cast<uint8_t*>(icon->pixels));
+            static_cast<uint8_t *>(icon->pixels));
   SDL_UnlockSurface(icon);
   SDL_SetWindowIcon(win.window, icon);
   SDL_FreeSurface(icon);
@@ -596,7 +596,7 @@ void NewDrawWindow() {
   SDL_ShowCursor(SDL_DISABLE);
 }
 
-void DrawWindowUpdate(uint8_t* colors, uintptr_t internal_width) {
+void DrawWindowUpdate(uint8_t *colors, uintptr_t internal_width) {
   // https://archive.md/yD5QL
   SDL_Event     event;
   SDL_UserEvent userevent;
@@ -608,7 +608,7 @@ void DrawWindowUpdate(uint8_t* colors, uintptr_t internal_width) {
   userevent.type  = SDL_USEREVENT;
   userevent.code  = 0;
   userevent.data1 = colors;
-  userevent.data2 = reinterpret_cast<void*>(internal_width);
+  userevent.data2 = reinterpret_cast<void *>(internal_width);
 
   event.type = SDL_USEREVENT;
   event.user = userevent;
@@ -620,7 +620,7 @@ void DrawWindowUpdate(uint8_t* colors, uintptr_t internal_width) {
   SDL_UnlockMutex(win.screen_mutex);
 }
 
-void SetKBCallback(void* fptr, void* data) {
+void SetKBCallback(void *fptr, void *data) {
   kb_cb      = fptr;
   kb_cb_data = data;
   if (kb_init)
@@ -629,7 +629,7 @@ void SetKBCallback(void* fptr, void* data) {
   SDL_AddEventWatch(KBCallback, data);
 }
 
-void SetMSCallback(void* fptr) {
+void SetMSCallback(void *fptr) {
   ms_cb = fptr;
   if (ms_init)
     return;

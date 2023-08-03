@@ -9,9 +9,9 @@
 #include "TOSPrint.hxx"
 
 namespace {
-char* UnescapeString(char* __restrict str, char* __restrict where) {
+char *UnescapeString(char *__restrict str, char *__restrict where) {
   while (*str) {
-    char const* __restrict to;
+    char const *__restrict to;
     switch (*str) {
 #define ESC(c, e) \
   case c:         \
@@ -57,7 +57,7 @@ char* UnescapeString(char* __restrict str, char* __restrict where) {
   return where;
 }
 
-std::string MStrPrint(char const* fmt, uint64_t, int64_t* argv) {
+std::string MStrPrint(char const *fmt, uint64_t, int64_t *argv) {
   // this does not compare argument count(argc)
   // with StrOcc(fmt, '%'), be careful i guess
   // it also isn't a fully featured one but should
@@ -105,13 +105,13 @@ loop:;
       ++start;
     }
   }
-#define FMT_CH(x, T)                                                           \
-  do {                                                                         \
-    size_t sz  = snprintf(nullptr, 0, "%" x, reinterpret_cast<T*>(argv)[arg]); \
-    char*  tmp = new (std::nothrow) char[sz + 1];                              \
-    snprintf(tmp, sz + 1, "%" x, reinterpret_cast<T*>(argv)[arg]);             \
-    ret += tmp;                                                                \
-    delete[] tmp;                                                              \
+#define FMT_CH(x, T)                                                            \
+  do {                                                                          \
+    size_t sz  = snprintf(nullptr, 0, "%" x, reinterpret_cast<T *>(argv)[arg]); \
+    char  *tmp = new (std::nothrow) char[sz + 1];                               \
+    snprintf(tmp, sz + 1, "%" x, reinterpret_cast<T *>(argv)[arg]);             \
+    ret += tmp;                                                                 \
+    delete[] tmp;                                                               \
   } while (false);
   switch (*start) {
   case 'd':
@@ -129,11 +129,11 @@ loop:;
     FMT_CH("f", double);
     break;
   case 'p':
-    FMT_CH("p", void*);
+    FMT_CH("p", void *);
     break;
   case 'c': {
     while (--aux >= 0) {
-      auto chr = reinterpret_cast<uint64_t*>(argv)[arg];
+      auto chr = reinterpret_cast<uint64_t *>(argv)[arg];
       // this accounts for HolyC's multichar character literals too
       while (chr > 0) {
         uint8_t c = chr & 0xff;
@@ -145,10 +145,10 @@ loop:;
   } break;
   case 's': {
     while (--aux >= 0)
-      ret += reinterpret_cast<char**>(argv)[arg];
+      ret += reinterpret_cast<char **>(argv)[arg];
   } break;
   case 'q': {
-    char *str = reinterpret_cast<char**>(argv)[arg],
+    char *str = reinterpret_cast<char **>(argv)[arg],
          *buf = new (std::nothrow) char[strlen(str) * 4 + 1];
     UnescapeString(str, buf);
     ret += buf;
@@ -165,7 +165,7 @@ loop:;
 }
 } // namespace
 
-void TOSPrint(char const* fmt, uint64_t argc, int64_t* argv) {
+void TOSPrint(char const *fmt, uint64_t argc, int64_t *argv) {
   auto s = MStrPrint(fmt, argc, argv);
   fputs(s.c_str(), stderr);
   fflush(stderr);
