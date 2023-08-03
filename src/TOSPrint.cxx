@@ -36,7 +36,7 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
 
   check_us_key:; // you bear a striking resemblance
                  // you look just like my bathroom mirror
-    if (isalnum(static_cast<char unsigned>(*str)) == 0 &&
+    if (isalnum(*str) == 0 &&
         strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == nullptr) {
       // Note: this was giving me bizarre buffer overflow
       // errors and it turns out you MUST use uint8_t when
@@ -105,13 +105,13 @@ loop:;
       ++start;
     }
   }
-#define FMT_CH(x, T)                                                            \
-  do {                                                                          \
-    size_t sz  = snprintf(nullptr, 0, "%" x, reinterpret_cast<T *>(argv)[arg]); \
-    char  *tmp = new (std::nothrow) char[sz + 1];                               \
-    snprintf(tmp, sz + 1, "%" x, reinterpret_cast<T *>(argv)[arg]);             \
-    ret += tmp;                                                                 \
-    delete[] tmp;                                                               \
+#define FMT_CH(x, T)                                            \
+  do {                                                          \
+    size_t sz  = snprintf(nullptr, 0, "%" x, ((T *)argv)[arg]); \
+    char  *tmp = new (std::nothrow) char[sz + 1];               \
+    snprintf(tmp, sz + 1, "%" x, ((T *)argv)[arg]);             \
+    ret += tmp;                                                 \
+    delete[] tmp;                                               \
   } while (false);
   switch (*start) {
   case 'd':
@@ -125,7 +125,6 @@ loop:;
     FMT_CH(PRIo64, uint64_t);
     break;
   case 'n':
-    static_assert(sizeof(double) == sizeof(uint64_t));
     FMT_CH("f", double);
     break;
   case 'p':
@@ -133,7 +132,7 @@ loop:;
     break;
   case 'c': {
     while (--aux >= 0) {
-      auto chr = reinterpret_cast<uint64_t *>(argv)[arg];
+      auto chr = ((uint64_t *)argv)[arg];
       // this accounts for HolyC's multichar character literals too
       while (chr > 0) {
         uint8_t c = chr & 0xff;
@@ -145,10 +144,10 @@ loop:;
   } break;
   case 's': {
     while (--aux >= 0)
-      ret += reinterpret_cast<char **>(argv)[arg];
+      ret += ((char **)argv)[arg];
   } break;
   case 'q': {
-    char *str = reinterpret_cast<char **>(argv)[arg],
+    char *str = ((char **)argv)[arg],
          *buf = new (std::nothrow) char[strlen(str) * 4 + 1];
     UnescapeString(str, buf);
     ret += buf;

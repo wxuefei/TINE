@@ -92,7 +92,6 @@ target_compile_features(${PROJECT_NAME}
     cxx_uniform_initialization
     cxx_generalized_initializers
     cxx_strong_enums
-    cxx_static_assert
     cxx_lambdas
     cxx_generic_lambdas
     cxx_aggregate_default_initializers

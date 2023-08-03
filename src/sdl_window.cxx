@@ -41,9 +41,9 @@ struct CDrawWindow {
 void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
   if (!win_init)
     return;
-  SDL_Surface *s   = win.surf;
-  auto         src = colors, dst = static_cast<uint8_t *>(s->pixels);
+  SDL_Surface *s = win.surf;
   SDL_LockSurface(s);
+  auto src = colors, dst = (uint8_t *)s->pixels;
   for (size_t y = 0; y < 480; ++y) {
     std::copy(src, src + 640, dst);
     src += internal_width;
@@ -86,13 +86,12 @@ void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
 
 void UserEvHandler(SDL_UserEvent *ev) {
   if (ev->type == SDL_USEREVENT)
-    DrawWindowUpdate_EV(static_cast<uint8_t *>(ev->data1),
-                        reinterpret_cast<uintptr_t>(ev->data2));
+    DrawWindowUpdate_EV((uint8_t *)ev->data1, (uintptr_t)ev->data2);
 }
 
 int ExitCb(void *off, SDL_Event *event) {
   if (event->type == SDL_QUIT)
-    *static_cast<bool *>(off) = true;
+    *(bool *)off = true;
   return 0;
 }
 
@@ -440,9 +439,20 @@ int ScanKey(uint64_t *sc, SDL_Event *ev) {
     case SDL_SCANCODE_PAUSE:
       *sc = mod | SC_PAUSE;
       return 1;
-    case SDL_SCANCODE_F1 ... SDL_SCANCODE_F12:
-      *sc = mod | (static_cast<uint8_t>(SC_F1) +
-                   (ev->key.keysym.scancode - SDL_SCANCODE_F1));
+    case SDL_SCANCODE_F1:
+    case SDL_SCANCODE_F2:
+    case SDL_SCANCODE_F3:
+    case SDL_SCANCODE_F4:
+    case SDL_SCANCODE_F5:
+    case SDL_SCANCODE_F6:
+    case SDL_SCANCODE_F7:
+    case SDL_SCANCODE_F8:
+    case SDL_SCANCODE_F9:
+    case SDL_SCANCODE_F10:
+    case SDL_SCANCODE_F11:
+    case SDL_SCANCODE_F12:
+      *sc =
+          mod | ((uint8_t)SC_F1 + (ev->key.keysym.scancode - SDL_SCANCODE_F1));
       return 1;
     default:;
     }
@@ -572,12 +582,10 @@ void NewDrawWindow() {
       0, TINELogo.width, TINELogo.height,
       8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
   SDL_LockSurface(icon);
-  // icon->pixels = const_cast<void*>((void const*)TINELogo.pixel_data);
-  // whatever, just copy it over lmao
   auto constexpr bytes =
       TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
   std::copy(TINELogo.pixel_data, TINELogo.pixel_data + bytes,
-            static_cast<uint8_t *>(icon->pixels));
+            (uint8_t *)icon->pixels);
   SDL_UnlockSurface(icon);
   SDL_SetWindowIcon(win.window, icon);
   SDL_FreeSurface(icon);
@@ -608,7 +616,7 @@ void DrawWindowUpdate(uint8_t *colors, uintptr_t internal_width) {
   userevent.type  = SDL_USEREVENT;
   userevent.code  = 0;
   userevent.data1 = colors;
-  userevent.data2 = reinterpret_cast<void *>(internal_width);
+  userevent.data2 = (void *)internal_width;
 
   event.type = SDL_USEREVENT;
   event.user = userevent;
@@ -642,9 +650,8 @@ void GrPaletteColorSet(uint64_t i, bgr_48 u) {
     return;
   // 0xffff is 100% so 0x7fff/0xffff would be about .50
   // this gets multiplied by 0xff to get 0x7f
-  Uint8 b = u.b / static_cast<double>(0xffff) * 0xff,
-        g = u.g / static_cast<double>(0xffff) * 0xff,
-        r = u.r / static_cast<double>(0xffff) * 0xff;
+  Uint8 b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
+        r = u.r / (double)0xffff * 0xff;
   // i seriously need designated inits in c++
   SDL_Color sdl_c;
   sdl_c.r = r;

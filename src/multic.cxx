@@ -36,8 +36,7 @@ uint64_t GetTicks() {
 #else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return static_cast<uint64_t>(ts.tv_nsec / 1000000) +
-         1000 * static_cast<uint64_t>(ts.tv_sec);
+  return (uint64_t)ts.tv_nsec / 1000000u + 1000 * (uint64_t)ts.tv_sec;
 #endif
 }
 
@@ -80,7 +79,7 @@ DWORD WINAPI LaunchCore(LPVOID c) {
 #endif
   VFsThrdInit();
   SetupDebugger();
-  core_num = reinterpret_cast<uintptr_t>(c);
+  core_num = (uintptr_t)c;
 #ifndef _WIN32
   static void *fp = nullptr;
   if (fp == nullptr)
@@ -149,13 +148,13 @@ void InterruptCore(size_t core) {
   GetThreadContext(cores[core].thread, &ctx);
   // push rip
   ctx.Rsp -= 8;
-  reinterpret_cast<DWORD64 *>(ctx.Rsp)[0] = ctx.Rip;
+  ((DWORD64 *)ctx.Rsp)[0] = ctx.Rip;
   //
   static void *fp = nullptr;
   if (fp == nullptr)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   // movabs rip, <fp>
-  ctx.Rip = reinterpret_cast<uintptr_t>(fp);
+  ctx.Rip = (uintptr_t)fp;
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);
 #else
@@ -182,7 +181,7 @@ void LaunchCore0(ThreadCallback *fp) {
 void CreateCore(size_t core, void *fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
-  auto core_n    = reinterpret_cast<void *>(core);
+  auto core_n    = (void *)core;
 #ifdef _WIN32
   cores[core].thread = CreateThread(nullptr, 0, LaunchCore, core_n, 0, nullptr);
   cores[core].mtx    = CreateMutex(nullptr, FALSE, nullptr);

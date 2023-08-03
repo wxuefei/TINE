@@ -56,7 +56,7 @@ LONG WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) {
   uint64_t sig = (c == EXCEPTION_BREAKPOINT || c == STATUS_SINGLE_STEP)
                    ? 5 /* SIGTRAP */
                    : 0;
-  FFI_CALL_TOS_2(fp, sig, reinterpret_cast<uintptr_t>(regs));
+  FFI_CALL_TOS_2(fp, sig, (uintptr_t)regs);
   return EXCEPTION_CONTINUE_EXECUTION;
 }
 } // namespace
@@ -109,7 +109,7 @@ void routine(int sig, siginfo_t *, ucontext_t *ctx) {
   static void *fp = nullptr;
   if (fp == nullptr)
     fp = TOSLoader["DebuggerLand"].val;
-  FFI_CALL_TOS_2(fp, sig_i64, reinterpret_cast<uintptr_t>(regs));
+  FFI_CALL_TOS_2(fp, sig_i64, (uintptr_t)regs);
 }
 } // namespace
 

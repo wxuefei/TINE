@@ -58,7 +58,7 @@ void LoadOneImport(char **src_, char *mod_base) {
         } else {
           auto &tmp_sym = it->second;
           if (tmp_sym.type != HTT_IMPORT_SYS_SYM)
-            i = reinterpret_cast<uintptr_t>(tmp_sym.val);
+            i = (uintptr_t)tmp_sym.val;
         }
       }
     }
@@ -149,7 +149,7 @@ void LoadPass1(char *src, char *mod_base) {
       for (size_t j = 0; j < cnt; j++) {
         ptr = mod_base + AS_(src, uint32_t);
         src += sizeof(uint32_t);
-        AS_(ptr, uint32_t) += reinterpret_cast<uintptr_t>(mod_base);
+        AS_(ptr, uint32_t) += (uintptr_t)mod_base;
       }
     } break;
     default:; // the other ones wont be used
@@ -212,7 +212,7 @@ void LoadHCRT(std::string const &name) {
   fclose(f);
   // I think this breaks strict aliasing but
   // I dont think it matters because its packed(?)
-  auto bfh = reinterpret_cast<CBinFile *>(bfh_addr);
+  auto bfh = (CBinFile *)bfh_addr;
   if (std::string_view{bfh->bin_signature, 4} != "TOSB") {
     fprintf(stderr, "INVALID TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
@@ -242,7 +242,7 @@ void BackTrace() {
     init = true;
   }
   putchar('\n');
-  auto  rbp = static_cast<void **>(__builtin_frame_address(0));
+  auto  rbp = (void **)__builtin_frame_address(0);
   void *oldp;
   // its 1 because we want to know the return
   // addr of BackTrace()'s caller

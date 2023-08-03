@@ -354,7 +354,7 @@ uint64_t STK_FUnixTime(char **stk) {
 }
 
 void STK_VFsFTrunc(uintptr_t *stk) {
-  fs::resize_file(VFsFileNameAbs((char*)stk[0]), stk[1]);
+  fs::resize_file(VFsFileNameAbs((char *)stk[0]), stk[1]);
 }
 
 uint64_t STK___FExists(char **stk) {
