@@ -159,12 +159,12 @@ char **VFsDir() {
   std::string file = VFsFileNameAbs("");
   if (!FIsDir(file))
     return nullptr;
-#define SD_(s) HolyStrDup(s)
+#define SD(s) HolyStrDup(s)
   // https://archive.md/1Ojr3#7
   using DirEnt = char *;
   std::vector<DirEnt> items{
-      SD_("."),
-      SD_(".."),
+      SD("."),
+      SD(".."),
   };
   for (auto const &e : fs::directory_iterator{file}) {
     auto const &s = e.path().filename().string();
@@ -172,12 +172,13 @@ char **VFsDir() {
     // do not touch, fat32 legacy
     // will break opening ISOs if touched
     if (s.size() <= 38 - 1)
-      items.emplace_back(SD_(s.c_str()));
+      items.emplace_back(SD(s.c_str()));
   }
   // force null pointer terminator
   auto ret = HolyAlloc<DirEnt, true>(items.size() + 1);
   std::copy(items.begin(), items.end(), ret);
   return ret;
+#undef SD
 }
 
 bool VFsIsDir(char const *path) {

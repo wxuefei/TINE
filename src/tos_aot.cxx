@@ -34,9 +34,9 @@ void LoadOneImport(char **src_, char *mod_base) {
   uintptr_t i     = 0;
   bool      first = true;
   uint8_t   etype;
-#define AS_(x, T) (*(T *)x) // yuck
+#define AS(x, T) (*(T *)x) // yuck
   while ((etype = *src++)) {
-    ptr = mod_base + AS_(src, uint32_t);
+    ptr = mod_base + AS(src, uint32_t);
     src += sizeof(uint32_t);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -64,34 +64,34 @@ void LoadOneImport(char **src_, char *mod_base) {
       }
     }
     // probably breaks strict aliasing :(
-#define OFF_(T) ((char *)i - ptr - sizeof(T))
+#define OFF(T) ((char *)i - ptr - sizeof(T))
     switch (etype) {
     case IET_REL_I8:
-      AS_(ptr, int8_t) = OFF_(int8_t);
+      AS(ptr, int8_t) = OFF(int8_t);
       break;
     case IET_IMM_U8:
-      AS_(ptr, uint8_t) = i;
+      AS(ptr, uint8_t) = i;
       break;
     case IET_REL_I16:
-      AS_(ptr, int16_t) = OFF_(int16_t);
+      AS(ptr, int16_t) = OFF(int16_t);
       break;
     case IET_IMM_U16:
-      AS_(ptr, uint16_t) = i;
+      AS(ptr, uint16_t) = i;
       break;
     case IET_REL_I32:
-      AS_(ptr, int32_t) = OFF_(int32_t);
+      AS(ptr, int32_t) = OFF(int32_t);
       break;
     case IET_IMM_U32:
-      AS_(ptr, uint32_t) = i;
+      AS(ptr, uint32_t) = i;
       break;
     case IET_REL_I64:
-      AS_(ptr, int64_t) = OFF_(int64_t);
+      AS(ptr, int64_t) = OFF(int64_t);
       break;
     case IET_IMM_I64:
-      AS_(ptr, int64_t) = (int64_t)i;
+      AS(ptr, int64_t) = (int64_t)i;
       break;
     }
-#undef OFF_
+#undef OFF
   }
   *src_ = src - 1;
 }
@@ -114,7 +114,7 @@ void LoadPass1(char *src, char *mod_base) {
   uint8_t   etype;
   CHash     tmpex;
   while ((etype = *src++)) {
-    i = AS_(src, uint32_t);
+    i = AS(src, uint32_t);
     src += sizeof(uint32_t);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -147,9 +147,9 @@ void LoadPass1(char *src, char *mod_base) {
     case IET_ABS_ADDR: {
       cnt = i;
       for (size_t j = 0; j < cnt; j++) {
-        ptr = mod_base + AS_(src, uint32_t);
+        ptr = mod_base + AS(src, uint32_t);
         src += sizeof(uint32_t);
-        AS_(ptr, uint32_t) += (uintptr_t)mod_base;
+        AS(ptr, uint32_t) += (uintptr_t)mod_base;
       }
     } break;
       // the other ones wont be used
@@ -163,7 +163,7 @@ void LoadPass2(char *src, char *mod_base) {
   uint32_t i;
   uint8_t  etype;
   while ((etype = *src++)) {
-    i = AS_(src, uint32_t);
+    i = AS(src, uint32_t);
     src += sizeof(uint32_t);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
@@ -185,6 +185,8 @@ void LoadPass2(char *src, char *mod_base) {
     }
   }
 }
+
+#undef AS
 
 extern "C" struct [[gnu::packed]] CBinFile {
   uint16_t jmp;
@@ -275,7 +277,7 @@ void BackTrace() {
 // the entire debug session not to mention
 // WhichFun() wont even be called in normal
 // circumstances
-#define STR_DUP_(s) (strcpy(new (std::nothrow) char[s.size() + 1], s.c_str()))
+#define STR_DUP(s) (strcpy(new (std::nothrow) char[s.size() + 1], s.c_str()))
 
 // great when you use lldb and get a fault
 // (lldb) p (char*)WhichFun($pc)
@@ -298,11 +300,11 @@ void BackTrace() {
     if (curp == ptr) {
       fprintf(stderr, "%s\n", sorted[idx].c_str());
     } else if (curp > ptr) {
-      return STR_DUP_(last);
+      return STR_DUP(last);
     }
     last = sorted[idx];
   }
-  return STR_DUP_(last);
+  return STR_DUP(last);
 }
 
 // vim: set expandtab ts=2 sw=2 :

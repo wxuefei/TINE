@@ -6,7 +6,7 @@ uint64_t STK_FunctionName(uint64_t* stk) {
   // ...
 }
 // in RegisterFuncPtrs()
-S_(FunctionName, function arg cnt in HolyC);
+S(FunctionName, <function arg cnt in HolyC>);
 ```
 `STK_FunctionName` ***MUST*** return void OR a value that is 8 bytes big
 

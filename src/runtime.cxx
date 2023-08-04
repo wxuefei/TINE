@@ -141,26 +141,29 @@ int64_t STK__DyadGetCallbackMode(char **stk) {
   // i thought of using streamprint but then
   // the variadic calling thing gets too complicated
   switch (tine::Hash(stk[0])) {
-  case tine::Hash("DYAD_EVENT_LINE"):
-    return DYAD_EVENT_LINE;
-  case tine::Hash("DYAD_EVENT_DATA"):
-    return DYAD_EVENT_DATA;
-  case tine::Hash("DYAD_EVENT_CLOSE"):
-    return DYAD_EVENT_CLOSE;
-  case tine::Hash("DYAD_EVENT_CONNECT"):
-    return DYAD_EVENT_CONNECT;
-  case tine::Hash("DYAD_EVENT_DESTROY"):
-    return DYAD_EVENT_DESTROY;
-  case tine::Hash("DYAD_EVENT_ERROR"):
-    return DYAD_EVENT_ERROR;
-  case tine::Hash("DYAD_EVENT_READY"):
-    return DYAD_EVENT_READY;
-  case tine::Hash("DYAD_EVENT_TICK"):
-    return DYAD_EVENT_TICK;
-  case tine::Hash("DYAD_EVENT_TIMEOUT"):
-    return DYAD_EVENT_TIMEOUT;
-  case tine::Hash("DYAD_EVENT_ACCEPT"):
-    return DYAD_EVENT_ACCEPT;
+    // это говнокод для принудительной оценки порядка
+#define D(x)     D_(DYAD_EVENT_, x)
+#define D_(x, y) x##y
+#define S(x)     S_(x)
+#define S_(x...) #x
+#define C(x)                \
+  case tine::Hash(S(D(x))): \
+    return D(x)
+    C(LINE);
+    C(DATA);
+    C(CLOSE);
+    C(CONNECT);
+    C(DESTROY);
+    C(ERROR);
+    C(READY);
+    C(TICK);
+    C(TIMEOUT);
+    C(ACCEPT);
+#undef D
+#undef D_
+#undef S
+#undef S_
+#undef C
   default:
     HolyThrow("InvMode"); // invalid mode
   }
@@ -552,84 +555,84 @@ void RegisterFunctionPtr(std::string &blob, char const *name, uintptr_t fp,
 
 void RegisterFuncPtrs() {
   std::string ffi_blob;
-#define R_(holy, secular, arity) \
+#define R(holy, secular, arity) \
   RegisterFunctionPtr(ffi_blob, holy, (uintptr_t)secular, arity)
-#define S_(name, arity) \
+#define S(name, arity) \
   RegisterFunctionPtr(ffi_blob, #name, (uintptr_t)STK_##name, arity)
-  R_("__CmdLineBootText", CmdLineBootText, 0);
-  R_("mp_cnt", mp_cnt, 0);
-  R_("__CoreNum", CoreNum, 0);
-  R_("GetFs", GetFs, 0);
-  R_("GetGs", GetGs, 0);
-  S_(__IsCmdLine, 0);
-  S_(__IsValidPtr, 1);
-  S_(__SpawnCore, 0);
-  S_(UnixNow, 0);
-  S_(InterruptCore, 1);
-  S_(NewVirtualChunk, 2);
-  S_(FreeVirtualChunk, 2);
-  S_(ExitTINE, 1);
-  S_(__GetStr, 1);
-  S_(__FExists, 1);
-  S_(FUnixTime, 1);
-  S_(SetClipboardText, 1);
-  S_(GetClipboardText, 0);
-  S_(SndFreq, 1);
-  S_(__Sleep, 1);
-  S_(__SleepHP, 1);
-  S_(__AwakeCore, 1);
-  S_(SetFs, 1);
-  S_(SetGs, 1);
-  S_(SetKBCallback, 2);
-  S_(SetMSCallback, 1);
-  S_(__GetTicks, 0);
-  S_(__BootstrapForeachSymbol, 1);
-  S_(DrawWindowUpdate, 2);
-  S_(UnblockSignals, 0);
+  R("__CmdLineBootText", CmdLineBootText, 0);
+  R("mp_cnt", mp_cnt, 0);
+  R("__CoreNum", CoreNum, 0);
+  R("GetFs", GetFs, 0);
+  R("GetGs", GetGs, 0);
+  S(__IsCmdLine, 0);
+  S(__IsValidPtr, 1);
+  S(__SpawnCore, 0);
+  S(UnixNow, 0);
+  S(InterruptCore, 1);
+  S(NewVirtualChunk, 2);
+  S(FreeVirtualChunk, 2);
+  S(ExitTINE, 1);
+  S(__GetStr, 1);
+  S(__FExists, 1);
+  S(FUnixTime, 1);
+  S(SetClipboardText, 1);
+  S(GetClipboardText, 0);
+  S(SndFreq, 1);
+  S(__Sleep, 1);
+  S(__SleepHP, 1);
+  S(__AwakeCore, 1);
+  S(SetFs, 1);
+  S(SetGs, 1);
+  S(SetKBCallback, 2);
+  S(SetMSCallback, 1);
+  S(__GetTicks, 0);
+  S(__BootstrapForeachSymbol, 1);
+  S(DrawWindowUpdate, 2);
+  S(UnblockSignals, 0);
   /*
    * In TempleOS variadics, functions follow __cdecl, whereas normally
    * they follow __stdcall which is why the arity argument is needed(RET1 x).
    * Thus we don't have to clean up the stack in variadics.
    */
-  S_(TOSPrint, 0);
-  S_(DyadInit, 0);
-  S_(DyadUpdate, 0);
-  S_(DyadShutdown, 0);
-  S_(DyadNewStream, 0);
-  S_(DyadListen, 2);
-  S_(DyadConnect, 3);
-  S_(DyadWrite, 3);
-  S_(DyadEnd, 1);
-  S_(DyadClose, 1);
-  S_(DyadGetAddress, 1);
-  S_(_DyadGetCallbackMode, 1);
-  S_(DyadSetReadCallback, 4);
-  S_(DyadSetCloseCallback, 4);
-  S_(DyadSetListenCallback, 4);
-  S_(DyadSetTimeout, 2);
-  S_(DyadSetNoDelay, 2);
-  S_(VFsFTrunc, 2);
-  S_(VFsSetPwd, 1);
-  S_(VFsExists, 1);
-  S_(VFsIsDir, 1);
-  S_(VFsFSize, 1);
-  S_(VFsFRead, 2);
-  S_(VFsFWrite, 3);
-  S_(VFsDel, 1);
-  S_(VFsDir, 0);
-  S_(VFsDirMk, 1);
-  S_(VFsFBlkRead, 4);
-  S_(VFsFBlkWrite, 4);
-  S_(VFsFOpenW, 1);
-  S_(VFsFOpenR, 1);
-  S_(VFsFClose, 1);
-  S_(VFsFSeek, 2);
-  S_(VFsSetDrv, 1);
-  S_(VFsGetDrv, 0);
-  S_(GetVolume, 0);
-  S_(SetVolume, 1);
-  S_(__GetTicksHP, 0);
-  S_(_GrPaletteColorSet, 2);
+  S(TOSPrint, 0);
+  S(DyadInit, 0);
+  S(DyadUpdate, 0);
+  S(DyadShutdown, 0);
+  S(DyadNewStream, 0);
+  S(DyadListen, 2);
+  S(DyadConnect, 3);
+  S(DyadWrite, 3);
+  S(DyadEnd, 1);
+  S(DyadClose, 1);
+  S(DyadGetAddress, 1);
+  S(_DyadGetCallbackMode, 1);
+  S(DyadSetReadCallback, 4);
+  S(DyadSetCloseCallback, 4);
+  S(DyadSetListenCallback, 4);
+  S(DyadSetTimeout, 2);
+  S(DyadSetNoDelay, 2);
+  S(VFsFTrunc, 2);
+  S(VFsSetPwd, 1);
+  S(VFsExists, 1);
+  S(VFsIsDir, 1);
+  S(VFsFSize, 1);
+  S(VFsFRead, 2);
+  S(VFsFWrite, 3);
+  S(VFsDel, 1);
+  S(VFsDir, 0);
+  S(VFsDirMk, 1);
+  S(VFsFBlkRead, 4);
+  S(VFsFBlkWrite, 4);
+  S(VFsFOpenW, 1);
+  S(VFsFOpenR, 1);
+  S(VFsFClose, 1);
+  S(VFsFSeek, 2);
+  S(VFsSetDrv, 1);
+  S(VFsGetDrv, 0);
+  S(GetVolume, 0);
+  S(SetVolume, 1);
+  S(__GetTicksHP, 0);
+  S(_GrPaletteColorSet, 2);
   auto blob = VirtAlloc<char>(ffi_blob.size());
   std::copy(ffi_blob.begin(), ffi_blob.end(), blob);
   for (auto &[name, sym] : TOSLoader)

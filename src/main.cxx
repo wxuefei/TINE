@@ -13,11 +13,12 @@
   #endif
 
 static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
-  #define STR_(x) x, lstrlenA(x)
-  WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), STR_("User Abort.\n"), nullptr,
+  #define S(x) x, lstrlenA(x)
+  WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
                 nullptr);
   ExitProcess(ERROR_CONTROL_C_EXIT);
   return TRUE;
+  #undef S
 }
 
 #else

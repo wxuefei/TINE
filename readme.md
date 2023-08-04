@@ -2,7 +2,7 @@
  \* *logo courtesy of CrunkLord420*
 
 ## features
-- seamless filesystem integration, no mounting virtual disks or anything(primary annoyance when working with TOS)
+- seamless filesystem integration, no mounting virtual disks or anything(primary annoyance when working with vanilla TempleOS)
 - networking through FFI using the [dyad](https://github.com/rxi/dyad) library(powers builtin wiki)
 
     you may want to read dyad's source code(it's not big) and networking examples in `T/{Community,Server}`
