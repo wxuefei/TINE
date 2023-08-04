@@ -23,7 +23,9 @@ AllowShortFunctionsOnASingleLine: false
 AllowShortLambdasOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakAfterReturnType: None
+Standard: c++17
 IndentPPDirectives: BeforeHash
+IndentCaseLabels: false
 IncludeCategories: [
   {Regex: '<winsock.*\.h>', Priority: -3},
   {Regex: '<windows\.h>', Priority: -2},

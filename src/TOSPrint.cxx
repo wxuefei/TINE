@@ -34,8 +34,8 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
     ++str;
     continue;
 
-  check_us_key:; // you bear a striking resemblance
-                 // you look just like my bathroom mirror
+  check_us_key: // you bear a striking resemblance
+                // you look just like my bathroom mirror
     if (isalnum(*str) == 0 &&
         strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == nullptr) {
       // Note: this was giving me bizarre buffer overflow
@@ -65,7 +65,7 @@ std::string MStrPrint(char const *fmt, uint64_t, int64_t *argv) {
   char const *start = fmt, *end;
   std::string ret;
   int64_t     arg = -1;
-loop:;
+loop:
   ++arg;
   end = strchr(start, '%');
   if (end == nullptr)
@@ -157,7 +157,6 @@ loop:;
   case '%':
     ret += '%';
     break;
-  default:;
   }
   ++start;
   goto loop;

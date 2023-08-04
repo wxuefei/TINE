@@ -14,6 +14,8 @@ extern DWORD dwAllocationGranularity;
   #include <sys/mman.h>
 #endif
 
+#include <array>
+
 #include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -42,7 +44,6 @@ void *NewVirtualChunk(size_t sz, bool low32) {
   size_t padded_sz = (sz + page_size - 1) & ~(page_size - 1);
   void  *ret;
   if (low32) { // code heap
-    // MAP_32BIT is actually MAP_31BIT(which is actually lucky for us)
     ret = mmap(nullptr, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                MAP_PRIVATE | MAP_ANON | MAP_32BIT, -1, 0);
   #ifdef __linux__
@@ -52,12 +53,15 @@ void *NewVirtualChunk(size_t sz, bool low32) {
       // for the code heap than on Windows or maybe FreeBSD(I don't have it
       // installed) but it won't really matter since machine code doesn't take
       // up a lot of space
-      char     *buffer  = nullptr;
-      size_t    line_sz = 0;
+      std::array<char, 0x1000> buf;
+      // we make a generous assumption that one line would not exceed
+      // 4096 chars, even 0x100 would have done the job
+      char     *buffer  = buf.data();
+      size_t    line_sz = buf.size();
       uintptr_t down    = 0;
       FILE *map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
-      while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline
+      while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline()
         char const *ptr   = buffer;
         uint64_t    lower = Hex2U64(ptr, &ptr);
         // MAP_FIXED wants us to align `down` to the page size
@@ -71,13 +75,11 @@ void *NewVirtualChunk(size_t sz, bool low32) {
         ++ptr;
         uint64_t upper = Hex2U64(ptr, &ptr);
         down           = upper;
-        free(buffer);
-        buffer  = nullptr;
-        line_sz = 0;
+        line_sz        = buf.size();
       }
-    found:;
+    found:
       fclose(map);
-      if (down > MAX_CODE_HEAP_ADDR)
+      if (down > UINT64_C(0xFFffFFff))
         return nullptr;
       ret = mmap((void *)down, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                  MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);

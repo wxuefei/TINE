@@ -13,9 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <tos_ffi.h>
+
 #include "alloc.hxx"
 #include "dbg.hxx"
-#include "ffi.h"
 #include "mem.hxx"
 #include "tos_aot.hxx"
 
@@ -89,7 +90,6 @@ void LoadOneImport(char **src_, char *mod_base) {
     case IET_IMM_I64:
       AS_(ptr, int64_t) = (int64_t)i;
       break;
-    default:;
     }
 #undef OFF_
   }
@@ -152,8 +152,8 @@ void LoadPass1(char *src, char *mod_base) {
         AS_(ptr, uint32_t) += (uintptr_t)mod_base;
       }
     } break;
-    default:; // the other ones wont be used
-              // so im not implementing them
+      // the other ones wont be used
+      // so im not implementing them
     }
   }
 }
@@ -263,7 +263,7 @@ void BackTrace() {
       oldp = curp;
       last = sorted[idx];
     }
-  next:;
+  next:
     ptr = rbp[1];
     rbp = (void **)*rbp; // yuck
   }

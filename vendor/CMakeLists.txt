@@ -19,8 +19,8 @@ set_target_properties(dyad argtable3
 )
 
 # yuck
-add_library(copts INTERFACE)
-target_compile_options(copts
+add_library(c_opts INTERFACE)
+target_compile_options(c_opts
   INTERFACE
     -Wall
     -Wextra
@@ -33,10 +33,14 @@ target_compile_options(copts
     -mno-shstk
     -fcf-protection=none
 )
-target_link_libraries(dyad PRIVATE copts)
-target_link_libraries(argtable3 PRIVATE copts)
+target_link_libraries(dyad PRIVATE c_opts)
+target_link_libraries(argtable3 PRIVATE c_opts)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE dyad argtable3)
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_subdirectory(linenoise-ng)
 

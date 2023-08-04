@@ -6,6 +6,8 @@
 
 #include <SDL2/SDL.h>
 
+#include <tos_ffi.h>
+
 #include "ffi.h"
 #include "logo.hxx"
 #include "main.hxx"
@@ -440,8 +442,7 @@ int ScanKey(uint64_t *sc, SDL_Event *ev) {
     case SDL_SCANCODE_F10:
     case SDL_SCANCODE_F11:
     case SDL_SCANCODE_F12:
-      *sc =
-          mod | ((uint8_t)SC_F1 + (ev->key.keysym.scancode - SDL_SCANCODE_F1));
+      *sc = mod | (SC_F1 + (ev->key.keysym.scancode - SDL_SCANCODE_F1));
       return 1;
     default:;
     }
@@ -496,7 +497,7 @@ int SDLCALL MSCallback(void *, SDL_Event *e) {
     goto ent;
   case SDL_MOUSEMOTION:
     x = e->motion.x, y = e->motion.y;
-  ent:;
+  ent:
     if (x < win.margin_x)
       x2 = 0;
     else if (x > win.margin_x + static_cast<Sint32>(win.sz_x))
@@ -511,7 +512,6 @@ int SDLCALL MSCallback(void *, SDL_Event *e) {
     else
       y2 = (y - win.margin_y) * 480. / win.sz_y;
     FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
-  default:;
   }
   return 0;
 }

@@ -3,7 +3,10 @@
 
 ## features
 - seamless filesystem integration, no mounting virtual disks or anything(primary annoyance when working with TOS)
-- networking through FFI using the [dyad](https://github.com/rxi/dyad) library(powers builtin wiki, you might want to read the repository and read dyad's source code to use it effectively, it's not big) 
+- networking through FFI using the [dyad](https://github.com/rxi/dyad) library(powers builtin wiki)
+
+    you may want to read dyad's source code(it's not big) and networking examples in `T/{Community,Server}`
+
 - [wiki that guides you through HolyC and TempleOS](#documentation)
 
 ## required skills
@@ -29,7 +32,7 @@ pacman -Syu make mingw-w64-x86_64-{cmake,gcc,SDL2}
 ```
 if pacman tells you to restart the terminal then do it and run the cmd again
 ## unix-like system users
-install SDL2, cmake, make and gcc/clang
+install SDL2, cmake, make and gcc
 ## building the loader
 ```
 mkdir build;
@@ -65,7 +68,8 @@ Cd("T:/Server");
 //point browser to localhost:8080
 ```
 contributions to wiki appreciated <br>
-uploading files must only have names **shorter*** than 38 characters
+files uploaded to wiki must only have names ***shorter*** than 38 characters
+
 
 # ref
 ```C

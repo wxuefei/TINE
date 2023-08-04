@@ -20,9 +20,10 @@
 #include <dyad.h>
 #include <linenoise-ng/linenoise.h>
 
+#include <tos_ffi.h>
+
 #include "TOSPrint.hxx"
 #include "alloc.hxx"
-#include "ffi.h"
 #include "main.hxx"
 #include "mem.hxx"
 #include "multic.hxx"

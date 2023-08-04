@@ -134,11 +134,6 @@ endif ()
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
 
-target_include_directories(${PROJECT_NAME}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor
-)
-
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
     CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   # uses this because cmake cant detect builtins

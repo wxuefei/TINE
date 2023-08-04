@@ -23,8 +23,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <tos_ffi.h>
+
 #include "dbg.hxx"
-#include "ffi.h"
 #include "main.hxx"
 #include "multic.hxx"
 #include "tos_aot.hxx"
