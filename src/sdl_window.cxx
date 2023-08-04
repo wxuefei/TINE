@@ -84,17 +84,6 @@ void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
   SDL_CondBroadcast(win.screen_done_cond);
 }
 
-void UserEvHandler(SDL_UserEvent *ev) {
-  if (ev->type == SDL_USEREVENT)
-    DrawWindowUpdate_EV((uint8_t *)ev->data1, (uintptr_t)ev->data2);
-}
-
-int ExitCb(void *off, SDL_Event *event) {
-  if (event->type == SDL_QUIT)
-    *(bool *)off = true;
-  return 0;
-}
-
 enum : uint8_t {
   CH_CTRLA       = 0x01,
   CH_CTRLB       = 0x02,
@@ -531,12 +520,16 @@ int SDLCALL MSCallback(void *, SDL_Event *e) {
 
 void InputLoop(bool *off) {
   SDL_Event e;
-  SDL_AddEventWatch(&ExitCb, off);
   while (!*off) {
     if (!SDL_WaitEvent(&e))
       continue;
-    if (e.type == SDL_USEREVENT)
-      UserEvHandler((SDL_UserEvent *)&e);
+    switch (e.type) {
+    case SDL_QUIT:
+      *off = true;
+      break;
+    case SDL_USEREVENT:
+      DrawWindowUpdate_EV((uint8_t *)e.user.data1, (uintptr_t)e.user.data2);
+    }
   }
 }
 

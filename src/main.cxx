@@ -191,7 +191,10 @@ int main(int argc, char **argv) {
     if (ndebug->count == 0)
       fprintf(stderr, "Using %s as the kernel.\n", bin_path.c_str());
   } else {
-    fprintf(stderr, "%s DOES NOT EXIST\n", bin_path.c_str());
+    fprintf(stderr,
+            "%s DOES NOT EXIST, MAYBE YOU FORGOT TO BOOTSTRAP IT? REFER TO "
+            "README FOR GUIDANCE\n",
+            bin_path.c_str());
     return 1;
   }
   LaunchCore0(Core0);

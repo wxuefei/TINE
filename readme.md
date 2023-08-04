@@ -64,7 +64,8 @@ Cd("T:/Server");
 #include "run";
 //point browser to localhost:8080
 ```
-contributions to wiki appreciated
+contributions to wiki appreciated <br>
+uploading files must only have names **shorter*** than 38 characters
 
 # ref
 ```C

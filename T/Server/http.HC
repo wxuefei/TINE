@@ -664,15 +664,15 @@ U0 ListenCallback(CDyadStream *s,CServer *srv) {
   CUniqueToken *ut=CAlloc(sizeof(CUniqueToken));
   ut->srv=srv;
   DyadSetTimeout(s,60);
-  DyadSetDataCallback(s,&SReadData,ut);
-  DyadSetOnCloseCallback(s,&CloseCallback,ut);
-  DyadSetOnTimeoutCallback(s,&CloseCallback,ut);
+  DyadSetReadCallback(s,DYAD_EVENT_DATA,&SReadData,ut);
+  DyadSetCloseCallback(s,DYAD_EVENT_CLOSE,&CloseCallback,ut);
+  DyadSetListenCallback(s,DYAD_EVENT_TIMEOUT,&CloseCallback,ut);
 }
 
 U0 ServeTask(CServer *srv) {
   srv->task=Fs;
   DyadListen(srv->s_sock,srv->port);
-  DyadSetOnListenCallback(srv->s_sock,&ListenCallback,srv);
+  DyadSetListenCallback(srv->s_sock,DYAD_EVENT_ACCEPT,&ListenCallback,srv);
   while (TRUE) {
     Sleep(1);
     DyadUpdate;
@@ -716,7 +716,7 @@ U0 Serve(CServer *srv) {
   Kill(srv_task);
   #exe {
     if (!__IsCmdLine)
-      StreamPrint("Sleep(100);gr.fp_wall_paper=fp;\n");
+      StreamPrint("Sleep(100);gr.fp_wall_paper=fp;\n");
   }
 }
 

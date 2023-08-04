@@ -80,18 +80,16 @@ namespace chrono = std::chrono;
 
 using chrono::system_clock;
 
-uint64_t STK__ThrowDemo(uint64_t *stk) {
-  switch (stk[0]) {
-  case 1:
-    return 3;
-    break;
-  case 2:
-    return 4;
-    break;
-  default:
-    HolyThrow("Chungus");
+namespace tine {
+uint64_t constexpr Hash(std::string_view sv) { // fnv64-1a
+  uint64_t h = 0xCBF29CE484222325;
+  for (char c : sv) {
+    h *= 0x100000001B3;
+    h ^= c;
   }
+  return h;
 }
+} // namespace tine
 
 void STK_DyadInit(void *) {
   static bool init = false;
@@ -138,70 +136,66 @@ char *STK_DyadGetAddress(dyad_Stream **stk) {
   return HolyStrDup(dyad_getAddress(stk[0]));
 }
 
-void DyadReadCB(dyad_Event *e) {
-  FFI_CALL_TOS_4(e->udata, (uintptr_t)e->stream, (uintptr_t)e->data, e->size,
-                 (uintptr_t)e->udata2);
+int64_t STK__DyadGetCallbackMode(char **stk) {
+  // i thought of using streamprint but then
+  // the variadic calling thing gets too complicated
+  switch (tine::Hash(stk[0])) {
+  case tine::Hash("DYAD_EVENT_LINE"):
+    return DYAD_EVENT_LINE;
+  case tine::Hash("DYAD_EVENT_DATA"):
+    return DYAD_EVENT_DATA;
+  case tine::Hash("DYAD_EVENT_CLOSE"):
+    return DYAD_EVENT_CLOSE;
+  case tine::Hash("DYAD_EVENT_CONNECT"):
+    return DYAD_EVENT_CONNECT;
+  case tine::Hash("DYAD_EVENT_DESTROY"):
+    return DYAD_EVENT_DESTROY;
+  case tine::Hash("DYAD_EVENT_ERROR"):
+    return DYAD_EVENT_ERROR;
+  case tine::Hash("DYAD_EVENT_READY"):
+    return DYAD_EVENT_READY;
+  case tine::Hash("DYAD_EVENT_TICK"):
+    return DYAD_EVENT_TICK;
+  case tine::Hash("DYAD_EVENT_TIMEOUT"):
+    return DYAD_EVENT_TIMEOUT;
+  case tine::Hash("DYAD_EVENT_ACCEPT"):
+    return DYAD_EVENT_ACCEPT;
+  default:
+    HolyThrow("InvMode"); // invalid mode
+  }
 }
 
 void STK_DyadSetReadCallback(void **stk) {
-  // This is for a line of text
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_LINE, DyadReadCB, stk[1],
-                   stk[2]);
+  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+                   [](dyad_Event *e) {
+                     FFI_CALL_TOS_4(e->udata, (uintptr_t)e->stream,
+                                    (uintptr_t)e->data, e->size,
+                                    (uintptr_t)e->udata2);
+                   },
+                   stk[2], stk[3]);
 }
 
-void STK_DyadSetDataCallback(void **stk) {
-  // This is for binary data
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_DATA, DyadReadCB, stk[1],
-                   stk[2]);
+void STK_DyadSetCloseCallback(void **stk) {
+  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+                   [](dyad_Event *e) {
+                     FFI_CALL_TOS_2(e->udata, (uintptr_t)e->stream,
+                                    (uintptr_t)e->udata2);
+                   },
+                   stk[2], stk[3]);
 }
 
-void DyadListenCB(dyad_Event *e) {
-  FFI_CALL_TOS_2(e->udata, (uintptr_t)e->remote, (uintptr_t)e->udata2);
+void STK_DyadSetListenCallback(void **stk) {
+  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+                   [](dyad_Event *e) {
+                     FFI_CALL_TOS_2(e->udata, (uintptr_t)e->remote,
+                                    (uintptr_t)e->udata2);
+                   },
+                   stk[2], stk[3]);
 }
 
-void DyadCloseCB(dyad_Event *e) {
-  FFI_CALL_TOS_2(e->udata, (uintptr_t)e->stream, (uintptr_t)e->udata2);
-}
-
-void STK_DyadSetOnCloseCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_CLOSE, DyadCloseCB, stk[1],
-                   stk[2]);
-}
-
-void STK_DyadSetOnConnectCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_CONNECT, DyadListenCB,
-                   stk[1], stk[2]);
-}
-
-void STK_DyadSetOnDestroyCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_DESTROY, DyadCloseCB,
-                   stk[1], stk[2]);
-}
-
-void STK_DyadSetOnErrorCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_ERROR, DyadCloseCB, stk[1],
-                   stk[2]);
-}
-
-void STK_DyadSetOnReadyCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_READY, DyadListenCB,
-                   stk[1], stk[2]);
-}
-
-void STK_DyadSetOnTickCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_TICK, DyadListenCB, stk[1],
-                   stk[2]);
-}
-
-void STK_DyadSetOnTimeoutCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_TIMEOUT, DyadListenCB,
-                   stk[1], stk[2]);
-}
-
-void STK_DyadSetOnListenCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], DYAD_EVENT_ACCEPT, DyadListenCB,
-                   stk[1], stk[2]);
-}
+// read callbacks -> DYAD_EVENT_{LINE,DATA}
+// close callbacks -> DYAD_EVENT_{DESTROY,ERROR,CLOSE}
+// listen callbacks -> DYAD_EVENT_{TIMEOUT,CONNECT,READY,TICK,ACCEPT}
 
 void STK_DyadSetTimeout(uintptr_t *stk) {
   dyad_setTimeout((dyad_Stream *)stk[0], ((double *)stk)[1]);
@@ -607,16 +601,10 @@ void RegisterFuncPtrs() {
   S_(DyadEnd, 1);
   S_(DyadClose, 1);
   S_(DyadGetAddress, 1);
-  S_(DyadSetDataCallback, 3);
-  S_(DyadSetReadCallback, 3);
-  S_(DyadSetOnListenCallback, 3);
-  S_(DyadSetOnConnectCallback, 3);
-  S_(DyadSetOnCloseCallback, 3);
-  S_(DyadSetOnReadyCallback, 3);
-  S_(DyadSetOnTimeoutCallback, 3);
-  S_(DyadSetOnTickCallback, 3);
-  S_(DyadSetOnErrorCallback, 3);
-  S_(DyadSetOnDestroyCallback, 3);
+  S_(_DyadGetCallbackMode, 1);
+  S_(DyadSetReadCallback, 4);
+  S_(DyadSetCloseCallback, 4);
+  S_(DyadSetListenCallback, 4);
   S_(DyadSetTimeout, 2);
   S_(DyadSetNoDelay, 2);
   S_(VFsFTrunc, 2);
@@ -641,7 +629,6 @@ void RegisterFuncPtrs() {
   S_(SetVolume, 1);
   S_(__GetTicksHP, 0);
   S_(_GrPaletteColorSet, 2);
-  S_(_ThrowDemo, 1);
   auto blob = VirtAlloc<char>(ffi_blob.size());
   std::copy(ffi_blob.begin(), ffi_blob.end(), blob);
   for (auto &[name, sym] : TOSLoader)

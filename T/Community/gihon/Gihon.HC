@@ -21,7 +21,8 @@ I64 Gihon()
 {
     DyadInit;
     CDyadStream *server=DyadNewStream;
-    DyadSetOnListenCallback(server,&IrcClientHandler,server);
+    DyadSetListenCallback(server,DYAD_EVENT_ACCEPT,
+                           &IrcClientHandler,server);
     DyadListen(server,6667);
     try {
         while(TRUE) {

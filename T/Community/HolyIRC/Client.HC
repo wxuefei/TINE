@@ -116,8 +116,8 @@ CClient *ClientNew(U8 *server="irc.libera.chat",I64 port=6667,U8 *name="Terry") 
   DyadInit;
   CClient *cl=CAlloc(sizeof(CClient));
   cl->srv=DyadNewStream;
-  DyadSetOnConnectCallback(cl->srv,&ServerConnect,cl);
-  DyadSetReadCallback(cl->srv,&ServerReadCb,cl);
+  DyadSetListenCallback(cl->srv,DYAD_EVENT_CONNECT,&ServerConnect,cl);
+  DyadSetReadCallback(cl->srv,DYAD_EVENT_LINE,&ServerReadCb,cl);
   StrCpy(cl->name,name);
   StrCpy(cl->host,server);
   StrCpy(cl->channel,"#anonchan");

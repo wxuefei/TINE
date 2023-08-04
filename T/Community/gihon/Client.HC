@@ -419,8 +419,8 @@ U0 IrcClientHandler(CDyadStream *s,I64 srv)
     client->host=StrNew("....");
     client->vhost=StrNew("....");
     client->msgs=FifoI64New(1);
-    DyadSetReadCallback(s,&IrcClientReadLine,client);
-    DyadSetOnCloseCallback(s,&IrcClientClose,client);
+    DyadSetReadCallback(s,DYAD_EVENT_LINE,&IrcClientReadLine,client);
+    DyadSetCloseCallback(s,DYAD_EVENT_CLOSE,&IrcClientClose,client);
     IrcClientAdd(client);
     IrcClientNotice(client, "Welcome to Gihon IRC Server!");
     IrcClientNotice(client, "This server is running Gihon, an IRCd for TempleOS");

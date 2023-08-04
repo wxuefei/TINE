@@ -280,10 +280,10 @@ import U0i DyadWrite(CDyadStream *,U8i*,I64i);
 import U0i DyadEnd(CDyadStream *);
 import U0i DyadClose(CDyadStream *);
 import U8i *DyadGetAddress(CDyadStream *);
-import U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-import U0i DyadSetDataCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-import U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-import U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
+import I64 _DyadGetCallbackMode(U8 *);
+import U0i DyadSetCloseCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *),U8i *)
+import U0i DyadSetListenCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *),U8i *)
+import U0i DyadSetReadCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
 import U64 mp_cnt();
 import U0i SetFs(CTask*);
 import CTask* GetFs();
@@ -312,7 +312,7 @@ import U8i *__CmdLineBootText();
 import U0i UnblockSignals();
 import U64i __GetTicksHP(); 
 #else
-extern U0 _GrPaletteColorSet(I64i,I64i);
+extern U0 _GrPaletteColorSet(I64i,I64i);
 extern U64 _ThrowDemo(U64);
 extern U0 __SleepHP(U64);
 extern U0 __AwakeCore(U64);
@@ -344,15 +344,10 @@ extern U8i **VFsDir();
 extern U0i DyadInit();
 extern U0i DyadUpdate();
 extern U0i DyadShutdown();
-extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern U0i DyadSetDataCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-extern U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-extern U0 DyadSetOnReadyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnTimeoutCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnTickCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnErrorCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnDestroyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern I64 _DyadGetCallbackMode(U8 *);
+extern U0i DyadSetCloseCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *),U8i *)
+extern U0i DyadSetListenCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *),U8i *)
+extern U0i DyadSetReadCallback(CDyadStream *,I64,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
 extern U0 DyadSetTimeout(CDyadStream *,F64);
 extern U0 DyadSetNoDelay(CDyadStream *,I64i);
 extern CDyadStream *DyadNewStream();
@@ -363,8 +358,6 @@ extern U0i DyadWrite(CDyadStream *,U8i*,I64i);
 extern U0i DyadEnd(CDyadStream *);
 extern U0i DyadClose(CDyadStream *);
 extern U8i *DyadGetAddress(CDyadStream *);
-extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern U0i DyadSetOnListenCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
 extern U64 mp_cnt();
 extern U0i SetFs(CTask*);
 extern CTask* GetFs();
@@ -7640,3 +7633,13 @@ extern I64 RedSeaISO(U8 *_iso_filename=NULL,U8 *_src_dir,U8 *_stage2_filename=NU
 extern U8 Mount2(U8 boot_drv_let,CDoc *_doc,Bool _caller_is_prtdsk);
 extern U0 __EnableDbg();
 extern U0 __EnableAns();
+#define DYAD_EVENT_LINE #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_LINE"));}
+#define DYAD_EVENT_DATA #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_DATA"));}
+#define DYAD_EVENT_CLOSE #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_CLOSE"));}
+#define DYAD_EVENT_CONNECT #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_CONNECT"));}
+#define DYAD_EVENT_DESTROY #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_DESTROY"));}
+#define DYAD_EVENT_ERROR #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_ERROR"));}
+#define DYAD_EVENT_READY #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_READY"));}
+#define DYAD_EVENT_TICK #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_TICK"));}
+#define DYAD_EVENT_TIMEOUT #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_TIMEOUT"));}
+#define DYAD_EVENT_ACCEPT #exe{StreamPrint("%d",_DyadGetCallbackMode("DYAD_EVENT_ACCEPT"));}
