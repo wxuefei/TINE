@@ -3,7 +3,7 @@
 
 ## features
 - seamless filesystem integration, no mounting virtual disks or anything(primary annoyance when working with TOS)
-- networking with FFI using the dyad library(powers builtin wiki)
+- networking through FFI using the [dyad](https://github.com/rxi/dyad) library(powers builtin wiki, you might want to read the repository and read dyad's source code to use it effectively, it's not big) 
 - [wiki that guides you through HolyC and TempleOS](#documentation)
 
 ## required skills
