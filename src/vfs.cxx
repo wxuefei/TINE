@@ -4,7 +4,6 @@
 #include <sys/stat.h>
 // clang-format on
 
-#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <string>
@@ -176,7 +175,7 @@ char **VFsDir() {
   }
   // force null pointer terminator
   auto ret = HolyAlloc<DirEnt, true>(items.size() + 1);
-  std::copy(items.begin(), items.end(), ret);
+  memcpy(ret, items.data(), items.size() * sizeof(DirEnt));
   return ret;
 #undef SD
 }

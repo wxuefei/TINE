@@ -126,7 +126,6 @@
 #include "ConvertUTF.h"
 #include "linenoise.h"
 
-#include <algorithm>
 #include <memory>
 #include <new>
 #include <string>
@@ -456,7 +455,7 @@ public:
 
     // note: parens intentional, _data must be properly initialized
     _data = new (std::nothrow) char32_t[_length + 1]{};
-    std::copy(src, src + _length * sizeof(char32_t), _data);
+    memcpy(_data, src, _length * sizeof(char32_t));
   }
 
   explicit Utf32String(const char32_t* src, size_t len)

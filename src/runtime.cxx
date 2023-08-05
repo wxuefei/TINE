@@ -8,7 +8,6 @@
   #include <sys/mman.h>
 #endif
 
-#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <numeric>
@@ -72,7 +71,7 @@ size_t mp_cnt(void *) {
   static void *fp;
   if (!fp)
     fp = TOSLoader["throw"].val;
-  std::copy(sv.begin(), sv.begin() + std::min<size_t>(sv.size(), 8), u.s);
+  memcpy(u.s, sv.data(), std::min<size_t>(sv.size(), 8));
   FFI_CALL_TOS_1(fp, u.i);
   __builtin_unreachable();
 }
@@ -646,10 +645,14 @@ void RegisterFuncPtrs() {
                                 return s.size() + i;
                               });
   // useless comment to stop clang-format from indenting the lambda wrong
-  auto   blob = VirtAlloc<char>(sz);
-  size_t off  = 0;
+  char *blob = VirtAlloc<char>(sz);
+  // c++20:
+  // #include <{ranges,algorithm}> up there
+  // auto r = v | std::views::join;
+  // std::copy(r.begin(), r.end(), blob);
+  size_t off = 0;
   for (auto const &s : v) {
-    std::copy(s.begin(), s.end(), blob + off);
+    memcpy(blob + off, s.data(), s.size());
     off += s.size();
   }
   for (auto &[name, sym] : TOSLoader)

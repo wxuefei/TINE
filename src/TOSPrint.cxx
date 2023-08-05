@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <string>
 
 #include <ctype.h>
@@ -29,7 +28,7 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
     default:
       goto check_us_key;
     }
-    std::copy(to, to + 2, where);
+    memcpy(where, to, 2);
     where += 2;
     ++str;
     continue;
@@ -45,7 +44,7 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
       // deep inside the Standard that I'm missing, either way, this works
       char buf[5];
       snprintf(buf, sizeof buf, "\\%" PRIo8, static_cast<uint8_t>(*str));
-      std::copy(buf, buf + 4, where);
+      memcpy(where, buf, 4);
       where += 4;
       ++str;
       continue;

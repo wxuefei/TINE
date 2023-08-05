@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <SDL2/SDL.h>
 
@@ -47,7 +48,7 @@ void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
   SDL_LockSurface(s);
   auto src = colors, dst = (uint8_t *)s->pixels;
   for (size_t y = 0; y < 480; ++y) {
-    std::copy(src, src + 640, dst);
+    memcpy(dst, src, 640);
     src += internal_width;
     dst += s->pitch;
   }
@@ -577,8 +578,7 @@ void NewDrawWindow() {
   SDL_LockSurface(icon);
   auto constexpr bytes =
       TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
-  std::copy(TINELogo.pixel_data, TINELogo.pixel_data + bytes,
-            (uint8_t *)icon->pixels);
+  memcpy(icon->pixels, TINELogo.pixel_data, bytes);
   SDL_UnlockSurface(icon);
   SDL_SetWindowIcon(win.window, icon);
   SDL_FreeSurface(icon);
