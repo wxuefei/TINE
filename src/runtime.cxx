@@ -11,7 +11,10 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <numeric>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -476,10 +479,14 @@ uint64_t STK___IsCmdLine(void *) {
 }
 
 // arity must be <= 0xffFF/sizeof U64
-void RegisterFunctionPtr(std::string &blob, char const *name, uintptr_t fp,
-                         uint16_t arity) {
+void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
+                         uintptr_t fp, uint16_t arity) {
+  std::string blob;
   // Function entry point offset from the code blob
-  uintptr_t off = blob.size();
+  uintptr_t off = std::accumulate(v.begin(), v.end(), 0,
+                                  [](size_t i, std::string const &s) {
+                                    return s.size() + i;
+                                  });
   // https://defuse.ca/online-x86-assembler.htm
   // boring register pushing and stack alignment bullshit
   // disas then read the ABIs and Doc/GuideLines.DD if interested
@@ -549,16 +556,17 @@ void RegisterFunctionPtr(std::string &blob, char const *name, uintptr_t fp,
   sym.type        = HTT_FUN;
   sym.val         = (uint8_t *)off;
   TOSLoader[name] = sym;
+  v.emplace_back(std::move(blob));
 }
 
 } // namespace
 
 void RegisterFuncPtrs() {
-  std::string ffi_blob;
+  std::vector<std::string> v; // vector of ffi'd function bodies
 #define R(holy, secular, arity) \
-  RegisterFunctionPtr(ffi_blob, holy, (uintptr_t)secular, arity)
+  RegisterFunctionPtr(v, holy, (uintptr_t)secular, arity)
 #define S(name, arity) \
-  RegisterFunctionPtr(ffi_blob, #name, (uintptr_t)STK_##name, arity)
+  RegisterFunctionPtr(v, #name, (uintptr_t)STK_##name, arity)
   R("__CmdLineBootText", CmdLineBootText, 0);
   R("mp_cnt", mp_cnt, 0);
   R("__CoreNum", CoreNum, 0);
@@ -633,8 +641,17 @@ void RegisterFuncPtrs() {
   S(SetVolume, 1);
   S(__GetTicksHP, 0);
   S(_GrPaletteColorSet, 2);
-  auto blob = VirtAlloc<char>(ffi_blob.size());
-  std::copy(ffi_blob.begin(), ffi_blob.end(), blob);
+  size_t sz = std::accumulate(v.begin(), v.end(), 0,
+                              [](size_t i, std::string const &s) {
+                                return s.size() + i;
+                              });
+  // useless comment to stop clang-format from indenting the lambda wrong
+  auto   blob = VirtAlloc<char>(sz);
+  size_t off  = 0;
+  for (auto const &s : v) {
+    std::copy(s.begin(), s.end(), blob + off);
+    off += s.size();
+  }
   for (auto &[name, sym] : TOSLoader)
     sym.val += (ptrdiff_t)blob;
 }

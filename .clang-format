@@ -23,7 +23,10 @@ AllowShortFunctionsOnASingleLine: false
 AllowShortLambdasOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakAfterReturnType: None
+BinPackArguments: true
+BinPackParameters: true
 Standard: c++17
+LambdaBodyIndentation: Signature
 IndentPPDirectives: BeforeHash
 IndentCaseLabels: false
 IncludeCategories: [
