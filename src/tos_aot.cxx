@@ -216,6 +216,7 @@ void LoadHCRT(std::string const &name) {
   if (e) {
     fprintf(stderr, "CANNOT DETERMINE SIZE OF FILE, ERROR MESSAGE: %s\n",
             e.message().c_str());
+    fclose(f);
     exit(1);
   }
   fread(bfh_addr = VirtAlloc<char>(sz), 1, sz, f);

@@ -466,12 +466,18 @@ struct HolyFunc {
   u16              m_arity; // arity must be <= 0xffFF/sizeof U64
 };
 
+template <usize S> struct ByteLiteral {
+  usize       m_sz;
+  char const *m_lit;
+  constexpr ByteLiteral(char const (&s)[S]) : m_sz{S - 1}, m_lit{s} {}
+};
+
 void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // clang-format off
   // I used https://defuse.ca/online-x86-assembler.htm
   // boring register pushing and stack alignment bullshit
   // read the SysV/Win64 ABIs and Doc/GuideLines.DD if interested
-  u8 constexpr inst[] =
+  ByteLiteral constexpr inst =
   /*
    * 0x0:  55                      push   rbp
    * 0x1:  48 89 e5                mov    rbp,rsp
@@ -564,34 +570,29 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
         "\xC9"
         "\xC2" "\x11\x22"; // 0x2211 is a placeholder
   // clang-format on
-  usize constexpr inst_len =
-#ifndef _WIN32
-      0x16 + 0x4 + 0xc + 0x12;
-#else
-      0x16 + 0xa + 0xc + 0x4 + 0x12;
-#endif
   usize constexpr fp_off =
 #ifndef _WIN32
       0x16 + 0x4 + 0x2;
 #else
       0x16 + 0xa + 0x2;
 #endif
-  usize constexpr arity_off = inst_len - 2;
+  usize constexpr arity_off = inst.m_sz - 2;
 
-  auto blob = VirtAlloc<u8>(inst_len * ffi_list.size());
+  auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
-    memcpy(blob + i * inst_len, inst, inst_len);
+    memcpy(blob + i * inst.m_sz, inst.m_lit, inst.m_sz);
   }
   {
     usize i = 0;
     for (HolyFunc hf : ffi_list) {
-      usize off = i++ * inst_len;
+      usize off = i * inst.m_sz;
       // for the 0x8877... placeholder
       memcpy(blob + off + fp_off, &hf.m_fp, sizeof(uptr));
       // for the 0x2211 placeholder
       hf.m_arity *= sizeof(u64); // all args are u64 in HolyC
       memcpy(blob + off + arity_off, &hf.m_arity, sizeof(u16) /* ret imm16 */);
       TOSLoader.emplace(hf.m_name, CHash{HTT_FUN, {blob + off}});
+      ++i;
     }
   }
   // clang-format off

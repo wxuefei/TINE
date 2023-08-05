@@ -14,12 +14,12 @@ AlignEscapedNewlines: Left
 AlignOperands: AlignAfterOperator
 AlignEscapedNewlines: Left
 AlignTrailingComments: true
-AllowShortBlocksOnASingleLine: Never
+AllowShortBlocksOnASingleLine: Empty
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortLambdasOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakAfterReturnType: None
