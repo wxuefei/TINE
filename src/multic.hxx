@@ -1,9 +1,8 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include "types.h"
 
-uint64_t GetTicks();
+u64 GetTicks();
 
 void *GetFs();
 void  SetFs(void *);
@@ -11,25 +10,25 @@ void  SetFs(void *);
 void *GetGs();
 void  SetGs(void *);
 
-size_t CoreNum();
+usize CoreNum();
 
-void InterruptCore(size_t core);
+void InterruptCore(usize core);
 
 using ThreadCallback =
 #ifdef _WIN32
-    long unsigned /*DWORD*/ __stdcall(void *);
+    long unsigned /*DWORD on x86_64*/ __stdcall(void *);
 #else
     void *(void *);
 #endif
 void LaunchCore0(ThreadCallback *fp);
 void WaitForCore0();
 
-void CreateCore(size_t core, void *fp);
-void ShutdownCore(size_t core);
+void CreateCore(usize core, void *fp);
+void ShutdownCore(usize core);
 void ShutdownCores(int ec);
 
-void AwakeFromSleeping(size_t core);
+void AwakeFromSleeping(usize core);
 
-void SleepHP(uint64_t us);
+void SleepHP(u64 us);
 
 // vim: set expandtab ts=2 sw=2 :

@@ -19,8 +19,6 @@
 #include <atomic>
 #include <vector>
 
-#include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 
 #include <tos_ffi.h>
@@ -31,13 +29,13 @@
 #include "tos_aot.hxx"
 #include "vfs.hxx"
 
-uint64_t GetTicks() {
+u64 GetTicks() {
 #ifdef _WIN32
   return GetTickCount();
 #else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_nsec / 1000000u + 1000 * (uint64_t)ts.tv_sec;
+  return (u64)ts.tv_nsec / 1000000u + 1000 * (u64)ts.tv_sec;
 #endif
 }
 
@@ -45,10 +43,10 @@ namespace {
 
 struct CCore {
 #ifdef _WIN32
-  HANDLE   thread;
-  HANDLE   event;
-  HANDLE   mtx;
-  uint64_t awake_at;
+  HANDLE thread;
+  HANDLE event;
+  HANDLE mtx;
+  u64    awake_at;
 #else
   pthread_t thread;
   /*
@@ -57,21 +55,21 @@ struct CCore {
    * > futexes are four-byte integers that must be aligned on a four-
    * > byte boundary.
    * freebsd doesnt seem to mind about alignment so im just going to use
-   * uint32_t too(though i have to specify UMTX_OP_WAIT_UINT instead of
+   * u32 too(though i have to specify UMTX_OP_WAIT_UINT instead of
    * UMTX_OP_WAIT)
    */
-  alignas(4) uint32_t is_sleeping;
+  alignas(4) u32 is_sleeping;
   // not using atomics here(instead using atomic builtins that operate on plain
   // values) because i need them for system calls and casting std::atomic<T>* to
   // T* is potentially UB and
-  // static_assert(std::is_layout_compatible_v<std::atomic<uint32_t>, uint32_t>)
+  // static_assert(std::is_layout_compatible_v<std::atomic<u32>, u32>)
   // failed on my machine
 #endif
   void *fp;
 };
 
-std::vector<CCore>  cores;
-thread_local size_t core_num;
+std::vector<CCore> cores;
+thread_local usize core_num;
 
 #ifndef _WIN32
 void *LaunchCore(void *c) {
@@ -80,7 +78,7 @@ DWORD WINAPI LaunchCore(LPVOID c) {
 #endif
   VFsThrdInit();
   SetupDebugger();
-  core_num = (uintptr_t)c;
+  core_num = (uptr)c;
 #ifndef _WIN32
   static void *fp = nullptr;
   if (fp == nullptr)
@@ -133,7 +131,7 @@ void SetGs(void *g) {
   Gs = g;
 }
 
-size_t CoreNum() {
+usize CoreNum() {
   return core_num;
 }
 
@@ -141,7 +139,7 @@ size_t CoreNum() {
 // contexts unless you call Yield() in a loop so
 // we have to set RIP manually(this routine is called
 // when CTRL+ALT+C is pressed inside TempleOS
-void InterruptCore(size_t core) {
+void InterruptCore(usize core) {
 #ifdef _WIN32
   CONTEXT ctx{};
   ctx.ContextFlags = CONTEXT_FULL;
@@ -155,7 +153,7 @@ void InterruptCore(size_t core) {
   if (fp == nullptr)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   // movabs rip, <fp>
-  ctx.Rip = (uintptr_t)fp;
+  ctx.Rip = (uptr)fp;
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);
 #else
@@ -179,7 +177,7 @@ void LaunchCore0(ThreadCallback *fp) {
 #endif
 }
 
-void CreateCore(size_t core, void *fp) {
+void CreateCore(usize core, void *fp) {
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
   auto core_n    = (void *)core;
@@ -202,7 +200,7 @@ void WaitForCore0() {
 #endif
 }
 
-void ShutdownCore(size_t core) {
+void ShutdownCore(usize core) {
 #ifdef _WIN32
   TerminateThread(cores[core].thread, 0);
 #else
@@ -214,7 +212,7 @@ void ShutdownCore(size_t core) {
 }
 
 void ShutdownCores(int ec) {
-  for (size_t c = 0; c < proc_cnt; ++c)
+  for (usize c = 0; c < proc_cnt; ++c)
     if (c != core_num)
       ShutdownCore(c);
   // This is the same as calling Core0Exit
@@ -223,14 +221,14 @@ void ShutdownCores(int ec) {
   exit(ec);
 }
 
-void AwakeFromSleeping(size_t core) {
+void AwakeFromSleeping(usize core) {
 #ifdef _WIN32
   WaitForSingleObject(cores[core].mtx, INFINITE);
   cores[core].awake_at = 0;
   SetEvent(cores[core].event);
   ReleaseMutex(cores[core].mtx);
 #else
-  uint32_t old = 1;
+  u32 old = 1;
   __atomic_compare_exchange_n(&cores[core].is_sleeping, &old, 0u, false,
                               __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
   #ifdef __linux__
@@ -246,15 +244,15 @@ void AwakeFromSleeping(size_t core) {
 
 namespace {
 
-UINT     tick_inc;
-uint64_t ticks = 0;
+UINT tick_inc;
+u64  ticks = 0;
 
 // To just get ticks we can use QueryPerformanceFrequency
 // and QueryPerformanceCounter but we want to set an winmm
 // event that updates the tick count while also helping cores wake up
 //
 // i killed two birds with one stoner
-uint64_t GetTicksHP() {
+u64 GetTicksHP() {
   static bool init = false;
   if (!init) {
     init = true;
@@ -284,7 +282,7 @@ uint64_t GetTicksHP() {
 
 #endif
 
-void SleepHP(uint64_t us) {
+void SleepHP(u64 us) {
 #ifdef _WIN32
   auto const s = GetTicksHP();
   WaitForSingleObject(cores[core_num].mtx, INFINITE);

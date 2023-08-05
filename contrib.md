@@ -5,8 +5,10 @@ runtime.cxx
 uint64_t STK_FunctionName(uint64_t* stk) {
   // ...
 }
-// in RegisterFuncPtrs()
-S(FunctionName, <function arg cnt in HolyC>);
+// in BootstrapLoader()
+// RegisterFunctionPtrs({ ...
+       S(FunctionName, <function arg cnt in HolyC>),
+// });
 ```
 `STK_FunctionName` ***MUST*** return void OR a value that is 8 bytes big
 

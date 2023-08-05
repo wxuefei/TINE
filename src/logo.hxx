@@ -1,12 +1,12 @@
 #pragma once
 
-#include <stdint.h>
+#include "types.h"
 
 // clang-format off
 // logo courtesy of CrunkLord420
 inline constexpr struct {
-  uint32_t width, height, bytes_per_pixel;
-  uint8_t pixel_data[100 * 100 * 4 + 1];
+  u32 width, height, bytes_per_pixel;
+  u8  pixel_data[100 * 100 * 4 + 1];
 } TINELogo {
   100, 100, 4,
   "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\001\001\001\000"

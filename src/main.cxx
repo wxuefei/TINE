@@ -29,9 +29,9 @@ static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
 
 #include <algorithm>
 #include <filesystem>
+#include <system_error>
 #include <thread>
 
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -44,6 +44,7 @@ static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
 #include "sdl_window.hxx"
 #include "sound.h"
 #include "tos_aot.hxx"
+#include "types.h"
 #include "vfs.hxx"
 
 namespace fs = std::filesystem;
@@ -99,12 +100,12 @@ bool sanitize_clipboard = false;
 bool is_cmd_line        = false;
 
 #ifndef _WIN32
-size_t page_size; // used for allocation
-                  // and pointer checks
+usize page_size; // used for allocation
+                 // and pointer checks
 #else
 DWORD dwAllocationGranularity;
 #endif
-size_t proc_cnt;
+usize proc_cnt;
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
@@ -148,8 +149,10 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (fs::exists(TDriveArg->filename[0])) {
+  if (std::error_code e; fs::exists(TDriveArg->filename[0], e)) {
     VFsMountDrive('T', TDriveArg->filename[0]);
+  } else if (e) {
+    fprintf(stderr, "SYSTEM ERROR OCCURED: %s\n", e.message().c_str());
   } else {
     fprintf(stderr, "%s DOES NOT EXIST\n", TDriveArg->filename[0]);
     return 1;
@@ -161,9 +164,7 @@ int main(int argc, char **argv) {
   if (cb_sanitize->count > 0)
     sanitize_clipboard = true;
 
-  // This is called before LoadHCRT so TOSLoader will not be
-  // all fucked up, fyi
-  RegisterFuncPtrs();
+  BootstrapLoader();
 
   if (ndebug->count == 0)
     boot_str += "__EnableDbg;\n";
@@ -188,9 +189,11 @@ int main(int argc, char **argv) {
     InitSound();
   if (HCRTArg->count > 0)
     bin_path = HCRTArg->filename[0];
-  if (fs::exists(bin_path)) {
+  if (std::error_code e; fs::exists(bin_path, e)) {
     if (ndebug->count == 0)
       fprintf(stderr, "Using %s as the kernel.\n", bin_path.c_str());
+  } else if (e) {
+    fprintf(stderr, "SYSTEM ERROR OCCURED: %s\n", e.message().c_str());
   } else {
     fprintf(stderr,
             "%s DOES NOT EXIST, MAYBE YOU FORGOT TO BOOTSTRAP IT? REFER TO "

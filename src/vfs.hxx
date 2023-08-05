@@ -2,25 +2,20 @@
 
 #include <string>
 
-#include <stddef.h>
-#include <stdint.h>
-
-enum {
-  VFS_CDF_MAKE         = 1,
-  VFS_CDF_FILENAME_ABS = 1 << 1,
-};
+#include "types.h"
 
 void        VFsThrdInit();
-void        VFsSetDrv(uint8_t d);
-uint8_t     VFsGetDrv();
+void        VFsSetDrv(u8 d);
+u8          VFsGetDrv();
 void        VFsSetPwd(char const *pwd);
-bool        VFsDirMk(char const *to, int const flags);
-uint64_t    VFsDel(char const *p);
+bool        VFsDirMk(char const *to);
+bool        VFsDel(char const *p);
 std::string VFsFileNameAbs(char const *name);
-uint64_t    VFsUnixTime(char const *name);
-int64_t     VFsFSize(char const *name);
-uint64_t    VFsFileWrite(char const *name, char const *data, size_t len);
-void       *VFsFileRead(char const *name, uint64_t *len);
+u64         VFsUnixTime(char const *name);
+i64         VFsFSize(char const *name);
+void        VFsFTrunc(char const *name, usize sz);
+bool        VFsFileWrite(char const *name, char const *data, usize len);
+void       *VFsFileRead(char const *name, u64 *len);
 char      **VFsDir();
 bool        VFsIsDir(char const *path);
 bool        VFsFileExists(char const *path);

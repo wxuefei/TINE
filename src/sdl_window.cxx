@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <string>
 
-#include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 
 #include <SDL2/SDL.h>
@@ -40,20 +38,20 @@ struct CDrawWindow {
   }
 } win;
 
-void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
+void DrawWindowUpdate_EV(u8 *colors, u64 internal_width) {
   if (!win_init)
     return;
   SDL_Surface *s = win.surf;
   SDL_LockSurface(s);
-  auto src = colors, dst = (uint8_t *)s->pixels;
-  for (size_t y = 0; y < 480; ++y) {
+  auto src = colors, dst = (u8 *)s->pixels;
+  for (usize y = 0; y < 480; ++y) {
     memcpy(dst, src, 640);
     src += internal_width;
     dst += s->pitch;
   }
   SDL_UnlockSurface(s);
   int      ww, wh, w2, h2;
-  int64_t  margin = 0, margin2 = 0;
+  i64      margin = 0, margin2 = 0;
   SDL_Rect rct;
   SDL_GetWindowSize(win.window, &ww, &wh);
   if (wh < ww) {
@@ -86,7 +84,7 @@ void DrawWindowUpdate_EV(uint8_t *colors, uint64_t internal_width) {
   SDL_CondBroadcast(win.screen_done_cond);
 }
 
-enum : uint8_t {
+enum : u8 {
   CH_CTRLA       = 0x01,
   CH_CTRLB       = 0x02,
   CH_CTRLC       = 0x03,
@@ -122,7 +120,7 @@ enum : uint8_t {
 };
 
 // Scan code flags
-enum : uint8_t {
+enum : u8 {
   SCf_E0_PREFIX = 7,
   SCf_KEY_UP    = 8,
   SCf_SHIFT     = 9,
@@ -140,7 +138,7 @@ enum : uint8_t {
   SCf_KEY_DESC  = 31,
 };
 
-enum : uint32_t {
+enum : u32 {
   SCF_E0_PREFIX = 1u << SCf_E0_PREFIX,
   SCF_KEY_UP    = 1u << SCf_KEY_UP,
   SCF_SHIFT     = 1u << SCf_SHIFT,
@@ -163,7 +161,7 @@ enum : uint32_t {
 // See \dLK,"::/Doc/CharOverview.DD"\d
 // and
 // \dLK,"KbdHndlr",A="MN:KbdHndlr"\d().
-enum : uint8_t {
+enum : u8 {
   SC_ESC          = 0x01,
   SC_BACKSPACE    = 0x0E,
   SC_TAB          = 0x0F,
@@ -203,7 +201,7 @@ enum : uint8_t {
 };
 
 // this is templeos' keymap
-uint8_t constexpr keys[] = {
+u8 constexpr keys[] = {
     0,   CH_ESC, '1',  '2', '3',  '4', '5', '6', '7', '8', '9', '0', '-',
     '=', '\b',   '\t', 'q', 'w',  'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
     '[', ']',    '\n', 0,   'a',  's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',
@@ -213,15 +211,15 @@ uint8_t constexpr keys[] = {
     '+', 0,      0,    0,   0,    0,   0,   0,   0,   0,   0,   0,
 };
 
-uint64_t constexpr K2SC(uint8_t ch) {
-  for (size_t i = 0; i < sizeof keys / sizeof keys[0]; ++i)
+u64 constexpr K2SC(u8 ch) {
+  for (usize i = 0; i < sizeof keys / sizeof keys[0]; ++i)
     if (keys[i] == ch)
       return i;
   __builtin_unreachable();
 }
 
-int ScanKey(uint64_t *sc, SDL_Event *ev) {
-  uint64_t mod = 0;
+int ScanKey(u64 *sc, SDL_Event *ev) {
+  u64 mod = 0;
   if (ev->type == SDL_KEYDOWN) {
   ent:
     *sc = ev->key.keysym.scancode;
@@ -459,7 +457,7 @@ static bool  kb_init    = false;
 static bool  ms_init    = false;
 
 int SDLCALL KBCallback(void *, SDL_Event *e) {
-  uint64_t s;
+  u64 s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
     FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
   return 0;
@@ -528,7 +526,7 @@ void InputLoop(bool *off) {
       *off = true;
       break;
     case SDL_USEREVENT:
-      DrawWindowUpdate_EV((uint8_t *)e.user.data1, (uintptr_t)e.user.data2);
+      DrawWindowUpdate_EV((u8 *)e.user.data1, (uptr)e.user.data2);
     }
   }
 }
@@ -545,13 +543,13 @@ std::string ClipboardText() {
   SDL_free(sdl_clip);
   if (sanitize_clipboard) {
     /*std::erase_if(s, [](auto c) {
-      return ' ' - 1 > static_cast<uint8_t>(c);
+      return ' ' - 1 > static_cast<u8>(c);
     }); C++20
     below is the C++17 equivalent because reasons*/
     auto it = std::remove_if(s.begin(), s.end(), [](auto c) {
       // we dont want negative values here
       // (TOS uses U8, UTF-8 on the host, etc)
-      return ' ' - 1 > static_cast<uint8_t>(c);
+      return ' ' - 1 > static_cast<u8>(c);
     });
     s.erase(it, s.end());
   }
@@ -596,7 +594,7 @@ void NewDrawWindow() {
   SDL_ShowCursor(SDL_DISABLE);
 }
 
-void DrawWindowUpdate(uint8_t *colors, uintptr_t internal_width) {
+void DrawWindowUpdate(u8 *colors, u64 internal_width) {
   // https://archive.md/yD5QL
   SDL_Event     event;
   SDL_UserEvent userevent;
@@ -637,13 +635,13 @@ void SetMSCallback(void *fptr) {
   SDL_AddEventWatch(MSCallback, nullptr);
 }
 
-void GrPaletteColorSet(uint64_t i, bgr_48 u) {
+void GrPaletteColorSet(u64 i, bgr_48 u) {
   if (!win_init)
     return;
   // 0xffff is 100% so 0x7fff/0xffff would be about .50
   // this gets multiplied by 0xff to get 0x7f
-  Uint8 b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
-        r = u.r / (double)0xffff * 0xff;
+  Uint8 b = u.b / (f64)0xffff * 0xff, g = u.g / (f64)0xffff * 0xff,
+        r = u.r / (f64)0xffff * 0xff;
   // i seriously need designated inits in c++
   SDL_Color sdl_c;
   sdl_c.r = r;

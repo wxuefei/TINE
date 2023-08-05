@@ -1,21 +1,20 @@
 #include <math.h>
-#include <stdint.h>
 
 #include <SDL2/SDL.h>
 
 #include "sound.h"
 
 static SDL_AudioDeviceID output;
-static uint64_t          sample, freq;
+static u64               sample, freq;
 static SDL_AudioSpec     have;
-static double            vol = .1;
+static f64               vol = .1;
 
 static void AudioCB(void *userdata, Uint8 *out, int len) {
   (void)userdata;
   for (int i = 0; i < len / have.channels; ++i) {
-    double t     = (double)++sample / have.freq;
-    double amp   = -1.0 + 2.0 * roundf(fmod(2.0 * t * freq, 1.0));
-    Sint8  maxed = (amp > 0) ? 127 : -127;
+    f64   t     = (f64)++sample / have.freq;
+    f64   amp   = -1.0 + 2.0 * roundf(fmod(2.0 * t * freq, 1.0));
+    Sint8 maxed = (amp > 0) ? 127 : -127;
     maxed *= vol;
     if (!freq)
       maxed = 0;
@@ -40,15 +39,15 @@ void InitSound(void) {
   SDL_PauseAudioDevice(output, 0);
 }
 
-void SndFreq(uint64_t f) {
+void SndFreq(u64 f) {
   freq = f;
 }
 
-void SetVolume(double v) {
+void SetVolume(f64 v) {
   vol = v;
 }
 
-double GetVolume(void) {
+f64 GetVolume(void) {
   return vol;
 }
 

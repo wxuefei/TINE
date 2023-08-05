@@ -4,12 +4,12 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include "types.h"
 
-void   InitSound(void);
-void   SndFreq(uint64_t);
-double GetVolume(void);
-void   SetVolume(double);
+void InitSound(void);
+void SndFreq(u64);
+f64  GetVolume(void);
+void SetVolume(f64);
 
 #ifdef __cplusplus
 }

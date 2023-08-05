@@ -2,22 +2,21 @@
 
 #include <string>
 
-#include <stddef.h>
-#include <stdint.h>
+#include "types.h"
 
 void        SetClipboard(char const *text);
 std::string ClipboardText();
 void        NewDrawWindow();
-void        DrawWindowUpdate(uint8_t *colors, uintptr_t internal_width);
+void        DrawWindowUpdate(u8 *colors, u64 internal_width);
 void        InputLoop(bool *off);
 
 extern "C" union bgr_48 {
-  uint64_t i;
+  u64 i;
   struct [[gnu::packed]] {
-    uint16_t b, g, r, pad;
+    u16 b, g, r, pad;
   };
 };
-void GrPaletteColorSet(uint64_t, bgr_48);
+void GrPaletteColorSet(u64, bgr_48);
 
 void SetKBCallback(void *fp, void *data);
 void SetMSCallback(void *fp);

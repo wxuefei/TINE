@@ -17,16 +17,14 @@ extern DWORD dwAllocationGranularity;
 #include <array>
 
 #include <ctype.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #include "main.hxx"
 #include "mem.hxx"
 
 #ifdef __linux__
-static inline uint64_t Hex2U64(char const *ptr, char const **res) {
-  uint64_t ret = 0;
-  char     c;
+static inline u64 Hex2U64(char *ptr, char **res) {
+  u64  ret = 0;
+  char c;
   while (isxdigit(c = *ptr)) {
     ret <<= 4;
     ret |= isalpha(c) ? toupper(c) - 'A' + 10 : c - '0';
@@ -37,12 +35,12 @@ static inline uint64_t Hex2U64(char const *ptr, char const **res) {
 }
 #endif
 
-void *NewVirtualChunk(size_t sz, bool low32) {
+void *NewVirtualChunk(usize sz, bool low32) {
 #ifndef _WIN32
   // explanation of (x+y-1)&~(y-1) on the bottom windows code
   // page_size is a power of 2 so this works
-  size_t padded_sz = (sz + page_size - 1) & ~(page_size - 1);
-  void  *ret;
+  usize padded_sz = (sz + page_size - 1) & ~(page_size - 1);
+  void *ret;
   if (low32) { // code heap
     ret = mmap(nullptr, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                MAP_PRIVATE | MAP_ANON | MAP_32BIT, -1, 0);
@@ -56,14 +54,14 @@ void *NewVirtualChunk(size_t sz, bool low32) {
       std::array<char, 0x1000> buf;
       // we make a generous assumption that one line would not exceed
       // 4096 chars, even 0x100 would have done the job
-      char     *buffer  = buf.data();
-      size_t    line_sz = buf.size();
-      uintptr_t down    = 0;
+      char *buffer  = buf.data();
+      usize line_sz = buf.size();
+      uptr  down    = 0;
       FILE *map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
       while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline()
-        char const *ptr   = buffer;
-        uint64_t    lower = Hex2U64(ptr, &ptr);
+        char *ptr   = buffer;
+        u64   lower = Hex2U64(ptr, &ptr);
         // MAP_FIXED wants us to align `down` to the page size
         down = (down + page_size - 1) & ~(page_size - 1);
         // basically finds a gap between the previous line's upper address
@@ -73,9 +71,9 @@ void *NewVirtualChunk(size_t sz, bool low32) {
         // ignore '-'
         // cat /proc/self/maps for an explanation
         ++ptr;
-        uint64_t upper = Hex2U64(ptr, &ptr);
-        down           = upper;
-        line_sz        = buf.size();
+        u64 upper = Hex2U64(ptr, &ptr);
+        down      = upper;
+        line_sz   = buf.size();
       }
     found:
       fclose(map);
@@ -99,11 +97,11 @@ void *NewVirtualChunk(size_t sz, bool low32) {
     // we initialize alloc with the granularity because NULL
     // will fail with VirtualQuery so we need to start
     // from a reasonable small value
-    uintptr_t alloc = dwAllocationGranularity, addr;
+    uptr alloc = dwAllocationGranularity, addr;
     while (alloc <= UINT64_C(0xFFffFFff)) {
       if (0 == VirtualQuery((void *)alloc, &mbi, sizeof mbi))
         return nullptr;
-      alloc = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
+      alloc = (uptr)mbi.BaseAddress + mbi.RegionSize;
       // clang-format off
       //
       // Fancy code to align to round up to the nearest allocation granularity unit
@@ -127,7 +125,7 @@ void *NewVirtualChunk(size_t sz, bool low32) {
       // It'll be the same if it's already aligned
       //
       // clang-format on
-      addr = ((uintptr_t)mbi.BaseAddress + dwAllocationGranularity - 1) &
+      addr = ((uptr)mbi.BaseAddress + dwAllocationGranularity - 1) &
              ~(dwAllocationGranularity - 1);
       if (mbi.State & MEM_FREE && sz <= alloc - addr)
         return VirtualAlloc((void *)addr, sz, MEM_COMMIT | MEM_RESERVE,
@@ -140,11 +138,11 @@ void *NewVirtualChunk(size_t sz, bool low32) {
 #endif
 }
 
-void FreeVirtualChunk(void *ptr, [[maybe_unused]] size_t sz) {
+void FreeVirtualChunk(void *ptr, [[maybe_unused]] usize sz) {
 #ifdef _WIN32
   VirtualFree(ptr, 0, MEM_RELEASE);
 #else
-  size_t padded_sz = (sz + page_size - 1) & ~(page_size - 1);
+  usize padded_sz = (sz + page_size - 1) & ~(page_size - 1);
   munmap(ptr, padded_sz);
 #endif
 }

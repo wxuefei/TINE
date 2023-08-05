@@ -2,13 +2,13 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <inttypes.h>
 #include <signal.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,21 +30,21 @@ namespace {
 // This code is mostly copied from TempleOS
 // and does not look very C++-y
 void LoadOneImport(char **src_, char *mod_base) {
-  char     *src = *src_, *ptr = nullptr, *st_ptr;
-  uintptr_t i     = 0;
-  bool      first = true;
-  uint8_t   etype;
+  char *src = *src_, *ptr = nullptr, *st_ptr;
+  uptr  i     = 0;
+  bool  first = true;
+  u8    etype;
 #define AS(x, T) (*(T *)x) // yuck
   while ((etype = *src++)) {
-    ptr = mod_base + AS(src, uint32_t);
-    src += sizeof(uint32_t);
+    ptr = mod_base + AS(src, u32);
+    src += sizeof(u32);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     // First occurance of a string means
     // "repeat this until another name is found"
     if (*st_ptr) {
       if (!first) {
-        *src_ = st_ptr - sizeof(uint32_t) - 1;
+        *src_ = st_ptr - sizeof(u32) - 1;
         return;
       } else {
         first = false;
@@ -53,13 +53,13 @@ void LoadOneImport(char **src_, char *mod_base) {
           fprintf(stderr, "Unresolved reference %p\n", st_ptr);
           CHash tmpiss;
           tmpiss.type             = HTT_IMPORT_SYS_SYM;
-          tmpiss.mod_header_entry = st_ptr - sizeof(uint32_t) - 1;
+          tmpiss.mod_header_entry = st_ptr - sizeof(u32) - 1;
           tmpiss.mod_base         = mod_base;
           TOSLoader[st_ptr]       = tmpiss;
         } else {
           auto &tmp_sym = it->second;
           if (tmp_sym.type != HTT_IMPORT_SYS_SYM)
-            i = (uintptr_t)tmp_sym.val;
+            i = (uptr)tmp_sym.val;
         }
       }
     }
@@ -67,28 +67,28 @@ void LoadOneImport(char **src_, char *mod_base) {
 #define OFF(T) ((char *)i - ptr - sizeof(T))
     switch (etype) {
     case IET_REL_I8:
-      AS(ptr, int8_t) = OFF(int8_t);
+      AS(ptr, i8) = OFF(i8);
       break;
     case IET_IMM_U8:
-      AS(ptr, uint8_t) = i;
+      AS(ptr, u8) = i;
       break;
     case IET_REL_I16:
-      AS(ptr, int16_t) = OFF(int16_t);
+      AS(ptr, i16) = OFF(i16);
       break;
     case IET_IMM_U16:
-      AS(ptr, uint16_t) = i;
+      AS(ptr, u16) = i;
       break;
     case IET_REL_I32:
-      AS(ptr, int32_t) = OFF(int32_t);
+      AS(ptr, i32) = OFF(i32);
       break;
     case IET_IMM_U32:
-      AS(ptr, uint32_t) = i;
+      AS(ptr, u32) = i;
       break;
     case IET_REL_I64:
-      AS(ptr, int64_t) = OFF(int64_t);
+      AS(ptr, i64) = OFF(i64);
       break;
     case IET_IMM_I64:
-      AS(ptr, int64_t) = (int64_t)i;
+      AS(ptr, i64) = (i64)i;
       break;
     }
 #undef OFF
@@ -108,14 +108,14 @@ void SysSymImportsResolve(char *st_ptr) {
 }
 
 void LoadPass1(char *src, char *mod_base) {
-  char     *ptr, *st_ptr;
-  uintptr_t i;
-  size_t    cnt;
-  uint8_t   etype;
-  CHash     tmpex;
+  char *ptr, *st_ptr;
+  uptr  i;
+  usize cnt;
+  u8    etype;
+  CHash tmpex;
   while ((etype = *src++)) {
-    i = AS(src, uint32_t);
-    src += sizeof(uint32_t);
+    i = AS(src, u32);
+    src += sizeof(u32);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
@@ -124,9 +124,9 @@ void LoadPass1(char *src, char *mod_base) {
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
       tmpex.type = HTT_EXPORT_SYS_SYM;
-      tmpex.val  = (uint8_t *)i;
+      tmpex.val  = (u8 *)i;
       if (etype != IET_IMM32_EXPORT && etype != IET_IMM64_EXPORT)
-        tmpex.val += (ptrdiff_t)mod_base;
+        tmpex.val += (uptr)mod_base;
       TOSLoader[st_ptr] = tmpex;
       SysSymImportsResolve(st_ptr);
       break;
@@ -146,10 +146,10 @@ void LoadPass1(char *src, char *mod_base) {
     // 32bit addrs
     case IET_ABS_ADDR: {
       cnt = i;
-      for (size_t j = 0; j < cnt; j++) {
-        ptr = mod_base + AS(src, uint32_t);
-        src += sizeof(uint32_t);
-        AS(ptr, uint32_t) += (uintptr_t)mod_base;
+      for (usize j = 0; j < cnt; j++) {
+        ptr = mod_base + AS(src, u32);
+        src += sizeof(u32);
+        AS(ptr, u32) += (uptr)mod_base;
       }
     } break;
       // the other ones wont be used
@@ -159,28 +159,30 @@ void LoadPass1(char *src, char *mod_base) {
 }
 
 void LoadPass2(char *src, char *mod_base) {
-  char    *st_ptr;
-  uint32_t i;
-  uint8_t  etype;
+  char *st_ptr;
+  u32   i;
+  u8    etype;
   while ((etype = *src++)) {
-    i = AS(src, uint32_t);
-    src += sizeof(uint32_t);
+    i = AS(src, u32);
+    src += sizeof(u32);
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_MAIN:
+      // we use ZERO_BP here for it to not climb
+      // up the C++ stack
       FFI_CALL_TOS_0_ZERO_BP(mod_base + i);
       break;
     case IET_ABS_ADDR:
-      src += sizeof(uint32_t) * i;
+      src += sizeof(u32) * i;
       break;
     case IET_CODE_HEAP:
     case IET_ZEROED_CODE_HEAP:
-      src += 4 + sizeof(uint32_t) * i;
+      src += 4 + sizeof(u32) * i;
       break;
     case IET_DATA_HEAP:
     case IET_ZEROED_DATA_HEAP:
-      src += 8 + sizeof(uint32_t) * i;
+      src += 8 + sizeof(u32) * i;
       break;
     }
   }
@@ -189,15 +191,15 @@ void LoadPass2(char *src, char *mod_base) {
 #undef AS
 
 extern "C" struct [[gnu::packed]] CBinFile {
-  uint16_t jmp;
-  uint8_t  mod_align_bits, pad;
+  u16 jmp;
+  u8  mod_align_bits, pad;
   union {
-    char     bin_signature[4];
-    uint32_t sig;
+    char bin_signature[4];
+    u32  sig;
   };
-  int64_t org, patch_table_offset, file_size;
-  char    data[]; // FAMs are technically illegal in
-                  // standard c++ but whatever
+  i64  org, patch_table_offset, file_size;
+  char data[]; // FAMs are technically illegal in
+               // standard c++ but whatever
 };
 
 } // namespace
@@ -208,8 +210,14 @@ void LoadHCRT(std::string const &name) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
-  char *bfh_addr;
-  auto  sz = fs::file_size(name);
+  char           *bfh_addr;
+  std::error_code e;
+  auto            sz = fs::file_size(name, e);
+  if (e) {
+    fprintf(stderr, "CANNOT DETERMINE SIZE OF FILE, ERROR MESSAGE: %s\n",
+            e.message().c_str());
+    exit(1);
+  }
   fread(bfh_addr = VirtAlloc<char>(sz), 1, sz, f);
   fclose(f);
   // I think this breaks strict aliasing but
@@ -231,7 +239,7 @@ void LoadHCRT(std::string const &name) {
 
 void BackTrace() {
   std::string                     last;
-  static size_t                   sz = 0;
+  static usize                    sz = 0;
   static std::vector<std::string> sorted;
   static bool                     init = false;
   if (!init) {
@@ -252,7 +260,7 @@ void BackTrace() {
   while (rbp) {
     oldp = nullptr;
     last = "UNKOWN";
-    size_t idx;
+    usize idx;
     for (idx = 0; idx < sz; idx++) {
       void *curp = TOSLoader[sorted[idx]].val;
       if (curp == ptr) {
@@ -283,7 +291,7 @@ void BackTrace() {
 // (lldb) p (char*)WhichFun($pc)
 [[gnu::used, gnu::visibility("default")]] char *WhichFun(void *ptr) {
   std::string                     last;
-  static size_t                   sz = 0;
+  static usize                    sz = 0;
   static std::vector<std::string> sorted;
   static bool                     init = false;
   if (!init) {
@@ -295,7 +303,7 @@ void BackTrace() {
     });
     init = true;
   }
-  for (size_t idx = 0; idx < sz; idx++) {
+  for (usize idx = 0; idx < sz; idx++) {
     void *curp = TOSLoader[sorted[idx]].val;
     if (curp == ptr) {
       fprintf(stderr, "%s\n", sorted[idx].c_str());

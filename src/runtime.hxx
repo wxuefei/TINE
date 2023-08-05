@@ -1,13 +1,15 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include <string_view>
 
-void    *HolyMAlloc(size_t sz);
-void    *HolyCAlloc(size_t sz);
-void     HolyFree(void *p);
-char    *HolyStrDup(char const *s);
-void     RegisterFuncPtrs();
-uint64_t mp_cnt(void *);
+#include "types.h"
+
+void             *HolyMAlloc(usize sz);
+void             *HolyCAlloc(usize sz);
+void              HolyFree(void *p);
+[[noreturn]] void HolyThrow(std::string_view sv = {});
+char             *HolyStrDup(char const *s);
+void              BootstrapLoader();
+u64               mp_cnt(void *);
 
 // vim: set expandtab ts=2 sw=2 :

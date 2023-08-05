@@ -1,5 +1,6 @@
 // clang-format off
 // Windows requires sys/stat to be included after sys/types
+// fuck bill gates
 #include <sys/types.h>
 #include <sys/stat.h>
 // clang-format on
@@ -7,10 +8,10 @@
 #include <array>
 #include <filesystem>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include <ctype.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -31,14 +32,18 @@ using std::ios;
 namespace {
 
 thread_local std::string thrd_pwd;
-thread_local uint8_t     thrd_drv;
+thread_local u8          thrd_drv;
 
 inline bool FExists(std::string const &path) {
-  return fs::exists(path);
+  std::error_code e;
+  bool            ret = fs::exists(path, e);
+  return e ? false : ret;
 }
 
 inline bool FIsDir(std::string const &path) {
-  return fs::is_directory(path);
+  std::error_code e;
+  bool            ret = fs::is_directory(path, e);
+  return e ? false : ret;
 }
 
 std::array<std::string, 'z' - 'a' + 1> mount_points;
@@ -50,13 +55,13 @@ void VFsThrdInit() {
   thrd_drv = 'T';
 }
 
-void VFsSetDrv(uint8_t d) {
+void VFsSetDrv(u8 d) {
   if (!isalpha(d))
     return;
   thrd_drv = toupper(d);
 }
 
-uint8_t VFsGetDrv() {
+u8 VFsGetDrv() {
   return thrd_drv;
 }
 
@@ -80,27 +85,26 @@ std::string VFsFileNameAbs(char const *name) {
   return ret;
 }
 
-bool VFsDirMk(char const *to, int const flags) {
+bool VFsDirMk(char const *to) {
   std::string p = VFsFileNameAbs(to);
   if (FExists(p) && FIsDir(p)) {
     return true;
-  } else if (flags & VFS_CDF_MAKE) {
-    fs::create_directory(p);
-    return true;
   }
-  return false;
+  std::error_code e;
+  fs::create_directory(p, e);
+  return !e;
 }
 
-uint64_t VFsDel(char const *p) {
+bool VFsDel(char const *p) {
   std::string path = VFsFileNameAbs(p);
-  bool        e    = FExists(path);
-  if (!e)
-    return 0;
-  fs::remove_all(path);
-  return 1;
+  if (!FExists(path))
+    return false;
+  std::error_code e;
+  fs::remove_all(path, e);
+  return !e;
 }
 
-int64_t VFsFSize(char const *name) {
+i64 VFsFSize(char const *name) {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn)) {
     return -1;
@@ -108,10 +112,19 @@ int64_t VFsFSize(char const *name) {
     fs::directory_iterator it{fn};
     return std::distance(fs::begin(it), fs::end(it));
   }
-  return fs::file_size(fn);
+  std::error_code e;
+  auto            sz = fs::file_size(fn, e);
+  return e ? -1 : sz;
 }
 
-uint64_t VFsUnixTime(char const *name) {
+void VFsFTrunc(char const *name, usize sz) {
+  std::error_code e;
+  fs::resize_file(VFsFileNameAbs(name), sz, e);
+  if (e)
+    HolyThrow("SysError");
+}
+
+u64 VFsUnixTime(char const *name) {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn))
     return 0;
@@ -120,7 +133,7 @@ uint64_t VFsUnixTime(char const *name) {
   return s.st_mtime;
 }
 
-uint64_t VFsFileWrite(char const *name, char const *data, size_t len) {
+bool VFsFileWrite(char const *name, char const *data, usize len) {
   std::string p = VFsFileNameAbs(name);
   if (name) {
     FILE *fp = fopen(p.c_str(), "wb");
@@ -132,7 +145,7 @@ uint64_t VFsFileWrite(char const *name, char const *data, size_t len) {
   return !!name;
 }
 
-void *VFsFileRead(char const *name, uint64_t *len_ptr) {
+void *VFsFileRead(char const *name, u64 *len_ptr) {
   if (len_ptr)
     *len_ptr = 0;
   if (!name)
@@ -146,10 +159,15 @@ void *VFsFileRead(char const *name, uint64_t *len_ptr) {
   FILE *fp   = fopen(p.c_str(), "rb");
   if (fp == nullptr)
     return nullptr;
-  size_t sz = fs::file_size(p);
+  std::error_code e;
+  usize           sz = fs::file_size(p, e);
+  if (e) {
+    fclose(fp);
+    return nullptr;
+  }
   fread(data = HolyAlloc<char, true>(sz + 1), 1, sz, fp);
   fclose(fp);
-  if (len_ptr != nullptr)
+  if (len_ptr)
     *len_ptr = sz;
   return data;
 }

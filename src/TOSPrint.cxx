@@ -38,12 +38,12 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
     if (isalnum(*str) == 0 &&
         strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == nullptr) {
       // Note: this was giving me bizarre buffer overflow
-      // errors and it turns out you MUST use uint8_t when
+      // errors and it turns out you MUST use u8 when
       // printing a 8 bit wide octal value to get the correct digits
       // probably it's typical GNU bullshittery or there's something
       // deep inside the Standard that I'm missing, either way, this works
       char buf[5];
-      snprintf(buf, sizeof buf, "\\%" PRIo8, static_cast<uint8_t>(*str));
+      snprintf(buf, sizeof buf, "\\%" PRIo8, static_cast<u8>(*str));
       memcpy(where, buf, 4);
       where += 4;
       ++str;
@@ -56,14 +56,14 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
   return where;
 }
 
-std::string MStrPrint(char const *fmt, uint64_t, int64_t *argv) {
+std::string MStrPrint(char const *fmt, u64, i64 *argv) {
   // this does not compare argument count(argc)
   // with StrOcc(fmt, '%'), be careful i guess
   // it also isn't a fully featured one but should
   // account for most use cases
   char const *start = fmt, *end;
   std::string ret;
-  int64_t     arg = -1;
+  i64         arg = -1;
 loop:
   ++arg;
   end = strchr(start, '%');
@@ -78,7 +78,7 @@ loop:
   /* this skips output format specifiers
    * because i dont think a debug printer
    * needs such a thing */
-  // int64_t width = 0, decimals = 0;
+  // i64 width = 0, decimals = 0;
   while (isdigit(*start)) {
     // width *= 10;
     // width += *start - '0';
@@ -93,7 +93,7 @@ loop:
   }
   while (strchr("t,$/", *start) != nullptr)
     ++start;
-  int64_t aux = 1;
+  i64 aux = 1;
   if (*start == '*') {
     aux = argv[arg++];
     ++start;
@@ -104,37 +104,37 @@ loop:
       ++start;
     }
   }
-#define FMT_CH(x, T)                                            \
-  do {                                                          \
-    size_t sz  = snprintf(nullptr, 0, "%" x, ((T *)argv)[arg]); \
-    char  *tmp = new (std::nothrow) char[sz + 1];               \
-    snprintf(tmp, sz + 1, "%" x, ((T *)argv)[arg]);             \
-    ret += tmp;                                                 \
-    delete[] tmp;                                               \
+#define FMT_CH(x, T)                                           \
+  do {                                                         \
+    usize sz  = snprintf(nullptr, 0, "%" x, ((T *)argv)[arg]); \
+    char *tmp = new (std::nothrow) char[sz + 1];               \
+    snprintf(tmp, sz + 1, "%" x, ((T *)argv)[arg]);            \
+    ret += tmp;                                                \
+    delete[] tmp;                                              \
   } while (false);
   switch (*start) {
   case 'd':
   case 'i':
-    FMT_CH(PRId64, int64_t);
+    FMT_CH(PRId64, i64);
     break;
   case 'u':
-    FMT_CH(PRIu64, uint64_t);
+    FMT_CH(PRIu64, u64);
     break;
   case 'o':
-    FMT_CH(PRIo64, uint64_t);
+    FMT_CH(PRIo64, u64);
     break;
   case 'n':
-    FMT_CH("f", double);
+    FMT_CH("f", f64);
     break;
   case 'p':
     FMT_CH("p", void *);
     break;
   case 'c': {
     while (--aux >= 0) {
-      auto chr = ((uint64_t *)argv)[arg];
+      auto chr = ((u64 *)argv)[arg];
       // this accounts for HolyC's multichar character literals too
       while (chr > 0) {
-        uint8_t c = chr & 0xff;
+        u8 c = chr & 0xff;
         chr >>= 8;
         if (c > 0)
           ret += static_cast<char>(c);
@@ -162,7 +162,7 @@ loop:
 }
 } // namespace
 
-void TOSPrint(char const *fmt, uint64_t argc, int64_t *argv) {
+void TOSPrint(char const *fmt, u64 argc, i64 *argv) {
   auto s = MStrPrint(fmt, argc, argv);
   fputs(s.c_str(), stderr);
   fflush(stderr);

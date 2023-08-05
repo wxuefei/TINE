@@ -3,12 +3,12 @@
 #include <string>
 #include <unordered_map>
 
-#include <stdint.h>
+#include "types.h"
 
 extern "C" struct CHash {
-  uint64_t type;
+  u64 type;
   union {
-    uint8_t *val;
+    u8 *val;
     struct {
       char *mod_header_entry, *mod_base;
     };
@@ -16,6 +16,9 @@ extern "C" struct CHash {
 };
 
 extern std::unordered_map<std::string, CHash> TOSLoader;
+
+void BackTrace();
+void LoadHCRT(std::string const &);
 
 // clang-format off
 // copied from TempleOS, DO NOT TOUCH
@@ -66,8 +69,4 @@ extern std::unordered_map<std::string, CHash> TOSLoader;
 #define IET_MAIN              25
 
 // clang-format on
-
-void BackTrace();
-void LoadHCRT(std::string const &);
-
 // vim: set expandtab ts=2 sw=2 :

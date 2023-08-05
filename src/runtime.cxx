@@ -9,13 +9,9 @@
 #endif
 
 #include <chrono>
-#include <filesystem>
-#include <numeric>
-#include <string>
+#include <initializer_list>
 #include <string_view>
-#include <vector>
 
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,18 +35,18 @@ void HolyFree(void *ptr) {
   static void *fptr = nullptr;
   if (!fptr)
     fptr = TOSLoader["_FREE"].val;
-  FFI_CALL_TOS_1(fptr, (uintptr_t)ptr);
+  FFI_CALL_TOS_1(fptr, (uptr)ptr);
 }
 
-void *HolyMAlloc(size_t sz) {
+void *HolyMAlloc(usize sz) {
   static void *fptr = nullptr;
   if (!fptr)
     fptr = TOSLoader["_MALLOC"].val;
   return (void *)FFI_CALL_TOS_2(fptr, sz, 0 /*NULL*/);
 }
 
-void *HolyCAlloc(size_t sz) {
-  auto ret = HolyAlloc<uint8_t>(sz);
+void *HolyCAlloc(usize sz) {
+  auto ret = HolyAlloc<u8>(sz);
   std::fill(ret, ret + sz, 0);
   return ret;
 }
@@ -59,33 +55,32 @@ char *HolyStrDup(char const *str) {
   return strcpy(HolyAlloc<char>(strlen(str) + 1), str);
 }
 
-size_t mp_cnt(void *) {
+usize mp_cnt(void *) {
   return proc_cnt;
 }
 
-[[noreturn]] void HolyThrow(std::string_view sv = {}) {
+[[noreturn]] void HolyThrow(std::string_view sv) {
   union {
-    char     s[8]{}; // zero-init
-    uint64_t i;
+    char s[8]{}; // zero-init
+    u64  i;
   } u;
   static void *fp;
   if (!fp)
     fp = TOSLoader["throw"].val;
-  memcpy(u.s, sv.data(), std::min<size_t>(sv.size(), 8));
+  memcpy(u.s, sv.data(), std::min<usize>(sv.size(), 8));
   FFI_CALL_TOS_1(fp, u.i);
   __builtin_unreachable();
 }
 
 namespace { // ffi shit goes here
 
-namespace fs     = std::filesystem;
 namespace chrono = std::chrono;
 
 using chrono::system_clock;
 
 namespace tine {
-uint64_t constexpr Hash(std::string_view sv) { // fnv64-1a
-  uint64_t h = 0xCBF29CE484222325;
+u64 constexpr Hash(std::string_view sv) { // fnv64-1a
+  u64 h = 0xCBF29CE484222325;
   for (char c : sv) {
     h *= 0x100000001B3;
     h ^= c;
@@ -115,15 +110,15 @@ void *STK_DyadNewStream(void *) {
   return dyad_newStream();
 }
 
-int64_t STK_DyadListen(intptr_t *stk) {
+i64 STK_DyadListen(iptr *stk) {
   return dyad_listen((dyad_Stream *)stk[0], (int)stk[1]);
 }
 
-int64_t STK_DyadConnect(intptr_t *stk) {
+i64 STK_DyadConnect(iptr *stk) {
   return dyad_connect((dyad_Stream *)stk[0], (char *)stk[1], (int)stk[2]);
 }
 
-void STK_DyadWrite(intptr_t *stk) {
+void STK_DyadWrite(iptr *stk) {
   dyad_write((dyad_Stream *)stk[0], (void *)stk[1], (int)stk[2]);
 }
 
@@ -139,7 +134,7 @@ char *STK_DyadGetAddress(dyad_Stream **stk) {
   return HolyStrDup(dyad_getAddress(stk[0]));
 }
 
-int64_t STK__DyadGetCallbackMode(char **stk) {
+i64 STK__DyadGetCallbackMode(char **stk) {
   // i thought of using streamprint but then
   // the variadic calling thing gets too complicated
   switch (tine::Hash(stk[0])) {
@@ -163,29 +158,26 @@ int64_t STK__DyadGetCallbackMode(char **stk) {
 }
 
 void STK_DyadSetReadCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+  dyad_addListener((dyad_Stream *)stk[0], (iptr)stk[1],
                    [](dyad_Event *e) {
-                     FFI_CALL_TOS_4(e->udata, (uintptr_t)e->stream,
-                                    (uintptr_t)e->data, e->size,
-                                    (uintptr_t)e->udata2);
+                     FFI_CALL_TOS_4(e->udata, (uptr)e->stream, (uptr)e->data,
+                                    e->size, (uptr)e->udata2);
                    },
                    stk[2], stk[3]);
 }
 
 void STK_DyadSetCloseCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+  dyad_addListener((dyad_Stream *)stk[0], (iptr)stk[1],
                    [](dyad_Event *e) {
-                     FFI_CALL_TOS_2(e->udata, (uintptr_t)e->stream,
-                                    (uintptr_t)e->udata2);
+                     FFI_CALL_TOS_2(e->udata, (uptr)e->stream, (uptr)e->udata2);
                    },
                    stk[2], stk[3]);
 }
 
 void STK_DyadSetListenCallback(void **stk) {
-  dyad_addListener((dyad_Stream *)stk[0], (intptr_t)stk[1],
+  dyad_addListener((dyad_Stream *)stk[0], (iptr)stk[1],
                    [](dyad_Event *e) {
-                     FFI_CALL_TOS_2(e->udata, (uintptr_t)e->remote,
-                                    (uintptr_t)e->udata2);
+                     FFI_CALL_TOS_2(e->udata, (uptr)e->remote, (uptr)e->udata2);
                    },
                    stk[2], stk[3]);
 }
@@ -194,11 +186,11 @@ void STK_DyadSetListenCallback(void **stk) {
 // close callbacks -> DYAD_EVENT_{DESTROY,ERROR,CLOSE}
 // listen callbacks -> DYAD_EVENT_{TIMEOUT,CONNECT,READY,TICK,ACCEPT}
 
-void STK_DyadSetTimeout(uintptr_t *stk) {
-  dyad_setTimeout((dyad_Stream *)stk[0], ((double *)stk)[1]);
+void STK_DyadSetTimeout(uptr *stk) {
+  dyad_setTimeout((dyad_Stream *)stk[0], ((f64 *)stk)[1]);
 }
 
-void STK_DyadSetNoDelay(intptr_t *stk) {
+void STK_DyadSetNoDelay(iptr *stk) {
   dyad_setNoDelay((dyad_Stream *)stk[0], (int)stk[1]);
 }
 
@@ -210,11 +202,11 @@ void STK_UnblockSignals(void *) {
 #endif
 }
 
-void STK__GrPaletteColorSet(uint64_t *stk) {
+void STK__GrPaletteColorSet(u64 *stk) {
   GrPaletteColorSet(stk[0], {stk[1]});
 }
 
-uint64_t STK___IsValidPtr(uintptr_t *stk) {
+u64 STK___IsValidPtr(uptr *stk) {
 #ifdef _WIN32
   // Wine doesnt like the
   // IsBadReadPtr,so use a polyfill
@@ -236,56 +228,56 @@ uint64_t STK___IsValidPtr(uintptr_t *stk) {
   #endif*/
 
 #else
-  // round down to page boundary (equiv to stk[0] / page_size * page_size)
-  //   0b100101010 (x)
-  // & 0b111110000 <- ~(0b10000 - 1)
-  // --------------
-  //   0b100100000
-  uintptr_t addr = stk[0] & ~(page_size - 1);
+  /* round down to page boundary (equiv to stk[0] / page_size * page_size)
+   *   0b100101010 (x)
+   * & 0b111110000 <- ~(0b10000 - 1)
+   * --------------
+   *   0b100100000
+   */
   // https://archive.md/Aj0S4
-  return -1 != msync((void *)addr, page_size, MS_ASYNC);
+  return -1 != msync((void *)(stk[0] & ~(page_size - 1)), page_size, MS_ASYNC);
 
 #endif
 }
 
-void STK_InterruptCore(size_t *stk) {
+void STK_InterruptCore(usize *stk) {
   InterruptCore(stk[0]);
 }
 
 void STK___BootstrapForeachSymbol(void **stk) {
   for (auto &[name, sym] : TOSLoader)
-    FFI_CALL_TOS_3(stk[0], (uintptr_t)name.c_str(), (uintptr_t)sym.val,
+    FFI_CALL_TOS_3(stk[0], (uptr)name.c_str(), (uptr)sym.val,
                    sym.type == HTT_EXPORT_SYS_SYM ? HTT_FUN : sym.type);
 }
 
-void STK_TOSPrint(intptr_t *stk) {
+void STK_TOSPrint(iptr *stk) {
   TOSPrint((char *)stk[0], stk[1], stk + 2);
 }
 
-void STK_DrawWindowUpdate(uintptr_t *stk) {
-  DrawWindowUpdate((uint8_t *)stk[0], stk[1]);
+void STK_DrawWindowUpdate(uptr *stk) {
+  DrawWindowUpdate((u8 *)stk[0], stk[1]);
 }
 
-uint64_t STK___GetTicksHP(void *) {
+u64 STK___GetTicksHP(void *) {
 #ifndef _WIN32
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  uint64_t tick = ts.tv_nsec / 1000u;
+  u64 tick = ts.tv_nsec / 1000u;
   tick += ts.tv_sec * 1000000u;
   return tick;
 #else
-  static uint64_t freq = 0;
+  static u64 freq = 0;
   if (!freq) {
     QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
     freq /= 1000000U;
   }
-  uint64_t cur;
+  u64 cur;
   QueryPerformanceCounter((LARGE_INTEGER *)&cur);
   return cur / freq;
 #endif
 }
 
-uint64_t STK___GetTicks(void *) {
+u64 STK___GetTicks(void *) {
   return GetTicks();
 }
 
@@ -297,15 +289,15 @@ void STK_SetMSCallback(void **stk) {
   SetMSCallback(stk[0]);
 }
 
-void STK___AwakeCore(size_t *stk) {
+void STK___AwakeCore(usize *stk) {
   AwakeFromSleeping(stk[0]);
 }
 
-void STK___SleepHP(uint64_t *stk) {
+void STK___SleepHP(u64 *stk) {
   SleepHP(stk[0]);
 }
 
-void STK___Sleep(uint64_t *stk) {
+void STK___Sleep(u64 *stk) {
   SleepHP(stk[0] * 1000);
 }
 
@@ -317,7 +309,7 @@ void STK_SetGs(void **stk) {
   SetGs(stk[0]);
 }
 
-void STK_SndFreq(uint64_t *stk) {
+void STK_SndFreq(u64 *stk) {
   SndFreq(stk[0]);
 }
 
@@ -340,31 +332,27 @@ char *STK_GetClipboardText(void *) {
   return HolyStrDup(clip.c_str());
 }
 
-uint64_t STK_FUnixTime(char **stk) {
+u64 STK_FUnixTime(char **stk) {
   return VFsUnixTime(stk[0]);
 }
 
-void STK_VFsFTrunc(uintptr_t *stk) {
-  fs::resize_file(VFsFileNameAbs((char *)stk[0]), stk[1]);
-}
-
-uint64_t STK___FExists(char **stk) {
+u64 STK___FExists(char **stk) {
   return VFsFileExists(stk[0]);
 }
 
-uint64_t STK_UnixNow(void *) {
+u64 STK_UnixNow(void *) {
   return system_clock::to_time_t(system_clock::now());
 }
 
-void STK___SpawnCore(uintptr_t *stk) {
+void STK___SpawnCore(uptr *stk) {
   CreateCore(stk[0], (void *)stk[1]);
 }
 
-void *STK_NewVirtualChunk(size_t *stk) {
+void *STK_NewVirtualChunk(usize *stk) {
   return NewVirtualChunk(stk[0], stk[1]);
 }
 
-void STK_FreeVirtualChunk(uintptr_t *stk) {
+void STK_FreeVirtualChunk(uptr *stk) {
   FreeVirtualChunk((void *)stk[0], stk[1]);
 }
 
@@ -372,35 +360,39 @@ void STK_VFsSetPwd(char **stk) {
   VFsSetPwd(stk[0]);
 }
 
-uint64_t STK_VFsExists(char **stk) {
+u64 STK_VFsExists(char **stk) {
   return VFsFileExists(stk[0]);
 }
 
-uint64_t STK_VFsIsDir(char **stk) {
+u64 STK_VFsIsDir(char **stk) {
   return VFsIsDir(stk[0]);
 }
 
-int64_t STK_VFsFSize(char **stk) {
+i64 STK_VFsFSize(char **stk) {
   return VFsFSize(stk[0]);
 }
 
+void STK_VFsFTrunc(uptr *stk) {
+  VFsFTrunc((char *)stk[0], stk[1]);
+}
+
 void *STK_VFsFRead(char **stk) {
-  return VFsFileRead(stk[0], (uint64_t *)stk[1]);
+  return VFsFileRead(stk[0], (u64 *)stk[1]);
 }
 
-uint64_t STK_VFsFWrite(char **stk) {
-  return VFsFileWrite(stk[0], stk[1], (uintptr_t)stk[2]);
+u64 STK_VFsFWrite(char **stk) {
+  return VFsFileWrite(stk[0], stk[1], (uptr)stk[2]);
 }
 
-uint64_t STK_VFsDirMk(char **stk) {
-  return VFsDirMk(stk[0], VFS_CDF_MAKE);
+u64 STK_VFsDirMk(char **stk) {
+  return VFsDirMk(stk[0]);
 }
 
 char **STK_VFsDir(void *) {
   return VFsDir();
 }
 
-uint64_t STK_VFsDel(char **stk) {
+u64 STK_VFsDel(char **stk) {
   return VFsDel(stk[0]);
 }
 
@@ -421,41 +413,41 @@ void STK_VFsFClose(FILE **stk) {
   fclose(stk[0]);
 }
 
-uint64_t STK_VFsFBlkRead(uintptr_t *stk) {
+u64 STK_VFsFBlkRead(uptr *stk) {
   fflush((FILE *)stk[3]);
   return stk[2] == fread((void *)stk[0], stk[1], stk[2], (FILE *)stk[3]);
 }
 
-uint64_t STK_VFsFBlkWrite(uintptr_t *stk) {
+u64 STK_VFsFBlkWrite(uptr *stk) {
   bool r = stk[2] == fwrite((void *)stk[0], stk[1], stk[2], (FILE *)stk[3]);
   fflush((FILE *)stk[3]);
   return r;
 }
 
-void STK_VFsFSeek(uintptr_t *stk) {
+void STK_VFsFSeek(uptr *stk) {
   fseek((FILE *)stk[1], stk[0], SEEK_SET);
 }
 
-void STK_VFsSetDrv(uint8_t *stk) {
+void STK_VFsSetDrv(u8 *stk) {
   VFsSetDrv(stk[0]);
 }
 
-uint64_t STK_VFsGetDrv(void *) {
-  return (uint64_t)VFsGetDrv();
+u64 STK_VFsGetDrv(void *) {
+  return (u64)VFsGetDrv();
 }
 
-void STK_SetVolume(uint64_t *stk) {
+void STK_SetVolume(u64 *stk) {
   union {
-    uint64_t i;
-    double   flt;
+    u64 i;
+    f64 flt;
   } un = {stk[0]};
   SetVolume(un.flt);
 }
 
-uint64_t STK_GetVolume(void *) {
+u64 STK_GetVolume(void *) {
   union {
-    double   flt;
-    uint64_t i;
+    f64 flt;
+    u64 i;
   } un = {GetVolume()};
   return un.i;
 }
@@ -464,23 +456,22 @@ void STK_ExitTINE(int *stk) {
   ShutdownTINE(stk[0]);
 }
 
-uint64_t STK___IsCmdLine(void *) {
-  return (uint64_t)is_cmd_line;
+u64 STK___IsCmdLine(void *) {
+  return (u64)is_cmd_line;
 }
 
-// arity must be <= 0xffFF/sizeof U64
-void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
-                         uintptr_t fp, uint16_t arity) {
-  // Function entry point offset from the code blob
-  uintptr_t off = std::accumulate(v.begin(), v.end(), 0,
-                                  [](size_t i, std::string const &s) {
-                                    return s.size() + i;
-                                  });
+struct HolyFunc {
+  std::string_view m_name;
+  uptr             m_fp;
+  u16              m_arity; // arity must be <= 0xffFF/sizeof U64
+};
+
+void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // clang-format off
   // I used https://defuse.ca/online-x86-assembler.htm
   // boring register pushing and stack alignment bullshit
   // read the SysV/Win64 ABIs and Doc/GuideLines.DD if interested
-  char inst[] =
+  u8 constexpr inst[] =
   /*
    * 0x0:  55                      push   rbp
    * 0x1:  48 89 e5                mov    rbp,rsp
@@ -573,25 +564,38 @@ void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
         "\xC9"
         "\xC2" "\x11\x22"; // 0x2211 is a placeholder
   // clang-format on
-  size_t constexpr inst_len =
+  usize constexpr inst_len =
 #ifndef _WIN32
       0x16 + 0x4 + 0xc + 0x12;
 #else
       0x16 + 0xa + 0xc + 0x4 + 0x12;
 #endif
-  size_t constexpr fp_off =
+  usize constexpr fp_off =
 #ifndef _WIN32
       0x16 + 0x4 + 0x2;
 #else
       0x16 + 0xa + 0x2;
 #endif
-  size_t constexpr arity_off = inst_len - 2;
-  memcpy(inst + fp_off, &fp, sizeof(uint64_t));
-  arity *= sizeof(uint64_t); // all args are u64 in HolyC
-  memcpy(inst + arity_off, &arity, sizeof(uint16_t) /* ret imm16 */);
-  std::string blob{inst, inst_len};
+  usize constexpr arity_off = inst_len - 2;
+
+  auto blob = VirtAlloc<u8>(inst_len * ffi_list.size());
+  for (usize i = 0; i < ffi_list.size(); ++i) {
+    memcpy(blob + i * inst_len, inst, inst_len);
+  }
+  {
+    usize i = 0;
+    for (HolyFunc hf : ffi_list) {
+      usize off = i++ * inst_len;
+      // for the 0x8877... placeholder
+      memcpy(blob + off + fp_off, &hf.m_fp, sizeof(uptr));
+      // for the 0x2211 placeholder
+      hf.m_arity *= sizeof(u64); // all args are u64 in HolyC
+      memcpy(blob + off + arity_off, &hf.m_arity, sizeof(u16) /* ret imm16 */);
+      TOSLoader.emplace(hf.m_name, CHash{HTT_FUN, {blob + off}});
+    }
+  }
   // clang-format off
-  // ret <arity*8>; (8 == sizeof(uint64_t))
+  // ret <arity*8>; (8 == sizeof(u64))
   // HolyC ABI is __stdcall, the callee cleans up its own stack
   // unless its variadic so we pop the stack with ret
   //
@@ -604,112 +608,93 @@ void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
   //   argc 3(num of varargs) // RBP + 24 <-value- argc(internal var in function)
   //   i    2    // RBP + 16(this is where the stack starts)
   // clang-format on
-  CHash sym;
-  sym.type        = HTT_FUN;
-  sym.val         = (uint8_t *)off;
-  TOSLoader[name] = sym;
-  v.emplace_back(std::move(blob));
 }
 
 } // namespace
 
-void RegisterFuncPtrs() {
-  std::vector<std::string> v; // vector of ffi'd function bodies
-#define R(holy, secular, arity) \
-  RegisterFunctionPtr(v, holy, (uintptr_t)secular, arity)
-#define S(name, arity) \
-  RegisterFunctionPtr(v, #name, (uintptr_t)STK_##name, arity)
-  R("__CmdLineBootText", CmdLineBootText, 0);
-  R("mp_cnt", mp_cnt, 0);
-  R("__CoreNum", CoreNum, 0);
-  R("GetFs", GetFs, 0);
-  R("GetGs", GetGs, 0);
-  S(__IsCmdLine, 0);
-  S(__IsValidPtr, 1);
-  S(__SpawnCore, 0);
-  S(UnixNow, 0);
-  S(InterruptCore, 1);
-  S(NewVirtualChunk, 2);
-  S(FreeVirtualChunk, 2);
-  S(ExitTINE, 1);
-  S(__GetStr, 1);
-  S(__FExists, 1);
-  S(FUnixTime, 1);
-  S(SetClipboardText, 1);
-  S(GetClipboardText, 0);
-  S(SndFreq, 1);
-  S(__Sleep, 1);
-  S(__SleepHP, 1);
-  S(__AwakeCore, 1);
-  S(SetFs, 1);
-  S(SetGs, 1);
-  S(SetKBCallback, 2);
-  S(SetMSCallback, 1);
-  S(__GetTicks, 0);
-  S(__BootstrapForeachSymbol, 1);
-  S(DrawWindowUpdate, 2);
-  S(UnblockSignals, 0);
-  /*
-   * In TempleOS variadics, functions follow __cdecl, whereas normally
-   * they follow __stdcall which is why the arity argument is needed(RET1 x).
-   * Thus we don't have to clean up the stack in variadics.
-   */
-  S(TOSPrint, 0);
-  S(DyadInit, 0);
-  S(DyadUpdate, 0);
-  S(DyadShutdown, 0);
-  S(DyadNewStream, 0);
-  S(DyadListen, 2);
-  S(DyadConnect, 3);
-  S(DyadWrite, 3);
-  S(DyadEnd, 1);
-  S(DyadClose, 1);
-  S(DyadGetAddress, 1);
-  S(_DyadGetCallbackMode, 1);
-  S(DyadSetReadCallback, 4);
-  S(DyadSetCloseCallback, 4);
-  S(DyadSetListenCallback, 4);
-  S(DyadSetTimeout, 2);
-  S(DyadSetNoDelay, 2);
-  S(VFsFTrunc, 2);
-  S(VFsSetPwd, 1);
-  S(VFsExists, 1);
-  S(VFsIsDir, 1);
-  S(VFsFSize, 1);
-  S(VFsFRead, 2);
-  S(VFsFWrite, 3);
-  S(VFsDel, 1);
-  S(VFsDir, 0);
-  S(VFsDirMk, 1);
-  S(VFsFBlkRead, 4);
-  S(VFsFBlkWrite, 4);
-  S(VFsFOpenW, 1);
-  S(VFsFOpenR, 1);
-  S(VFsFClose, 1);
-  S(VFsFSeek, 2);
-  S(VFsSetDrv, 1);
-  S(VFsGetDrv, 0);
-  S(GetVolume, 0);
-  S(SetVolume, 1);
-  S(__GetTicksHP, 0);
-  S(_GrPaletteColorSet, 2);
-  size_t sz = std::accumulate(v.begin(), v.end(), 0,
-                              [](size_t i, std::string const &s) {
-                                return s.size() + i;
-                              });
-  // useless comment to stop clang-format from indenting the lambda wrong
-  char *blob = VirtAlloc<char>(sz);
-  // c++20:
-  // #include <{ranges,algorithm}> up there
-  // auto r = v | std::views::join;
-  // std::copy(r.begin(), r.end(), blob);
-  size_t off = 0;
-  for (auto const &s : v) {
-    memcpy(blob + off, s.data(), s.size());
-    off += s.size();
+void BootstrapLoader() {
+#define R(holy, secular, arity) {holy, (uptr)secular, arity}
+#define S(name, arity)             \
+  {                                \
+    #name, (uptr)STK_##name, arity \
   }
-  for (auto &[name, sym] : TOSLoader)
-    sym.val += (ptrdiff_t)blob;
+  RegisterFunctionPtrs({
+      R("__CmdLineBootText", CmdLineBootText, 0),
+      R("mp_cnt", mp_cnt, 0),
+      R("__CoreNum", CoreNum, 0),
+      R("GetFs", GetFs, 0),
+      R("GetGs", GetGs, 0),
+      S(__IsCmdLine, 0),
+      S(__IsValidPtr, 1),
+      S(__SpawnCore, 0),
+      S(UnixNow, 0),
+      S(InterruptCore, 1),
+      S(NewVirtualChunk, 2),
+      S(FreeVirtualChunk, 2),
+      S(ExitTINE, 1),
+      S(__GetStr, 1),
+      S(__FExists, 1),
+      S(FUnixTime, 1),
+      S(SetClipboardText, 1),
+      S(GetClipboardText, 0),
+      S(SndFreq, 1),
+      S(__Sleep, 1),
+      S(__SleepHP, 1),
+      S(__AwakeCore, 1),
+      S(SetFs, 1),
+      S(SetGs, 1),
+      S(SetKBCallback, 2),
+      S(SetMSCallback, 1),
+      S(__GetTicks, 0),
+      S(__BootstrapForeachSymbol, 1),
+      S(DrawWindowUpdate, 2),
+      S(UnblockSignals, 0),
+      /*
+       * In TempleOS variadics, functions follow __cdecl, whereas normally
+       * they follow __stdcall which is why the arity argument is needed(RET1
+       * x). Thus we don't have to clean up the stack in variadics.
+       */
+      S(TOSPrint, 0),
+      //
+      S(DyadInit, 0),
+      S(DyadUpdate, 0),
+      S(DyadShutdown, 0),
+      S(DyadNewStream, 0),
+      S(DyadListen, 2),
+      S(DyadConnect, 3),
+      S(DyadWrite, 3),
+      S(DyadEnd, 1),
+      S(DyadClose, 1),
+      S(DyadGetAddress, 1),
+      S(_DyadGetCallbackMode, 1),
+      S(DyadSetReadCallback, 4),
+      S(DyadSetCloseCallback, 4),
+      S(DyadSetListenCallback, 4),
+      S(DyadSetTimeout, 2),
+      S(DyadSetNoDelay, 2),
+      S(VFsFTrunc, 2),
+      S(VFsSetPwd, 1),
+      S(VFsExists, 1),
+      S(VFsIsDir, 1),
+      S(VFsFSize, 1),
+      S(VFsFRead, 2),
+      S(VFsFWrite, 3),
+      S(VFsDel, 1),
+      S(VFsDir, 0),
+      S(VFsDirMk, 1),
+      S(VFsFBlkRead, 4),
+      S(VFsFBlkWrite, 4),
+      S(VFsFOpenW, 1),
+      S(VFsFOpenR, 1),
+      S(VFsFClose, 1),
+      S(VFsFSeek, 2),
+      S(VFsSetDrv, 1),
+      S(VFsGetDrv, 0),
+      S(GetVolume, 0),
+      S(SetVolume, 1),
+      S(__GetTicksHP, 0),
+      S(_GrPaletteColorSet, 2),
+  });
 }
 
 // vim: set expandtab ts=2 sw=2 :

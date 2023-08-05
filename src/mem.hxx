@@ -1,9 +1,8 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include "types.h"
 
-void *NewVirtualChunk(size_t sz, bool low32);
-void  FreeVirtualChunk(void *ptr, size_t s);
+void *NewVirtualChunk(usize sz, bool low32);
+void  FreeVirtualChunk(void *ptr, usize s);
 
 // vim: set expandtab ts=2 sw=2 :
