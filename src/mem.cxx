@@ -100,7 +100,7 @@ void *NewVirtualChunk(size_t sz, bool low32) {
     // will fail with VirtualQuery so we need to start
     // from a reasonable small value
     uintptr_t alloc = dwAllocationGranularity, addr;
-    while (alloc <= MAX_CODE_HEAP_ADDR) {
+    while (alloc <= UINT64_C(0xFFffFFff)) {
       if (0 == VirtualQuery((void *)alloc, &mbi, sizeof mbi))
         return nullptr;
       alloc = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;

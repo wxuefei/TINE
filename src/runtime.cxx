@@ -143,28 +143,19 @@ int64_t STK__DyadGetCallbackMode(char **stk) {
   // i thought of using streamprint but then
   // the variadic calling thing gets too complicated
   switch (tine::Hash(stk[0])) {
-    // это говнокод для принудительной оценки порядка
-#define D(x)     D_(DYAD_EVENT_, x)
-#define D_(x, y) x##y
-#define S(x)     S_(x)
-#define S_(x...) #x
-#define C(x)                \
-  case tine::Hash(S(D(x))): \
-    return D(x)
-    C(LINE);
-    C(DATA);
-    C(CLOSE);
-    C(CONNECT);
-    C(DESTROY);
-    C(ERROR);
-    C(READY);
-    C(TICK);
-    C(TIMEOUT);
-    C(ACCEPT);
-#undef D
-#undef D_
-#undef S
-#undef S_
+#define C(x)           \
+  case tine::Hash(#x): \
+    return x
+    C(DYAD_EVENT_LINE);
+    C(DYAD_EVENT_DATA);
+    C(DYAD_EVENT_CLOSE);
+    C(DYAD_EVENT_CONNECT);
+    C(DYAD_EVENT_DESTROY);
+    C(DYAD_EVENT_ERROR);
+    C(DYAD_EVENT_READY);
+    C(DYAD_EVENT_TICK);
+    C(DYAD_EVENT_TIMEOUT);
+    C(DYAD_EVENT_ACCEPT);
 #undef C
   default:
     HolyThrow("InvMode"); // invalid mode

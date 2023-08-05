@@ -9,7 +9,6 @@
 
 #include <tos_ffi.h>
 
-#include "ffi.h"
 #include "logo.hxx"
 #include "main.hxx"
 #include "sdl_window.hxx"
