@@ -480,54 +480,125 @@ uint64_t STK___IsCmdLine(void *) {
 // arity must be <= 0xffFF/sizeof U64
 void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
                          uintptr_t fp, uint16_t arity) {
-  std::string blob;
   // Function entry point offset from the code blob
   uintptr_t off = std::accumulate(v.begin(), v.end(), 0,
                                   [](size_t i, std::string const &s) {
                                     return s.size() + i;
                                   });
-  // https://defuse.ca/online-x86-assembler.htm
+  // clang-format off
+  // I used https://defuse.ca/online-x86-assembler.htm
   // boring register pushing and stack alignment bullshit
-  // disas then read the ABIs and Doc/GuideLines.DD if interested
-  char const *inst = "\x55\x48\x89\xE5\x48"
-                     "\x83\xE4\xF0\x56\x57"
-                     "\x41\x52\x41\x53\x41"
-                     "\x54\x41\x55\x41\x56"
-                     "\x41\x57";
-  blob.append(inst, 22);
+  // read the SysV/Win64 ABIs and Doc/GuideLines.DD if interested
+  char inst[] =
+  /*
+   * 0x0:  55                      push   rbp
+   * 0x1:  48 89 e5                mov    rbp,rsp
+   * 0x4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
+   *                          // ^ chops stack off to align to 16
+   * 0x8:  56                      push   rsi
+   * 0x9:  57                      push   rdi
+   * 0xa:  41 52                   push   r10
+   * 0xc:  41 53                   push   r11
+   * 0xe:  41 54                   push   r12
+   * 0x10: 41 55                   push   r13
+   * 0x12: 41 56                   push   r14
+   * 0x14: 41 57                   push   r15
+   * len = 0x16
+   */
+        "\x55"
+        "\x48\x89\xE5"
+        "\x48\x83\xE4\xF0"
+        "\x56"
+        "\x57"
+        "\x41\x52"
+        "\x41\x53"
+        "\x41\x54"
+        "\x41\x55"
+        "\x41\x56"
+        "\x41\x57"
 #ifdef _WIN32
   // https://archive.md/4HDA0#selection-2085.880-2085.1196
   // rcx is the first arg i have to provide in win64 abi
   // last 4 register pushes are for register "home"s
   // that windows wants me to provide
-  inst = "\x48\x8D\x4D\x10\x41"
-         "\x51\x41\x50\x52\x51";
-  blob.append(inst, 10);
+  /*
+   * 0x0:  48 8d 4d 10             lea    rcx,[rbp+0x10]
+   * 0x4:  41 51                   push   r9
+   * 0x6:  41 50                   push   r8
+   * 0x8:  52                      push   rdx
+   * 0x9:  51                      push   rcx
+   * len = 0xa
+   */
+        "\x48\x8D\x4D\x10"
+        "\x41\x51"
+        "\x41\x50"
+        "\x52"
+        "\x51"
 #else // sysv
   // rdi is the first arg i have to provide in sysv
-  blob.append("\x48\x8D\x7D\x10", 4);
+  /*
+   * 0x0:  48 8d 7d 10             lea    rdi,[rbp+0x10]
+   * len = 0x4
+   */
+        "\x48\x8D\x7D\x10"
 #endif
-  // movabs rax, <fp>
-  blob.append("\x48\xb8", 2);
-  union {
-    uintptr_t p;
-    char      data[8];
-  } fu = {fp};
-  blob.append(fu.data, 8);
-  // call rax
-  blob.append("\xFF\xD0", 2);
+  /*
+   * 0x0:  48 b8 11 22 33 44 55 66 77 88    movabs rax,0x8877665544332211(fp)
+   * 0xa:  ff d0                            call   rax
+   * len = 0xc
+   */
+        "\x48\xB8" "\x11\x22\x33\x44\x55\x66\x77\x88" // 0x8877... is a placeholder
+        "\xFF\xD0"
 #ifdef _WIN32
   // can just add to rsp since
   // those 4 registers are volatile
-  blob.append("\x48\x83\xC4\x20", 4);
+  /* 0x0:  48 83 c4 20             add    rsp,0x20
+   * len = 0x4
+   */
+        "\x48\x83\xC4\x20"
 #endif
   // pops stack. boring stuff
-  inst = "\x41\x5F\x41\x5E\x41"
-         "\x5D\x41\x5C\x41\x5B"
-         "\x41\x5A\x5F\x5E";
-  blob.append(inst, 14);
-  // leave
-  blob.push_back('\xC9');
+  /*
+   * 0x0:  41 5f                   pop    r15
+   * 0x2:  41 5e                   pop    r14
+   * 0x4:  41 5d                   pop    r13
+   * 0x6:  41 5c                   pop    r12
+   * 0x8:  41 5b                   pop    r11
+   * 0xa:  41 5a                   pop    r10
+   * 0xc:  5f                      pop    rdi
+   * 0xd:  5e                      pop    rsi
+   * 0xe:  c9                      leave
+   * 0xf:  c2 11 22                ret    0x2211(arity*8(==sizeof u64))
+   * len = 0x12
+   */
+        "\x41\x5F"
+        "\x41\x5E"
+        "\x41\x5D"
+        "\x41\x5C"
+        "\x41\x5B"
+        "\x41\x5A"
+        "\x5F"
+        "\x5E"
+        "\xC9"
+        "\xC2" "\x11\x22"; // 0x2211 is a placeholder
+  // clang-format on
+  size_t constexpr inst_len =
+#ifndef _WIN32
+      0x16 + 0x4 + 0xc + 0x12;
+#else
+      0x16 + 0xa + 0xc + 0x4 + 0x12;
+#endif
+  size_t constexpr fp_off =
+#ifndef _WIN32
+      0x16 + 0x4 + 0x2;
+#else
+      0x16 + 0xa + 0x2;
+#endif
+  size_t constexpr arity_off = inst_len - 2;
+  memcpy(inst + fp_off, &fp, sizeof(uint64_t));
+  arity *= sizeof(uint64_t); // all args are u64 in HolyC
+  memcpy(inst + arity_off, &arity, sizeof(uint16_t) /* ret imm16 */);
+  std::string blob{inst, inst_len};
   // clang-format off
   // ret <arity*8>; (8 == sizeof(uint64_t))
   // HolyC ABI is __stdcall, the callee cleans up its own stack
@@ -540,17 +611,8 @@ void RegisterFunctionPtr(std::vector<std::string> &v, char const *name,
   //   argv[1] 5 // RBP + 40
   //   argv[0] 4 // RBP + 32 <-points- argv(internal var in function)
   //   argc 3(num of varargs) // RBP + 24 <-value- argc(internal var in function)
-  //   i  2    // RBP + 16(this is where the stack starts)
+  //   i    2    // RBP + 16(this is where the stack starts)
   // clang-format on
-  // ret
-  blob.push_back('\xc2');
-  arity *= 8; // sizeof(uint64_t)
-  // imm16
-  union {
-    uint16_t ar;
-    char     data[2];
-  } au = {arity};
-  blob.append(au.data, 2);
   CHash sym;
   sym.type        = HTT_FUN;
   sym.val         = (uint8_t *)off;
