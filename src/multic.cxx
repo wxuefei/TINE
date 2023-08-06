@@ -35,7 +35,7 @@ u64 GetTicks() {
 #else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (u64)ts.tv_nsec / 1000000u + 1000 * (u64)ts.tv_sec;
+  return (u64)ts.tv_nsec / UINT64_C(1000000) + UINT64_C(1000) * (u64)ts.tv_sec;
 #endif
 }
 
@@ -81,7 +81,7 @@ DWORD WINAPI LaunchCore(LPVOID c) {
   core_num = (uptr)c;
 #ifndef _WIN32
   static void *fp = nullptr;
-  if (fp == nullptr)
+  if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   signal(SIGUSR2, (void (*)(int))fp);
   signal(SIGUSR1, [](int) {
@@ -150,7 +150,7 @@ void InterruptCore(usize core) {
   ((DWORD64 *)ctx.Rsp)[0] = ctx.Rip;
   //
   static void *fp = nullptr;
-  if (fp == nullptr)
+  if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   // movabs rip, <fp>
   ctx.Rip = (uptr)fp;

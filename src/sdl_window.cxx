@@ -537,7 +537,7 @@ void SetClipboard(char const *text) {
 
 std::string ClipboardText() {
   char *sdl_clip = SDL_GetClipboardText();
-  if (sdl_clip == nullptr)
+  if (!sdl_clip)
     return {};
   std::string s = sdl_clip;
   SDL_free(sdl_clip);
@@ -642,12 +642,14 @@ void GrPaletteColorSet(u64 i, bgr_48 u) {
   // this gets multiplied by 0xff to get 0x7f
   Uint8 b = u.b / (f64)0xffff * 0xff, g = u.g / (f64)0xffff * 0xff,
         r = u.r / (f64)0xffff * 0xff;
-  // i seriously need designated inits in c++
-  SDL_Color sdl_c;
-  sdl_c.r = r;
-  sdl_c.g = g;
-  sdl_c.b = b;
-  sdl_c.a = 0xff;
+  // yes i know this is a C++20 feature but compilers already support it
+  // so shut the fuck up
+  SDL_Color sdl_c{
+      .r = r,
+      .g = g,
+      .b = b,
+      .a = 0xff,
+  };
   // set column
   for (int repeat = 0; repeat < 256 / 16; ++repeat)
     SDL_SetPaletteColors(win.palette, &sdl_c, i + repeat * 16, 1);

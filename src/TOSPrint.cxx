@@ -36,7 +36,7 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
   check_us_key: // you bear a striking resemblance
                 // you look just like my bathroom mirror
     if (isalnum(*str) == 0 &&
-        strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str) == nullptr) {
+        !strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str)) {
       // Note: this was giving me bizarre buffer overflow
       // errors and it turns out you MUST use u8 when
       // printing a 8 bit wide octal value to get the correct digits
@@ -66,8 +66,7 @@ std::string MStrPrint(char const *fmt, u64, i64 *argv) {
   i64         arg = -1;
 loop:
   ++arg;
-  end = strchr(start, '%');
-  if (end == nullptr)
+  if (nullptr == (end = strchr(start, '%')))
     end = start + strlen(start);
   ret.append(start, end - start);
   if (*end == '\0')

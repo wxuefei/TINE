@@ -136,7 +136,7 @@ u64 VFsUnixTime(char const *name) {
 bool VFsFileWrite(char const *name, char const *data, usize len) {
   std::string p = VFsFileNameAbs(name);
   if (name) {
-    FILE *fp = fopen(p.c_str(), "wb");
+    auto fp = fopen(p.c_str(), "wb");
     if (fp != nullptr) {
       fwrite(data, 1, len, fp);
       fclose(fp);
@@ -155,9 +155,8 @@ void *VFsFileRead(char const *name, u64 *len_ptr) {
     return nullptr;
   if (FIsDir(p))
     return nullptr;
-  char *data = nullptr;
-  FILE *fp   = fopen(p.c_str(), "rb");
-  if (fp == nullptr)
+  auto fp = fopen(p.c_str(), "rb");
+  if (!fp)
     return nullptr;
   std::error_code e;
   usize           sz = fs::file_size(p, e);
@@ -165,7 +164,8 @@ void *VFsFileRead(char const *name, u64 *len_ptr) {
     fclose(fp);
     return nullptr;
   }
-  fread(data = HolyAlloc<char, true>(sz + 1), 1, sz, fp);
+  u8 *data = nullptr;
+  fread(data = HolyAlloc<u8, true>(sz + 1), 1, sz, fp);
   fclose(fp);
   if (len_ptr)
     *len_ptr = sz;

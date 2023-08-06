@@ -203,7 +203,7 @@ extern "C" struct [[gnu::packed]] CBinFile {
 
 void LoadHCRT(std::string const &name) {
   auto f = fopen(name.c_str(), "rb");
-  if (f == nullptr) {
+  if (!f) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
@@ -228,7 +228,7 @@ void LoadHCRT(std::string const &name) {
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
 #ifndef _WIN32
   static void *fp = nullptr;
-  if (fp == nullptr)
+  if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   signal(SIGUSR2, (void (*)(int))fp);
 #endif

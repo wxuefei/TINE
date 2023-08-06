@@ -57,7 +57,7 @@ void *NewVirtualChunk(usize sz, bool low32) {
       char *buffer  = buf.data();
       usize line_sz = buf.size();
       uptr  down    = 0;
-      FILE *map = fopen("/proc/self/maps", "rb"); // assumes its always there
+      auto  map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
       while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline()
         char *ptr   = buffer;

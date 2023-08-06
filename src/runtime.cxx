@@ -318,7 +318,7 @@ void STK_SetClipboardText(char **stk) {
 
 char *STK___GetStr(char **stk) {
   char *s = linenoise(stk[0]), *r;
-  if (s == nullptr)
+  if (!s)
     return nullptr;
   linenoiseHistoryAdd(s);
   r = HolyStrDup(s);
