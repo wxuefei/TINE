@@ -5,17 +5,21 @@
 
 #include "types.h"
 
-extern "C" struct CHash {
-  u64 type;
+struct CSymbol {
+  u32 type;
   union {
-    u8 *val;
+    u8 *val; // CHashExport
     struct {
-      char *mod_header_entry, *mod_base;
+      u8 *module_base, *module_header_entry; // CHashImport
     };
   };
+  CSymbol(u32 t, u8 *p) noexcept : type{t}, val{p} {}
+  CSymbol(u32 t, u8 *mb, u8 *mhe) noexcept
+      : type{t}, module_base{mb}, module_header_entry{mhe} {}
+  CSymbol() noexcept = default;
 };
 
-extern std::unordered_map<std::string, CHash> TOSLoader;
+extern std::unordered_map<std::string, CSymbol> TOSLoader;
 
 void BackTrace();
 void LoadHCRT(std::string const &);

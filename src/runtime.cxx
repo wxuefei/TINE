@@ -468,6 +468,7 @@ struct HolyFunc {
 template <usize S> struct ByteLiteral {
   usize       m_sz;
   char const *m_lit;
+  // char is fine here because we aren't doing any arithmetic on them
   constexpr ByteLiteral(char const (&s)[S]) : m_sz{S - 1}, m_lit{s} {}
 };
 
@@ -580,21 +581,18 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   usize constexpr arity_off = inst.m_sz - 2;
 
   auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
-  for (usize i = 0; i < ffi_list.size(); ++i) {
+  for (usize i = 0; i < ffi_list.size(); ++i)
     memcpy(blob + i * inst.m_sz, inst.m_lit, inst.m_sz);
-  }
-  {
-    usize i = 0;
-    for (HolyFunc hf : ffi_list) {
-      usize off = i * inst.m_sz;
-      // for the 0x8877... placeholder
-      memcpy(blob + off + fp_off, &hf.m_fp, sizeof(uptr));
-      // for the 0x2211 placeholder
-      hf.m_arity *= sizeof(u64); // all args are u64 in HolyC
-      memcpy(blob + off + arity_off, &hf.m_arity, sizeof(u16) /* ret imm16 */);
-      TOSLoader.emplace(hf.m_name, CHash{HTT_FUN, {blob + off}});
-      ++i;
-    }
+  usize i = 0;
+  for (HolyFunc hf : ffi_list) {
+    usize off = i * inst.m_sz;
+    ++i;
+    // for the 0x8877... placeholder
+    memcpy(blob + off + fp_off, &hf.m_fp, sizeof(uptr));
+    // for the 0x2211 placeholder
+    hf.m_arity *= sizeof(u64); // all args are u64 in HolyC
+    memcpy(blob + off + arity_off, &hf.m_arity, sizeof(u16) /* ret imm16 */);
+    TOSLoader.emplace(hf.m_name, CSymbol{HTT_FUN, blob + off});
   }
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))

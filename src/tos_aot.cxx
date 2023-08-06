@@ -24,47 +24,45 @@ namespace fs = std::filesystem;
 
 using std::ios;
 
-std::unordered_map<std::string, CHash> TOSLoader;
+std::unordered_map<std::string, CSymbol> TOSLoader;
 
 namespace {
 // This code is mostly copied from TempleOS
 // and does not look very C++-y
-void LoadOneImport(char **src_, char *mod_base) {
-  char *src = *src_, *ptr = nullptr, *st_ptr;
+void LoadOneImport(u8 **src_, u8 *module_base) {
+  u8   *src = *src_, *ptr = nullptr;
+  char *st_ptr;
   uptr  i     = 0;
   bool  first = true;
   u8    etype;
 #define AS(x, T) (*(T *)x) // yuck
   while ((etype = *src++)) {
-    ptr = mod_base + AS(src, u32);
+    ptr = module_base + AS(src, u32);
     src += sizeof(u32);
-    st_ptr = src;
+    st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
     // First occurance of a string means
     // "repeat this until another name is found"
     if (*st_ptr) {
       if (!first) {
-        *src_ = st_ptr - sizeof(u32) - 1;
+        *src_ = (u8 *)st_ptr - sizeof(u32) - 1;
         return;
       } else {
         first = false;
         decltype(TOSLoader)::iterator it;
         if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end()) {
           fprintf(stderr, "Unresolved reference %p\n", st_ptr);
-          CHash tmpiss;
-          tmpiss.type             = HTT_IMPORT_SYS_SYM;
-          tmpiss.mod_header_entry = st_ptr - sizeof(u32) - 1;
-          tmpiss.mod_base         = mod_base;
-          TOSLoader[st_ptr]       = tmpiss;
+          TOSLoader.emplace(st_ptr, CSymbol{HTT_IMPORT_SYS_SYM, module_base,
+                                            (u8 *)st_ptr - sizeof(u32) - 1});
         } else {
-          auto &tmp_sym = it->second;
-          if (tmp_sym.type != HTT_IMPORT_SYS_SYM)
-            i = (uptr)tmp_sym.val;
+          auto &sym = it->second;
+          if (sym.type != HTT_IMPORT_SYS_SYM)
+            i = (uptr)sym.val;
         }
       }
     }
     // probably breaks strict aliasing :(
-#define OFF(T) ((char *)i - ptr - sizeof(T))
+#define OFF(T) ((u8 *)i - ptr - sizeof(T))
     switch (etype) {
     case IET_REL_I8:
       AS(ptr, i8) = OFF(i8);
@@ -103,31 +101,30 @@ void SysSymImportsResolve(char *st_ptr) {
   auto &sym = it->second;
   if (sym.type != HTT_IMPORT_SYS_SYM)
     return;
-  LoadOneImport(&sym.mod_header_entry, sym.mod_base);
+  LoadOneImport(&sym.module_header_entry, sym.module_base);
   sym.type = HTT_INVALID;
 }
 
-void LoadPass1(char *src, char *mod_base) {
-  char *ptr, *st_ptr;
+void LoadPass1(u8 *src, u8 *module_base) {
+  u8   *ptr;
+  char *st_ptr;
   uptr  i;
   usize cnt;
   u8    etype;
-  CHash tmpex;
   while ((etype = *src++)) {
     i = AS(src, u32);
     src += sizeof(u32);
-    st_ptr = src;
+    st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_REL32_EXPORT:
     case IET_IMM32_EXPORT:
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
-      tmpex.type = HTT_EXPORT_SYS_SYM;
-      tmpex.val  = (u8 *)i;
       if (etype != IET_IMM32_EXPORT && etype != IET_IMM64_EXPORT)
-        tmpex.val += (uptr)mod_base;
-      TOSLoader[st_ptr] = tmpex;
+        i += (uptr)module_base; // i gets reset at the
+                                // top of the loop so its fine
+      TOSLoader.emplace(st_ptr, CSymbol{HTT_EXPORT_SYS_SYM, (u8 *)i});
       SysSymImportsResolve(st_ptr);
       break;
     case IET_REL_I0:
@@ -140,16 +137,16 @@ void LoadPass1(char *src, char *mod_base) {
     case IET_IMM_U32:
     case IET_REL_I64:
     case IET_IMM_I64:
-      src = st_ptr - 5;
-      LoadOneImport(&src, mod_base);
+      src = (u8 *)st_ptr - 5;
+      LoadOneImport(&src, module_base);
       break;
     // 32bit addrs
     case IET_ABS_ADDR: {
       cnt = i;
       for (usize j = 0; j < cnt; j++) {
-        ptr = mod_base + AS(src, u32);
+        ptr = module_base + AS(src, u32);
         src += sizeof(u32);
-        AS(ptr, u32) += (uptr)mod_base;
+        AS(ptr, u32) += (uptr)module_base;
       }
     } break;
       // the other ones wont be used
@@ -158,20 +155,20 @@ void LoadPass1(char *src, char *mod_base) {
   }
 }
 
-void LoadPass2(char *src, char *mod_base) {
+void LoadPass2(u8 *src, u8 *module_base) {
   char *st_ptr;
   u32   i;
   u8    etype;
   while ((etype = *src++)) {
     i = AS(src, u32);
     src += sizeof(u32);
-    st_ptr = src;
+    st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_MAIN:
       // we use ZERO_BP here for it to not climb
       // up the C++ stack
-      FFI_CALL_TOS_0_ZERO_BP(mod_base + i);
+      FFI_CALL_TOS_0_ZERO_BP(module_base + i);
       break;
     case IET_ABS_ADDR:
       src += sizeof(u32) * i;
@@ -192,25 +189,24 @@ void LoadPass2(char *src, char *mod_base) {
 
 extern "C" struct [[gnu::packed]] CBinFile {
   u16 jmp;
-  u8  mod_align_bits, pad;
+  u8  module_align_bits, reserved /*padding*/;
   union {
     char bin_signature[4];
     u32  sig;
   };
-  i64  org, patch_table_offset, file_size;
-  char data[]; // FAMs are technically illegal in
-               // standard c++ but whatever
+  i64 org, patch_table_offset, file_size;
+  u8  data[]; // FAMs are technically illegal in
+              // standard c++ but whatever
 };
 
 } // namespace
 
 void LoadHCRT(std::string const &name) {
-  FILE *f = fopen(name.c_str(), "rb");
+  auto f = fopen(name.c_str(), "rb");
   if (f == nullptr) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
-  char           *bfh_addr;
   std::error_code e;
   auto            sz = fs::file_size(name, e);
   if (e) {
@@ -219,7 +215,8 @@ void LoadHCRT(std::string const &name) {
     fclose(f);
     exit(1);
   }
-  fread(bfh_addr = VirtAlloc<char>(sz), 1, sz, f);
+  u8 *bfh_addr;
+  fread(bfh_addr = VirtAlloc<u8>(sz), 1, sz, f);
   fclose(f);
   // I think this breaks strict aliasing but
   // I dont think it matters because its packed(?)
@@ -268,15 +265,15 @@ void BackTrace() {
         fprintf(stderr, "%s\n", sorted[idx].c_str());
       } else if (curp > ptr) {
         fprintf(stderr, "%s [%p+%#" PRIx64 "]\n", last.c_str(), ptr,
-                (char *)ptr - (char *)oldp);
+                (u8 *)ptr - (u8 *)oldp);
         goto next;
       }
       oldp = curp;
       last = sorted[idx];
     }
   next:
-    ptr = rbp[1];
-    rbp = (void **)*rbp; // yuck
+    ptr = rbp[1];          // [RBP+0x8] is the return address
+    rbp = (void **)rbp[0]; // [RBP] is the previous base pointer
   }
   putchar('\n');
 }
