@@ -8,6 +8,7 @@
   #include <sys/mman.h>
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <initializer_list>
 #include <string_view>
@@ -46,16 +47,14 @@ void *HolyMAlloc(usize sz) {
 }
 
 void *HolyCAlloc(usize sz) {
-  auto ret = HolyAlloc<u8>(sz);
-  std::fill(ret, ret + sz, 0);
-  return ret;
+  return memset(HolyAlloc<u8>(sz), 0, sz);
 }
 
 char *HolyStrDup(char const *str) {
   return strcpy(HolyAlloc<char>(strlen(str) + 1), str);
 }
 
-usize mp_cnt(void *) {
+usize STK_mp_cnt(void *) {
   return proc_cnt;
 }
 
@@ -477,6 +476,8 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // I used https://defuse.ca/online-x86-assembler.htm
   // boring register pushing and stack alignment bullshit
   // read the SysV/Win64 ABIs and Doc/GuideLines.DD if interested
+  // below is a criminal-grade string literal abuse scene to avoid extra
+  // allocations like a vector of std::string's(my previous approach)
   ByteLiteral constexpr inst =
   /*
    * 0x0:  55                      push   rbp
@@ -621,10 +622,10 @@ void BootstrapLoader() {
   }
   RegisterFunctionPtrs({
       R("__CmdLineBootText", CmdLineBootText, 0),
-      R("mp_cnt", mp_cnt, 0),
       R("__CoreNum", CoreNum, 0),
       R("GetFs", GetFs, 0),
       R("GetGs", GetGs, 0),
+      S(mp_cnt, 0),
       S(__IsCmdLine, 0),
       S(__IsValidPtr, 1),
       S(__SpawnCore, 0),
