@@ -33,9 +33,18 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
   uptr  i     = 0;
   bool  first = true;
   u8    etype;
-#define AS(x, T) (*(T *)x) // yuck
+  // i know this is a GNU extension, problem?
+  // this won't actually call memcpy
+  // anyway so it respects strict aliasing
+  // while not compromising on speed
+#define READ_NUM(x, T)          \
+  ({                            \
+    T ret;                      \
+    memcpy(&ret, x, sizeof(T)); \
+    ret;                        \
+  })
   while ((etype = *src++)) {
-    ptr = module_base + AS(src, u32);
+    ptr = module_base + READ_NUM(src, u32);
     src += sizeof(u32);
     st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
@@ -59,35 +68,44 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
         }
       }
     }
-    // probably breaks strict aliasing :(
 #define OFF(T) ((u8 *)i - ptr - sizeof(T))
+// same stuff to respect strict aliasing
+#define IET(T)                    \
+  {                               \
+    usize off = OFF(T);           \
+    memcpy(ptr, &off, sizeof(T)); \
+  }
+#define IMM(T) \
+  { memcpy(ptr, &i, sizeof(T)); }
     switch (etype) {
     case IET_REL_I8:
-      AS(ptr, i8) = OFF(i8);
-      break;
-    case IET_IMM_U8:
-      AS(ptr, u8) = i;
+      IET(i8);
       break;
     case IET_REL_I16:
-      AS(ptr, i16) = OFF(i16);
-      break;
-    case IET_IMM_U16:
-      AS(ptr, u16) = i;
+      IET(i16);
       break;
     case IET_REL_I32:
-      AS(ptr, i32) = OFF(i32);
-      break;
-    case IET_IMM_U32:
-      AS(ptr, u32) = i;
+      IET(i32);
       break;
     case IET_REL_I64:
-      AS(ptr, i64) = OFF(i64);
+      IET(i64);
+      break;
+    case IET_IMM_U8:
+      IMM(u8);
+      break;
+    case IET_IMM_U16:
+      IMM(u16);
+      break;
+    case IET_IMM_U32:
+      IMM(u32);
       break;
     case IET_IMM_I64:
-      AS(ptr, i64) = (i64)i;
+      IMM(i64);
       break;
     }
 #undef OFF
+#undef IET
+#undef IMM
   }
   *src_ = src - 1;
 }
@@ -107,10 +125,9 @@ void LoadPass1(u8 *src, u8 *module_base) {
   u8   *ptr;
   char *st_ptr;
   uptr  i;
-  usize cnt;
   u8    etype;
   while ((etype = *src++)) {
-    i = AS(src, u32);
+    i = READ_NUM(src, u32);
     src += sizeof(u32);
     st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
@@ -135,16 +152,18 @@ void LoadPass1(u8 *src, u8 *module_base) {
     case IET_IMM_U32:
     case IET_REL_I64:
     case IET_IMM_I64:
-      src = (u8 *)st_ptr - 5;
+      src = (u8 *)st_ptr - sizeof(u32) - 1;
       LoadOneImport(&src, module_base);
       break;
     // 32bit addrs
     case IET_ABS_ADDR: {
-      cnt = i;
-      for (usize j = 0; j < cnt; j++) {
-        ptr = module_base + AS(src, u32);
-        src += sizeof(u32);
-        AS(ptr, u32) += (uptr)module_base;
+      for (usize j = 0; j < i /*count*/; j++, src += sizeof(u32)) {
+        ptr = module_base + READ_NUM(src, u32);
+        // compiles down to `add DWORD PTR[ptr],module_base`
+        u32 off;
+        memcpy(&off, ptr, sizeof(u32));
+        off += (uptr)module_base;
+        memcpy(ptr, &off, sizeof(u32));
       }
     } break;
       // the other ones wont be used
@@ -158,7 +177,7 @@ void LoadPass2(u8 *src, u8 *module_base) {
   u32   i;
   u8    etype;
   while ((etype = *src++)) {
-    i = AS(src, u32);
+    i = READ_NUM(src, u32);
     src += sizeof(u32);
     st_ptr = (char *)src;
     src += strlen(st_ptr) + 1;
@@ -183,7 +202,7 @@ void LoadPass2(u8 *src, u8 *module_base) {
   }
 }
 
-#undef AS
+#undef READ_NUM
 
 extern "C" struct [[gnu::packed]] CBinFile {
   u16 jmp;
