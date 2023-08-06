@@ -1,9 +1,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
-#include <string_view>
 #include <system_error>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -221,7 +219,7 @@ void LoadHCRT(std::string const &name) {
   // I think this breaks strict aliasing but
   // I dont think it matters because its packed(?)
   auto bfh = (CBinFile *)bfh_addr;
-  if (std::string_view{bfh->bin_signature, 4} != "TOSB") {
+  if (memcmp(bfh->bin_signature, "TOSB" /*BIN_SIGNATURE_VAL*/, 4)) {
     fprintf(stderr, "INVALID TEMPLEOS BINARY FILE %s\n", name.c_str());
     exit(1);
   }
