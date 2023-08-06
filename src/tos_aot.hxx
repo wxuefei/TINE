@@ -13,10 +13,12 @@ struct CSymbol {
       u8 *module_base, *module_header_entry; // CHashImport
     };
   };
-  CSymbol(u32 t, u8 *p) noexcept : type{t}, val{p} {}
-  CSymbol(u32 t, u8 *mb, u8 *mhe) noexcept
+  inline CSymbol(u32 t, u8 *p) noexcept : type{t}, val{p} {}
+  inline CSymbol(u32 t, u8 *mb, u8 *mhe) noexcept
       : type{t}, module_base{mb}, module_header_entry{mhe} {}
-  CSymbol() noexcept = default;
+  // default constructor for initialization
+  // of empty pairs in TOSLoader
+  inline CSymbol() noexcept = default;
 };
 
 extern std::unordered_map<std::string, CSymbol> TOSLoader;

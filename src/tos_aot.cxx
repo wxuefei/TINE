@@ -35,7 +35,8 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
   u8    etype;
   // i know this is a GNU extension, problem?
   // this won't actually call memcpy
-  // anyway so it respects strict aliasing
+  // anyway(compiles down to a mov call)
+  // so it respects strict aliasing
   // while not compromising on speed
 #define READ_NUM(x, T)          \
   ({                            \
@@ -70,7 +71,7 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
     }
 #define OFF(T) ((u8 *)i - ptr - sizeof(T))
 // same stuff to respect strict aliasing
-#define IET(T)                    \
+#define REL(T)                    \
   {                               \
     usize off = OFF(T);           \
     memcpy(ptr, &off, sizeof(T)); \
@@ -79,16 +80,16 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
   { memcpy(ptr, &i, sizeof(T)); }
     switch (etype) {
     case IET_REL_I8:
-      IET(i8);
+      REL(i8);
       break;
     case IET_REL_I16:
-      IET(i16);
+      REL(i16);
       break;
     case IET_REL_I32:
-      IET(i32);
+      REL(i32);
       break;
     case IET_REL_I64:
-      IET(i64);
+      REL(i64);
       break;
     case IET_IMM_U8:
       IMM(u8);
@@ -104,7 +105,7 @@ void LoadOneImport(u8 **src_, u8 *module_base) {
       break;
     }
 #undef OFF
-#undef IET
+#undef REL
 #undef IMM
   }
   *src_ = src - 1;
@@ -267,7 +268,7 @@ void BackTrace() {
     init = true;
   }
   putchar('\n');
-  auto  rbp = (void **)__builtin_frame_address(0);
+  void *rbp = __builtin_frame_address(0);
   void *oldp;
   // its 1 because we want to know the return
   // addr of BackTrace()'s caller
@@ -289,8 +290,8 @@ void BackTrace() {
       last = sorted[idx];
     }
   next:
-    ptr = rbp[1];          // [RBP+0x8] is the return address
-    rbp = (void **)rbp[0]; // [RBP] is the previous base pointer
+    ptr = static_cast<void **>(rbp)[1]; // [RBP+0x8] is the return address
+    rbp = static_cast<void **>(rbp)[0]; // [RBP] is the previous base pointer
   }
   putchar('\n');
 }
