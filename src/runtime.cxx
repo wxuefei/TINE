@@ -582,10 +582,10 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     //
     memcpy(cur_pos, inst.m_lit, inst.m_sz);
     // for the 0x8877... placeholder
-    // mov qword ptr[cur_pos+fp_off],hf.m_fp
+    // mov QWORD PTR[cur_pos+fp_off],hf.m_fp
     memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(uptr));
     // for the 0x2211 placeholder
-    // mov word ptr[cur_pos+arity_off],hf.m_arity*8
+    // mov WORD PTR[cur_pos+arity_off],hf.m_arity*8
     usize ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
     memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
     //

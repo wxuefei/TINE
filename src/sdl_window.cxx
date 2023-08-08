@@ -558,9 +558,6 @@ auto ClipboardText() -> std::string {
 
 void NewDrawWindow() {
   SDL_Init(SDL_INIT_EVERYTHING);
-  // sdl disables compositor in kde by default
-  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
-                          SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   win_init             = true;
@@ -583,10 +580,7 @@ void NewDrawWindow() {
   win.palette = SDL_AllocPalette(256);
   SDL_SetSurfacePalette(win.surf, win.palette);
   SDL_SetWindowMinimumSize(win.window, 640, 480);
-  win.rend = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
-  SDL_SetRenderDrawColor(win.rend, 0, 0, 0, 255);
-  SDL_RenderClear(win.rend);
-  SDL_RenderPresent(win.rend);
+  win.rend     = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
   win.margin_y = win.margin_x = 0;
   win.sz_x                    = 640;
   win.sz_y                    = 480;
