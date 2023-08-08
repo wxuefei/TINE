@@ -90,7 +90,7 @@ loop:
     // decimals += *start - '0';
     ++start;
   }
-  while (strchr("t,$/", *start) != nullptr)
+  while (strchr("t,$/", *start))
     ++start;
   i64 aux = 1;
   if (*start == '*') {

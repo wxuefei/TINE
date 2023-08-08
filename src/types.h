@@ -9,6 +9,8 @@ extern "C" {
 typedef size_t    usize;
 typedef uintptr_t uptr;
 typedef intptr_t  iptr;
+typedef uintmax_t umax;
+typedef intmax_t  imax;
 typedef uint64_t  u64;
 typedef uint32_t  u32;
 typedef uint16_t  u16;

@@ -36,14 +36,12 @@ thread_local u8          thrd_drv;
 
 inline bool FExists(std::string const &path) {
   std::error_code e;
-  bool            ret = fs::exists(path, e);
-  return e ? false : ret;
+  return fs::exists(path, e) && !e; // shortcircuit ops are well defined
 }
 
 inline bool FIsDir(std::string const &path) {
   std::error_code e;
-  bool            ret = fs::is_directory(path, e);
-  return e ? false : ret;
+  return fs::is_directory(path, e) && !e;
 }
 
 std::array<std::string, 'z' - 'a' + 1> mount_points;
@@ -91,8 +89,7 @@ bool VFsDirMk(char const *to) {
     return true;
   }
   std::error_code e;
-  fs::create_directory(p, e);
-  return !e;
+  return fs::create_directory(p, e) && !e;
 }
 
 bool VFsDel(char const *p) {
@@ -100,8 +97,11 @@ bool VFsDel(char const *p) {
   if (!FExists(path))
     return false;
   std::error_code e;
-  fs::remove_all(path, e);
-  return !e;
+  // remove_all can still throw but
+  // only when it's out of memory which
+  // SHOULD terminate
+  // https://archive.md/kkVNq#selection-56944.0-56944.3
+  return (static_cast<umax>(-1) != fs::remove_all(path, e)) && !e;
 }
 
 i64 VFsFSize(char const *name) {
@@ -113,8 +113,10 @@ i64 VFsFSize(char const *name) {
     return std::distance(fs::begin(it), fs::end(it));
   }
   std::error_code e;
-  auto            sz = fs::file_size(fn, e);
-  return e ? -1 : sz;
+  // https://archive.md/kkVNq#selection-50768.3-50766.3
+  // thankfully for us fs::file_size will return -1 for its
+  // error_code overload when something goes fucky wucky
+  return static_cast<i64>(fs::file_size(fn, e));
 }
 
 void VFsFTrunc(char const *name, usize sz) {
@@ -137,7 +139,7 @@ bool VFsFileWrite(char const *name, char const *data, usize len) {
   std::string p = VFsFileNameAbs(name);
   if (name) {
     auto fp = fopen(p.c_str(), "wb");
-    if (fp != nullptr) {
+    if (fp) {
       fwrite(data, 1, len, fp);
       fclose(fp);
     }
@@ -151,22 +153,22 @@ void *VFsFileRead(char const *name, u64 *len_ptr) {
   if (!name)
     return nullptr;
   std::string p = VFsFileNameAbs(name);
-  if (!FExists(p))
-    return nullptr;
-  if (FIsDir(p))
+  if (!FExists(p) || FIsDir(p))
     return nullptr;
   auto fp = fopen(p.c_str(), "rb");
   if (!fp)
     return nullptr;
   std::error_code e;
-  usize           sz = fs::file_size(p, e);
-  if (e) {
+  umax            sz;
+  // no need to check for e(see comment in VFsFSize)
+  if (static_cast<umax>(-1) == (sz = fs::file_size(p, e))) {
     fclose(fp);
     return nullptr;
   }
   u8 *data = nullptr;
-  fread(data = HolyAlloc<u8, true>(sz + 1), 1, sz, fp);
+  fread(data = HolyAlloc<u8>(sz + 1), 1, sz, fp);
   fclose(fp);
+  data[sz] = 0;
   if (len_ptr)
     *len_ptr = sz;
   return data;
@@ -191,8 +193,8 @@ char **VFsDir() {
     if (s.size() <= 38 - 1)
       items.emplace_back(SD(s.c_str()));
   }
-  // force null pointer terminator
-  auto ret = HolyAlloc<DirEnt, true>(items.size() + 1);
+  auto ret          = HolyAlloc<DirEnt>(items.size() + 1);
+  ret[items.size()] = nullptr;
   memcpy(ret, items.data(), items.size() * sizeof(DirEnt));
   return ret;
 #undef SD
