@@ -223,7 +223,7 @@ void LoadHCRT(std::string const &name) {
   auto f = fopen(name.c_str(), "rb");
   if (!f) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
-    exit(1);
+    _Exit(1);
   }
   std::error_code e;
   umax            sz;
@@ -231,7 +231,7 @@ void LoadHCRT(std::string const &name) {
     fprintf(stderr, "CANNOT DETERMINE SIZE OF FILE, ERROR MESSAGE: %s\n",
             e.message().c_str());
     fclose(f);
-    exit(1);
+    _Exit(1);
   }
   u8 *bfh_addr;
   fread(bfh_addr = VirtAlloc<u8>(sz), 1, sz, f);
@@ -241,7 +241,7 @@ void LoadHCRT(std::string const &name) {
   auto bfh = (CBinFile *)bfh_addr;
   if (memcmp(bfh->bin_signature, "TOSB" /*BIN_SIGNATURE_VAL*/, 4)) {
     fprintf(stderr, "INVALID TEMPLEOS BINARY FILE %s\n", name.c_str());
-    exit(1);
+    _Exit(1);
   }
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
 #ifndef _WIN32
