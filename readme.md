@@ -33,7 +33,7 @@ pacman -Syu make mingw-w64-x86_64-{cmake,gcc,SDL2}
 if pacman tells you to restart the terminal then do it and run the cmd again
 ## unix-like system users
 install SDL2, cmake, make and gcc
-## building the loader
+## building the loader and runtime
 ```
 mkdir build;
 cd build;
@@ -41,14 +41,9 @@ cmake ..; # *nix ***THIS LINE ISNT FOR WINDOWS***
 cmake .. -G 'MSYS Makefiles'; # ***WINDOWS***
 make -j$(nproc);
 ```
-side note: statically linking SDL2 on windows seems like std{in,out} gets borked so make sure to run the built binary in the mingw terminal to avoid dll hell
-## build runtime
-if you pull a newer commit then rebuild TINE and perform this step with `./tine -ctT BuildHCRT.HC;mv T/HCRT.BIN .`(if anyone wonders why i didnt add a custom cmake target for this, a breaking change in the loader/HCRT can produce a malformed/incompatible kernel which is a pain to fix)
-```
-./tine -f HCRT_BOOTSTRAP.BIN -ctT BuildHCRT.HC
-mv T/HCRT.BIN .
-```
-# running
+side note: statically linking SDL2 on windows seems like std{in,out} gets borked so make sure to run the built binary in the mingw terminal to avoid dll hell <br>
+FOR MAINTAINERS AND CONTRIBUTORS: USE THE `-DBUILD_HCRT=OFF` FLAG TO DISABLE AUTO-BUILD OF HCRT.BIN IF YOU'RE WORKING WITH THE LOADER
+## running
 ```
 ./tine -t T #-h for info on other flags
 ```

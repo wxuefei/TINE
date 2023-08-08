@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
+option(BUILD_HCRT "Build HolyC kernel when loader is built" ON)
+
 # do not fuck crazy
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
   message(FATAL_ERROR "You cannot use CMake to build from the root of its source tree! Remove the CMakeCache.txt file and CMakeFiles directory from this directory, then create a separate directory (either below this directory or elsewhere), and then re-run CMake from there.")
@@ -163,5 +165,13 @@ else ()
   message(FATAL_ERROR "Unsupported system")
 endif ()
 
+if (BUILD_HCRT)
+  add_custom_target(HCRT
+    ALL
+    COMMAND tine -ct T -f HCRT_BOOTSTRAP.BIN BuildHCRT.HC
+    DEPENDS ${PROJECT_NAME}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+endif ()
 
 # vim: set expandtab ts=2 sw=2 :
