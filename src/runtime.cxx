@@ -375,8 +375,8 @@ void STK_VFsFTrunc(uptr *stk) {
   VFsFTrunc((char *)stk[0], stk[1]);
 }
 
-auto STK_VFsFRead(char **stk) -> void * {
-  return VFsFileRead(stk[0], (u64 *)stk[1]);
+auto STK_VFsFRead(char **stk) -> u8 * {
+  return VFsFRead(stk[0], (u64 *)stk[1]);
 }
 
 auto STK_VFsFWrite(char **stk) -> u64 {

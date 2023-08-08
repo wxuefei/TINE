@@ -18,7 +18,7 @@ auto VFsFSize(char const *name) -> i64;
 auto VFsFOpen(char const *path, char const *m) -> FILE *;
 void VFsFTrunc(char const *name, usize sz);
 auto VFsFileWrite(char const *name, char const *data, usize len) -> bool;
-auto VFsFileRead(char const *name, u64 *len) -> void *;
+auto VFsFRead(char const *name, u64 *len) -> u8 *;
 auto VFsDir() -> char **;
 auto VFsIsDir(char const *path) -> bool;
 auto VFsFileExists(char const *path) -> bool;

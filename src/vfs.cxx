@@ -152,7 +152,7 @@ auto VFsFileWrite(char const *name, char const *data, usize len) -> bool {
   return !!name;
 }
 
-auto VFsFileRead(char const *name, u64 *len_ptr) -> void * {
+auto VFsFRead(char const *name, u64 *len_ptr) -> u8 * {
   if (len_ptr)
     *len_ptr = 0;
   if (!name)
