@@ -15,7 +15,7 @@
 
 namespace {
 
-LONG WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) {
+auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) -> LONG {
   auto c = info->ExceptionRecord->ExceptionCode;
   switch (c) {
   #define FERR(code) case EXCEPTION_##code:

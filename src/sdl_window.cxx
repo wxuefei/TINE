@@ -211,14 +211,14 @@ u8 constexpr keys[] = {
     '+', 0,      0,    0,   0,    0,   0,   0,   0,   0,   0,   0,
 };
 
-u64 constexpr K2SC(u8 ch) {
+auto constexpr K2SC(u8 ch) -> u64 {
   for (usize i = 0; i < sizeof keys / sizeof keys[0]; ++i)
     if (keys[i] == ch)
       return i;
   __builtin_unreachable();
 }
 
-int ScanKey(u64 *sc, SDL_Event *ev) {
+auto ScanKey(u64 *sc, SDL_Event *ev) -> int {
   u64 mod = 0;
   if (ev->type == SDL_KEYDOWN) {
   ent:
@@ -456,7 +456,7 @@ static void *kb_cb_data = nullptr;
 static bool  kb_init    = false;
 static bool  ms_init    = false;
 
-int SDLCALL KBCallback(void *, SDL_Event *e) {
+auto SDLCALL KBCallback(void *, SDL_Event *e) -> int {
   u64 s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
     FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
@@ -466,7 +466,7 @@ int SDLCALL KBCallback(void *, SDL_Event *e) {
 // x,y,z,(l<<1)|r
 static void *ms_cb = nullptr;
 
-int SDLCALL MSCallback(void *, SDL_Event *e) {
+auto SDLCALL MSCallback(void *, SDL_Event *e) -> int {
   static Sint32 x, y;
   static int    state;
   static int    z;
@@ -535,7 +535,7 @@ void SetClipboard(char const *text) {
   SDL_SetClipboardText(text);
 }
 
-std::string ClipboardText() {
+auto ClipboardText() -> std::string {
   char *sdl_clip = SDL_GetClipboardText();
   if (!sdl_clip)
     return {};

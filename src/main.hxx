@@ -2,8 +2,8 @@
 
 #include "types.h"
 
-void        ShutdownTINE(int);
-char const *CmdLineBootText();
+void ShutdownTINE(int);
+auto CmdLineBootText() -> char const *;
 
 extern bool sanitize_clipboard;
 extern bool is_cmd_line;

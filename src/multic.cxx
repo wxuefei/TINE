@@ -29,7 +29,7 @@
 #include "tos_aot.hxx"
 #include "vfs.hxx"
 
-u64 GetTicks() {
+auto GetTicks() -> u64 {
 #ifdef _WIN32
   return GetTickCount();
 #else
@@ -72,9 +72,9 @@ std::vector<CCore> cores;
 thread_local usize core_num;
 
 #ifndef _WIN32
-void *LaunchCore(void *c) {
+auto LaunchCore(void *c) -> void * {
 #else
-DWORD WINAPI LaunchCore(LPVOID c) {
+auto WINAPI LaunchCore(LPVOID c) -> DWORD {
 #endif
   VFsThrdInit();
   SetupDebugger();
@@ -115,7 +115,7 @@ thread_local std::atomic<void *> Gs = nullptr;
 
 } // namespace
 
-void *GetFs() {
+auto GetFs() -> void * {
   return Fs;
 }
 
@@ -123,7 +123,7 @@ void SetFs(void *f) {
   Fs = f;
 }
 
-void *GetGs() {
+auto GetGs() -> void * {
   return Gs;
 }
 
@@ -252,7 +252,7 @@ u64  ticks = 0;
 // event that updates the tick count while also helping cores wake up
 //
 // i killed two birds with one stoner
-u64 GetTicksHP() {
+auto GetTicksHP() -> u64 {
   static bool init = false;
   if (!init) {
     init = true;

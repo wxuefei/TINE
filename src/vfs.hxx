@@ -2,23 +2,26 @@
 
 #include <string>
 
+#include <stdio.h>
+
 #include "types.h"
 
-void        VFsThrdInit();
-void        VFsSetDrv(u8 d);
-u8          VFsGetDrv();
-void        VFsSetPwd(char const *pwd);
-bool        VFsDirMk(char const *to);
-bool        VFsDel(char const *p);
-std::string VFsFileNameAbs(char const *name);
-u64         VFsUnixTime(char const *name);
-i64         VFsFSize(char const *name);
-void        VFsFTrunc(char const *name, usize sz);
-bool        VFsFileWrite(char const *name, char const *data, usize len);
-void       *VFsFileRead(char const *name, u64 *len);
-char      **VFsDir();
-bool        VFsIsDir(char const *path);
-bool        VFsFileExists(char const *path);
-void        VFsMountDrive(char const let, char const *path);
+void VFsThrdInit();
+void VFsSetDrv(u8 d);
+auto VFsGetDrv() -> u8;
+void VFsSetPwd(char const *pwd);
+auto VFsDirMk(char const *to) -> bool;
+auto VFsDel(char const *p) -> bool;
+auto VFsFileNameAbs(char const *name) -> std::string;
+auto VFsUnixTime(char const *name) -> u64;
+auto VFsFSize(char const *name) -> i64;
+auto VFsFOpen(char const *path, char const *m) -> FILE *;
+void VFsFTrunc(char const *name, usize sz);
+auto VFsFileWrite(char const *name, char const *data, usize len) -> bool;
+auto VFsFileRead(char const *name, u64 *len) -> void *;
+auto VFsDir() -> char **;
+auto VFsIsDir(char const *path) -> bool;
+auto VFsFileExists(char const *path) -> bool;
+void VFsMountDrive(char const let, char const *path);
 
 // vim: set expandtab ts=2 sw=2 :

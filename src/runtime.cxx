@@ -39,22 +39,22 @@ void HolyFree(void *ptr) {
   FFI_CALL_TOS_1(fptr, (uptr)ptr);
 }
 
-void *HolyMAlloc(usize sz) {
+auto HolyMAlloc(usize sz) -> void * {
   static void *fptr = nullptr;
   if (!fptr)
     fptr = TOSLoader["_MALLOC"].val;
   return (void *)FFI_CALL_TOS_2(fptr, sz, 0 /*NULL*/);
 }
 
-void *HolyCAlloc(usize sz) {
+auto HolyCAlloc(usize sz) -> void * {
   return memset(HolyAlloc<u8>(sz), 0, sz);
 }
 
-char *HolyStrDup(char const *str) {
+auto HolyStrDup(char const *str) -> char * {
   return strcpy(HolyAlloc<char>(strlen(str) + 1), str);
 }
 
-usize STK_mp_cnt(void *) {
+auto STK_mp_cnt(void *) -> usize {
   return proc_cnt;
 }
 
@@ -78,7 +78,7 @@ namespace chrono = std::chrono;
 using chrono::system_clock;
 
 namespace tine {
-u64 constexpr Hash(std::string_view sv) { // fnv64-1a
+auto constexpr Hash(std::string_view sv) -> u64 { // fnv64-1a
   u64 h = 0xCBF29CE484222325;
   for (char c : sv) {
     h *= 0x100000001B3;
@@ -105,15 +105,15 @@ void STK_DyadShutdown(void *) {
   dyad_shutdown();
 }
 
-void *STK_DyadNewStream(void *) {
+auto STK_DyadNewStream(void *) -> dyad_Stream * {
   return dyad_newStream();
 }
 
-i64 STK_DyadListen(iptr *stk) {
+auto STK_DyadListen(iptr *stk) -> i64 {
   return dyad_listen((dyad_Stream *)stk[0], (int)stk[1]);
 }
 
-i64 STK_DyadConnect(iptr *stk) {
+auto STK_DyadConnect(iptr *stk) -> i64 {
   return dyad_connect((dyad_Stream *)stk[0], (char *)stk[1], (int)stk[2]);
 }
 
@@ -129,11 +129,11 @@ void STK_DyadClose(dyad_Stream **stk) {
   dyad_close(stk[0]);
 }
 
-char *STK_DyadGetAddress(dyad_Stream **stk) {
+auto STK_DyadGetAddress(dyad_Stream **stk) -> char * {
   return HolyStrDup(dyad_getAddress(stk[0]));
 }
 
-i64 STK__DyadGetCallbackMode(char **stk) {
+auto STK__DyadGetCallbackMode(char **stk) -> i64 {
   // i thought of using streamprint but then
   // the variadic calling thing gets too complicated
   switch (tine::Hash(stk[0])) {
@@ -205,7 +205,7 @@ void STK__GrPaletteColorSet(u64 *stk) {
   GrPaletteColorSet(stk[0], {stk[1]});
 }
 
-u64 STK___IsValidPtr(uptr *stk) {
+auto STK___IsValidPtr(uptr *stk) -> u64 {
 #ifdef _WIN32
   // Wine doesnt like the
   // IsBadReadPtr,so use a polyfill
@@ -257,7 +257,7 @@ void STK_DrawWindowUpdate(uptr *stk) {
   DrawWindowUpdate((u8 *)stk[0], stk[1]);
 }
 
-u64 STK___GetTicksHP(void *) {
+auto STK___GetTicksHP(void *) -> u64 {
 #ifndef _WIN32
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -276,7 +276,7 @@ u64 STK___GetTicksHP(void *) {
 #endif
 }
 
-u64 STK___GetTicks(void *) {
+auto STK___GetTicks(void *) -> u64 {
   return GetTicks();
 }
 
@@ -316,7 +316,7 @@ void STK_SetClipboardText(char **stk) {
   SetClipboard(stk[0]);
 }
 
-char *STK___GetStr(char **stk) {
+auto STK___GetStr(char **stk) -> char * {
   char *s = linenoise(stk[0]), *r;
   if (!s)
     return nullptr;
@@ -326,20 +326,20 @@ char *STK___GetStr(char **stk) {
   return r;
 }
 
-char *STK_GetClipboardText(void *) {
+auto STK_GetClipboardText(void *) -> char * {
   std::string clip{ClipboardText()};
   return HolyStrDup(clip.c_str());
 }
 
-u64 STK_FUnixTime(char **stk) {
+auto STK_FUnixTime(char **stk) -> u64 {
   return VFsUnixTime(stk[0]);
 }
 
-u64 STK___FExists(char **stk) {
+auto STK___FExists(char **stk) -> u64 {
   return VFsFileExists(stk[0]);
 }
 
-u64 STK_UnixNow(void *) {
+auto STK_UnixNow(void *) -> u64 {
   return system_clock::to_time_t(system_clock::now());
 }
 
@@ -347,7 +347,7 @@ void STK___SpawnCore(uptr *stk) {
   CreateCore(stk[0], (void *)stk[1]);
 }
 
-void *STK_NewVirtualChunk(usize *stk) {
+auto STK_NewVirtualChunk(usize *stk) -> void * {
   return NewVirtualChunk(stk[0], stk[1]);
 }
 
@@ -359,15 +359,15 @@ void STK_VFsSetPwd(char **stk) {
   VFsSetPwd(stk[0]);
 }
 
-u64 STK_VFsExists(char **stk) {
+auto STK_VFsExists(char **stk) -> u64 {
   return VFsFileExists(stk[0]);
 }
 
-u64 STK_VFsIsDir(char **stk) {
+auto STK_VFsIsDir(char **stk) -> u64 {
   return VFsIsDir(stk[0]);
 }
 
-i64 STK_VFsFSize(char **stk) {
+auto STK_VFsFSize(char **stk) -> i64 {
   return VFsFSize(stk[0]);
 }
 
@@ -375,36 +375,31 @@ void STK_VFsFTrunc(uptr *stk) {
   VFsFTrunc((char *)stk[0], stk[1]);
 }
 
-void *STK_VFsFRead(char **stk) {
+auto STK_VFsFRead(char **stk) -> void * {
   return VFsFileRead(stk[0], (u64 *)stk[1]);
 }
 
-u64 STK_VFsFWrite(char **stk) {
+auto STK_VFsFWrite(char **stk) -> u64 {
   return VFsFileWrite(stk[0], stk[1], (uptr)stk[2]);
 }
 
-u64 STK_VFsDirMk(char **stk) {
+auto STK_VFsDirMk(char **stk) -> u64 {
   return VFsDirMk(stk[0]);
 }
 
-char **STK_VFsDir(void *) {
+auto STK_VFsDir(void *) -> char ** {
   return VFsDir();
 }
 
-u64 STK_VFsDel(char **stk) {
+auto STK_VFsDel(char **stk) -> u64 {
   return VFsDel(stk[0]);
 }
 
-FILE *VFsFOpen(char const *path, char const *m) {
-  std::string p = VFsFileNameAbs(path);
-  return fopen(p.c_str(), m);
-}
-
-FILE *STK_VFsFOpenW(char **stk) {
+auto STK_VFsFOpenW(char **stk) -> FILE * {
   return VFsFOpen(stk[0], "w+b");
 }
 
-FILE *STK_VFsFOpenR(char **stk) {
+auto STK_VFsFOpenR(char **stk) -> FILE * {
   return VFsFOpen(stk[0], "rb");
 }
 
@@ -412,12 +407,12 @@ void STK_VFsFClose(FILE **stk) {
   fclose(stk[0]);
 }
 
-u64 STK_VFsFBlkRead(uptr *stk) {
+auto STK_VFsFBlkRead(uptr *stk) -> u64 {
   fflush((FILE *)stk[3]);
   return stk[2] == fread((void *)stk[0], stk[1], stk[2], (FILE *)stk[3]);
 }
 
-u64 STK_VFsFBlkWrite(uptr *stk) {
+auto STK_VFsFBlkWrite(uptr *stk) -> u64 {
   bool r = stk[2] == fwrite((void *)stk[0], stk[1], stk[2], (FILE *)stk[3]);
   fflush((FILE *)stk[3]);
   return r;
@@ -431,7 +426,7 @@ void STK_VFsSetDrv(u8 *stk) {
   VFsSetDrv(stk[0]);
 }
 
-u64 STK_VFsGetDrv(void *) {
+auto STK_VFsGetDrv(void *) -> u64 {
   return (u64)VFsGetDrv();
 }
 
@@ -443,7 +438,7 @@ void STK_SetVolume(u64 *stk) {
   SetVolume(un.flt);
 }
 
-u64 STK_GetVolume(void *) {
+auto STK_GetVolume(void *) -> u64 {
   union {
     f64 flt;
     u64 i;
@@ -455,7 +450,7 @@ void STK_ExitTINE(int *stk) {
   ShutdownTINE(stk[0]);
 }
 
-u64 STK___IsCmdLine(void *) {
+auto STK___IsCmdLine(void *) -> u64 {
   return (u64)is_cmd_line;
 }
 

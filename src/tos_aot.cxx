@@ -305,7 +305,7 @@ void BackTrace() {
 
 // great when you use lldb and get a fault
 // (lldb) p (char*)WhichFun($pc)
-[[gnu::used, gnu::visibility("default")]] char *WhichFun(void *ptr) {
+[[gnu::used, gnu::visibility("default")]] auto WhichFun(void *ptr) -> char * {
   std::string                     last;
   static usize                    sz = 0;
   static std::vector<std::string> sorted;

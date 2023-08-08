@@ -2,23 +2,23 @@
 
 #include "types.h"
 
-u64 GetTicks();
+auto GetTicks() -> u64;
 
-void *GetFs();
-void  SetFs(void *);
+auto GetFs() -> void *;
+void SetFs(void *);
 
-void *GetGs();
-void  SetGs(void *);
+auto GetGs() -> void *;
+void SetGs(void *);
 
-usize CoreNum();
+auto CoreNum() -> usize;
 
 void InterruptCore(usize core);
 
 using ThreadCallback =
 #ifdef _WIN32
-    long unsigned /*DWORD on x86_64*/ __stdcall(void *);
+    auto __stdcall(void *) -> long unsigned /*DWORD on x86_64*/;
 #else
-    void *(void *);
+    auto(void *) -> void *;
 #endif
 void LaunchCore0(ThreadCallback *fp);
 void WaitForCore0();

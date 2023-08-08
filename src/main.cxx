@@ -12,7 +12,7 @@
     #define ERROR_CONTROL_C_EXIT 0x23C
   #endif
 
-static BOOL WINAPI CtrlCHandlerRoutine(DWORD) {
+static auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
   #define S(x) x, lstrlenA(x)
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
                 nullptr);
@@ -67,9 +67,9 @@ int  exit_code = 0;
 bool prog_exit = false;
 
 #ifndef _WIN32
-void *Core0(void *) {
+auto Core0(void *) -> void * {
 #else
-DWORD WINAPI Core0(LPVOID) {
+auto WINAPI Core0(LPVOID) -> DWORD {
 #endif
   VFsThrdInit();
   LoadHCRT(bin_path);
@@ -86,7 +86,7 @@ DWORD WINAPI Core0(LPVOID) {
 
 } // namespace
 
-char const *CmdLineBootText() {
+auto CmdLineBootText() -> char const * {
   return boot_str.c_str();
 }
 
@@ -107,7 +107,7 @@ DWORD dwAllocationGranularity;
 #endif
 usize proc_cnt;
 
-int main(int argc, char **argv) {
+auto main(int argc, char **argv) -> int {
 #ifndef _WIN32
   // https://archive.md/5cufN#selection-2369.223-2369.272
   // Hilarious how Linux manpages won't teach me anything

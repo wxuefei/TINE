@@ -22,7 +22,7 @@ extern DWORD dwAllocationGranularity;
 #include "mem.hxx"
 
 #ifdef __linux__
-static inline u64 Hex2U64(char *ptr, char **res) {
+static inline auto Hex2U64(char *ptr, char **res) -> u64 {
   u64  ret = 0;
   char c;
   while (isxdigit(c = *ptr)) {
@@ -35,7 +35,7 @@ static inline u64 Hex2U64(char *ptr, char **res) {
 }
 #endif
 
-void *NewVirtualChunk(usize sz, bool low32) {
+auto NewVirtualChunk(usize sz, bool low32) -> void * {
 #ifndef _WIN32
   // explanation of (x+y-1)&~(y-1) on the bottom windows code
   // page_size is a power of 2 so this works

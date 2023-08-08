@@ -8,7 +8,7 @@
 #include "TOSPrint.hxx"
 
 namespace {
-char *UnescapeString(char *__restrict str, char *__restrict where) {
+auto UnescapeString(char *__restrict str, char *__restrict where) -> char * {
   while (*str) {
     char const *__restrict to;
     switch (*str) {
@@ -56,7 +56,7 @@ char *UnescapeString(char *__restrict str, char *__restrict where) {
   return where;
 }
 
-std::string MStrPrint(char const *fmt, u64, i64 *argv) {
+auto MStrPrint(char const *fmt, u64, i64 *argv) -> std::string {
   // this does not compare argument count(argc)
   // with StrOcc(fmt, '%'), be careful i guess
   // it also isn't a fully featured one but should

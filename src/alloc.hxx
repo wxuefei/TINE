@@ -17,18 +17,18 @@ template <> struct size_of<void> {
 } // namespace detail
 
 template <class T = void, bool fill = false>
-[[gnu::always_inline]] inline T *HolyAlloc(usize sz) {
+[[gnu::always_inline]] inline auto HolyAlloc(usize sz) -> T * {
   // I demand a constexpr ternary right now
   if constexpr (fill)
-    return (T *)HolyCAlloc(detail::size_of<T>::sz * sz);
+    return static_cast<T *>(HolyCAlloc(detail::size_of<T>::sz * sz));
   else
-    return (T *)HolyMAlloc(detail::size_of<T>::sz * sz);
+    return static_cast<T *>(HolyMAlloc(detail::size_of<T>::sz * sz));
 }
 
 // use with caution as its executable by default
 template <class T = void, bool exec = true>
-[[gnu::always_inline]] inline T *VirtAlloc(usize sz) {
-  return (T *)NewVirtualChunk(detail::size_of<T>::sz * sz, exec);
+[[gnu::always_inline]] inline auto VirtAlloc(usize sz) -> T * {
+  return static_cast<T *>(NewVirtualChunk(detail::size_of<T>::sz * sz, exec));
 }
 
 // vim: set expandtab ts=2 sw=2 :

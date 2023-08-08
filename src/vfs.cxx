@@ -34,12 +34,12 @@ namespace {
 thread_local std::string thrd_pwd;
 thread_local u8          thrd_drv;
 
-inline bool FExists(std::string const &path) {
+inline auto FExists(std::string const &path) -> bool {
   std::error_code e;
   return fs::exists(path, e) && !e; // shortcircuit ops are well defined
 }
 
-inline bool FIsDir(std::string const &path) {
+inline auto FIsDir(std::string const &path) -> bool {
   std::error_code e;
   return fs::is_directory(path, e) && !e;
 }
@@ -59,7 +59,7 @@ void VFsSetDrv(u8 d) {
   thrd_drv = toupper(d);
 }
 
-u8 VFsGetDrv() {
+auto VFsGetDrv() -> u8 {
   return thrd_drv;
 }
 
@@ -69,7 +69,7 @@ void VFsSetPwd(char const *pwd) {
   thrd_pwd = pwd;
 }
 
-std::string VFsFileNameAbs(char const *name) {
+auto VFsFileNameAbs(char const *name) -> std::string {
   std::string ret;
   // thrd_drv is always uppercase
   ret += mount_points[thrd_drv - 'A']; // T
@@ -83,7 +83,7 @@ std::string VFsFileNameAbs(char const *name) {
   return ret;
 }
 
-bool VFsDirMk(char const *to) {
+auto VFsDirMk(char const *to) -> bool {
   std::string p = VFsFileNameAbs(to);
   if (FExists(p) && FIsDir(p)) {
     return true;
@@ -92,7 +92,7 @@ bool VFsDirMk(char const *to) {
   return fs::create_directory(p, e) && !e;
 }
 
-bool VFsDel(char const *p) {
+auto VFsDel(char const *p) -> bool {
   std::string path = VFsFileNameAbs(p);
   if (!FExists(path))
     return false;
@@ -104,7 +104,7 @@ bool VFsDel(char const *p) {
   return (static_cast<umax>(-1) != fs::remove_all(path, e)) && !e;
 }
 
-i64 VFsFSize(char const *name) {
+auto VFsFSize(char const *name) -> i64 {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn)) {
     return -1;
@@ -119,6 +119,11 @@ i64 VFsFSize(char const *name) {
   return static_cast<i64>(fs::file_size(fn, e));
 }
 
+auto VFsFOpen(char const *path, char const *m) -> FILE * {
+  std::string p = VFsFileNameAbs(path);
+  return fopen(p.c_str(), m);
+}
+
 void VFsFTrunc(char const *name, usize sz) {
   std::error_code e;
   fs::resize_file(VFsFileNameAbs(name), sz, e);
@@ -126,7 +131,7 @@ void VFsFTrunc(char const *name, usize sz) {
     HolyThrow("SysError");
 }
 
-u64 VFsUnixTime(char const *name) {
+auto VFsUnixTime(char const *name) -> u64 {
   std::string fn = VFsFileNameAbs(name);
   if (!FExists(fn))
     return 0;
@@ -135,7 +140,7 @@ u64 VFsUnixTime(char const *name) {
   return s.st_mtime;
 }
 
-bool VFsFileWrite(char const *name, char const *data, usize len) {
+auto VFsFileWrite(char const *name, char const *data, usize len) -> bool {
   std::string p = VFsFileNameAbs(name);
   if (name) {
     auto fp = fopen(p.c_str(), "wb");
@@ -147,7 +152,7 @@ bool VFsFileWrite(char const *name, char const *data, usize len) {
   return !!name;
 }
 
-void *VFsFileRead(char const *name, u64 *len_ptr) {
+auto VFsFileRead(char const *name, u64 *len_ptr) -> void * {
   if (len_ptr)
     *len_ptr = 0;
   if (!name)
@@ -174,7 +179,7 @@ void *VFsFileRead(char const *name, u64 *len_ptr) {
   return data;
 }
 
-char **VFsDir() {
+auto VFsDir() -> char ** {
   std::string file = VFsFileNameAbs("");
   if (!FIsDir(file))
     return nullptr;
@@ -200,11 +205,11 @@ char **VFsDir() {
 #undef SD
 }
 
-bool VFsIsDir(char const *path) {
+auto VFsIsDir(char const *path) -> bool {
   return FIsDir(VFsFileNameAbs(path));
 }
 
-bool VFsFileExists(char const *path) {
+auto VFsFileExists(char const *path) -> bool {
   return FExists(VFsFileNameAbs(path));
 }
 
