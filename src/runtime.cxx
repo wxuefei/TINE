@@ -63,7 +63,7 @@ usize STK_mp_cnt(void *) {
     char s[8]{}; // zero-init
     u64  i;
   } u;
-  static void *fp;
+  static void *fp = nullptr;
   if (!fp)
     fp = TOSLoader["throw"].val;
   memcpy(u.s, sv.data(), std::min<usize>(sv.size(), 8));
@@ -581,18 +581,20 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   usize constexpr arity_off = inst.m_sz - 2;
 
   auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
-  for (usize i = 0; i < ffi_list.size(); ++i)
-    memcpy(blob + i * inst.m_sz, inst.m_lit, inst.m_sz);
-  usize i = 0;
-  for (HolyFunc hf : ffi_list) {
-    usize off = i * inst.m_sz;
-    ++i;
+  for (usize i = 0; i < ffi_list.size(); ++i) {
+    auto const &hf      = ffi_list.begin()[i]; // looks weird af lmao
+    u8         *cur_pos = blob + i * inst.m_sz;
+    //
+    memcpy(cur_pos, inst.m_lit, inst.m_sz);
     // for the 0x8877... placeholder
-    memcpy(blob + off + fp_off, &hf.m_fp, sizeof(uptr));
+    // mov qword ptr[cur_pos+fp_off],hf.m_fp
+    memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(uptr));
     // for the 0x2211 placeholder
-    hf.m_arity *= sizeof(u64); // all args are u64 in HolyC
-    memcpy(blob + off + arity_off, &hf.m_arity, sizeof(u16) /* ret imm16 */);
-    TOSLoader.emplace(hf.m_name, CSymbol{HTT_FUN, blob + off});
+    // mov word ptr[cur_pos+arity_off],hf.m_arity*8
+    usize ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
+    memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
+    //
+    TOSLoader.emplace(hf.m_name, CSymbol{HTT_FUN, cur_pos});
   }
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))
@@ -601,12 +603,15 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   //
   // A bit about HolyC ABI: all args are 8 bytes(64 bits)
   // let there be function Foo(I64 i, ...);
-  // Foo(2, 4, 5, 6)
+  // call Foo() like Foo(2, 4, 5, 6);
+  // stack view:
   //   argv[2] 6 // RBP + 48
   //   argv[1] 5 // RBP + 40
-  //   argv[0] 4 // RBP + 32 <-points- argv(internal var in function)
-  //   argc 3(num of varargs) // RBP + 24 <-value- argc(internal var in function)
-  //   i    2    // RBP + 16(this is where the stack starts)
+  //   argv[0] 4 // RBP + 32 <-points- argv (internal var in function)
+  //   argc    3 // RBP + 24 <-value- argc (internal var in function, num of varargs) 
+  //   i       2 // RBP + 16 this is where the argument stack starts
+  //   0x??????? // RBP + 8  return address
+  //   0x??????? // RBP + 0  previous RBP of caller function
   // clang-format on
 }
 

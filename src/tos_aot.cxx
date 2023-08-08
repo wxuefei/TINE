@@ -226,8 +226,8 @@ void LoadHCRT(std::string const &name) {
     exit(1);
   }
   std::error_code e;
-  auto            sz = fs::file_size(name, e);
-  if (e) {
+  umax            sz;
+  if ((sz = fs::file_size(name, e)) == static_cast<umax>(-1)) {
     fprintf(stderr, "CANNOT DETERMINE SIZE OF FILE, ERROR MESSAGE: %s\n",
             e.message().c_str());
     fclose(f);
