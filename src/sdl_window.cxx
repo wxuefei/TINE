@@ -557,10 +557,16 @@ auto ClipboardText() -> std::string {
 }
 
 void NewDrawWindow() {
-  SDL_Init(SDL_INIT_EVERYTHING);
+  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+  win_init = true;
+  /*
+   // i removed this line to improve boot speeds but if you absolutely need
+   // your compositor to be running then uncomment this line
+  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
+                          SDL_HINT_OVERRIDE);
+  */
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
-  win_init             = true;
   win.screen_mutex     = SDL_CreateMutex();
   win.screen_done_cond = SDL_CreateCond();
   win.window =

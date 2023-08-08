@@ -24,8 +24,6 @@ static void AudioCB(void *userdata, Uint8 *out, int len) {
 }
 
 void InitSound(void) {
-  if (!SDL_WasInit(SDL_INIT_AUDIO))
-    SDL_Init(SDL_INIT_AUDIO);
   SDL_AudioSpec want = {
       .freq     = 24000,
       .format   = AUDIO_S8,

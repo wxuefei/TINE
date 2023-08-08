@@ -194,11 +194,11 @@ auto main(int argc, char **argv) -> int {
             bin_path.c_str());
     return 1;
   }
-  if (is_win || !is_cmd_line)
-    InitSound();
   BootstrapLoader();
   if (!is_cmd_line)
     NewDrawWindow();
+  if (is_win || !is_cmd_line)
+    InitSound();
   LaunchCore0(Core0);
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   if (!is_cmd_line) {
