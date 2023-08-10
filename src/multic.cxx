@@ -12,8 +12,8 @@
     #include <sys/types.h>
     #include <sys/umtx.h>
   #endif
+  #include "signal_types.hxx"
   #include <pthread.h>
-  #include <signal.h>
 #endif
 
 #include <atomic>
@@ -83,7 +83,7 @@ auto WINAPI LaunchCore(LPVOID c) -> DWORD {
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (void (*)(int))fp);
+  signal(SIGUSR2, (SignalCallback*)fp);
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });

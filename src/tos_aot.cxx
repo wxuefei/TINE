@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <inttypes.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +15,7 @@
 #include "alloc.hxx"
 #include "dbg.hxx"
 #include "mem.hxx"
+#include "signal_types.hxx"
 #include "tos_aot.hxx"
 
 namespace fs = std::filesystem;
@@ -251,47 +251,61 @@ void LoadHCRT(std::string const& name) {
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (void (*)(int))fp);
+  signal(SIGUSR2, (SignalCallback*)fp);
 #endif
   LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
 }
 
+namespace {
+std::vector<std::string> sorted_syms;
+bool                     sorted_syms_init = false;
+std::string const        unknown_fun{"UNKNOWN"};
+
+void InitSortedSyms() {
+  for (auto const& e : TOSLoader)
+    sorted_syms.emplace_back(e.first);
+  std::sort(sorted_syms.begin(), sorted_syms.end(),
+            [](auto const& a, auto const& b) -> bool {
+              return TOSLoader[a].val < TOSLoader[b].val;
+            });
+  sorted_syms_init = true;
+}
+} // namespace
+
 void BackTrace() {
-  std::string                     last;
-  static usize                    sz = 0;
-  static std::vector<std::string> sorted;
-  static bool                     init = false;
-  if (!init) {
-    for (auto const& e : TOSLoader)
-      sorted.emplace_back(e.first);
-    sz = sorted.size();
-    std::sort(sorted.begin(), sorted.end(),
-              [](auto const& a, auto const& b) -> bool {
-                return TOSLoader[a].val < TOSLoader[b].val;
-              });
-    init = true;
-  }
+  if (!sorted_syms_init)
+    InitSortedSyms();
   putchar('\n');
   void* rbp = __builtin_frame_address(0);
   void* oldp;
   // its 1 because we want to know the return
   // addr of BackTrace()'s caller
   void* ptr = __builtin_return_address(1);
+  //
+  std::string const* last;
   while (rbp) {
     oldp = nullptr;
-    last = "UNKOWN";
-    usize idx;
-    for (idx = 0; idx < sz; idx++) {
-      void* curp = TOSLoader[sorted[idx]].val;
+    last = &unknown_fun; // this will never be printed
+                         // here's the thing: i have to scour through the whole
+                         // debug info and function body to mimic
+                         // StrPrintFunSeg()'s behavior and a 64kb difference
+                         // might seem like a reasonable magic number but that's
+                         // kinda just a really stupid way to do it so i decided
+                         // to just not do it also BackTrace() runs in
+                         // a pretty confined situation so i dont think actually
+                         // implementing the thing is worth it either, plus, the
+                         // HolyC side has its own backtrace too anyways
+    for (auto const& s : sorted_syms) {
+      void* curp = TOSLoader[s].val;
       if (curp == ptr) {
-        fprintf(stderr, "%s\n", sorted[idx].c_str());
+        fprintf(stderr, "%s\n", s.c_str());
       } else if (curp > ptr) {
-        fprintf(stderr, "%s [%p+%#" PRIx64 "]\n", last.c_str(), ptr,
-                (u8*)ptr - (u8*)oldp);
+        fprintf(stderr, "%s [%p+%#" PRIx64 "] %p %p %p\n", last->c_str(), ptr,
+                (u8*)ptr - (u8*)oldp, curp, ptr, oldp);
         goto next;
       }
       oldp = curp;
-      last = sorted[idx];
+      last = &s;
     }
   next:
     ptr = static_cast<void**>(rbp)[1]; // [RBP+0x8] is the return address
@@ -305,33 +319,22 @@ void BackTrace() {
 // the entire debug session not to mention
 // WhichFun() wont even be called in normal
 // circumstances
-#define STR_DUP(s) (strcpy(new (std::nothrow) char[s.size() + 1], s.c_str()))
+#define STR_DUP(s) (strcpy(new (std::nothrow) char[s->size() + 1], s->c_str()))
 
 // great when you use lldb and get a fault
 // (lldb) p (char*)WhichFun($pc)
 [[gnu::used, gnu::visibility("default")]] auto WhichFun(void* ptr) -> char* {
-  std::string                     last;
-  static usize                    sz = 0;
-  static std::vector<std::string> sorted;
-  static bool                     init = false;
-  if (!init) {
-    for (auto const& e : TOSLoader)
-      sorted.emplace_back(e.first);
-    sz = sorted.size();
-    std::sort(sorted.begin(), sorted.end(),
-              [](auto const& a, auto const& b) -> bool {
-                return TOSLoader[a].val < TOSLoader[b].val;
-              });
-    init = true;
-  }
-  for (usize idx = 0; idx < sz; idx++) {
-    void* curp = TOSLoader[sorted[idx]].val;
+  if (!sorted_syms_init)
+    InitSortedSyms();
+  std::string const* last;
+  for (auto const& s : sorted_syms) {
+    void* curp = TOSLoader[s].val;
     if (curp == ptr) {
-      fprintf(stderr, "%s\n", sorted[idx].c_str());
+      fprintf(stderr, "%s\n", s.c_str());
     } else if (curp > ptr) {
       return STR_DUP(last);
     }
-    last = sorted[idx];
+    last = &s;
   }
   return STR_DUP(last);
 }

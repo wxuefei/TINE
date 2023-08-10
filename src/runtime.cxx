@@ -4,7 +4,7 @@
   #include <winbase.h>
   #include <memoryapi.h>
 #else
-  #include <signal.h>
+  #include "signal_types.hxx"
   #include <sys/mman.h>
 #endif
 

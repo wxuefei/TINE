@@ -23,7 +23,7 @@ namespace {
 } // namespace
 
 #else
-  #include <signal.h>
+  #include "signal_types.hxx"
   #include <sys/resource.h>
   #include <unistd.h>
 #endif

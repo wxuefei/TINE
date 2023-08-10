@@ -2,7 +2,7 @@
   #include <windows.h>
   #include <errhandlingapi.h>
 #else
-  #include <signal.h>
+  #include "signal_types.hxx"
   #include <ucontext.h>
 #endif
 
@@ -64,6 +64,7 @@ void SetupDebugger() {
 }
 
 #else
+  #include <initializer_list>
 
 namespace {
 
@@ -113,9 +114,8 @@ void routine(int sig, siginfo_t*, ucontext_t* ctx) {
 
 void SetupDebugger() {
   struct sigaction inf;
-  inf.sa_flags = SA_SIGINFO | SA_NODEFER;
-  // ugly piece of shit
-  inf.sa_sigaction = (void (*)(int, siginfo_t*, void*))routine;
+  inf.sa_flags     = SA_SIGINFO | SA_NODEFER;
+  inf.sa_sigaction = (SigActionCallback*)routine;
   sigemptyset(&inf.sa_mask);
   for (auto i : {SIGTRAP, SIGBUS, SIGSEGV, SIGFPE})
     sigaction(i, &inf, nullptr);
