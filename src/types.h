@@ -20,6 +20,7 @@ typedef int32_t   i32;
 typedef int16_t   i16;
 typedef int8_t    i8;
 typedef double    f64;
+typedef float     f32;
 
 #ifdef __cplusplus
 }
