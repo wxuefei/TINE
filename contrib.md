@@ -2,7 +2,8 @@
 runtime.cxx
 ```C++
 // inside the anonymous namespace
-uint64_t STK_FunctionName(uint64_t* stk) {
+// please use trailing return types
+auto STK_FunctionName(u64* stk) -> u64 {
   // ...
 }
 // in BootstrapLoader()

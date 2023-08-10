@@ -8,13 +8,13 @@
 struct CSymbol {
   u32 type;
   union {
-    u8 *val; // CHashExport
+    u8* val; // CHashExport
     struct {
       u8 *module_base, *module_header_entry; // CHashImport
     };
   };
-  inline CSymbol(u32 t, u8 *p) noexcept : type{t}, val{p} {}
-  inline CSymbol(u32 t, u8 *mb, u8 *mhe) noexcept
+  inline CSymbol(u32 t, u8* p) noexcept : type{t}, val{p} {}
+  inline CSymbol(u32 t, u8* mb, u8* mhe) noexcept
       : type{t}, module_base{mb}, module_header_entry{mhe} {}
   // default constructor for initialization
   // of empty pairs in TOSLoader
@@ -24,7 +24,7 @@ struct CSymbol {
 extern std::unordered_map<std::string, CSymbol> TOSLoader;
 
 void BackTrace();
-void LoadHCRT(std::string const &);
+void LoadHCRT(std::string const&);
 
 // clang-format off
 // copied from TempleOS, DO NOT TOUCH

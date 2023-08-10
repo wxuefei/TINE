@@ -22,7 +22,7 @@ extern DWORD dwAllocationGranularity;
 #include "mem.hxx"
 
 #ifdef __linux__
-static inline auto Hex2U64(char *ptr, char **res) -> u64 {
+static inline auto Hex2U64(char* ptr, char** res) -> u64 {
   u64  ret = 0;
   char c;
   while (isxdigit(c = *ptr)) {
@@ -35,12 +35,12 @@ static inline auto Hex2U64(char *ptr, char **res) -> u64 {
 }
 #endif
 
-auto NewVirtualChunk(usize sz, bool low32) -> void * {
+auto NewVirtualChunk(usize sz, bool low32) -> void* {
 #ifndef _WIN32
   // explanation of (x+y-1)&~(y-1) on the bottom windows code
   // page_size is a power of 2 so this works
   usize padded_sz = (sz + page_size - 1) & ~(page_size - 1);
-  void *ret;
+  void* ret;
   if (low32) { // code heap
     ret = mmap(nullptr, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                MAP_PRIVATE | MAP_ANON | MAP_32BIT, -1, 0);
@@ -54,13 +54,13 @@ auto NewVirtualChunk(usize sz, bool low32) -> void * {
       std::array<char, 0x1000> buf;
       // we make a generous assumption that one line would not exceed
       // 4096 chars, even 0x100 would have done the job
-      char *buffer  = buf.data();
+      char* buffer  = buf.data();
       usize line_sz = buf.size();
       uptr  down    = 0;
       auto  map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
       while (::getline(&buffer, &line_sz, map) > 0) { // NOT std::getline()
-        char *ptr   = buffer;
+        char* ptr   = buffer;
         u64   lower = Hex2U64(ptr, &ptr);
         // MAP_FIXED wants us to align `down` to the page size
         down = (down + page_size - 1) & ~(page_size - 1);
@@ -79,7 +79,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void * {
       fclose(map);
       if (down > UINT64_C(0xFFffFFff))
         return nullptr;
-      ret = mmap((void *)down, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
+      ret = mmap((void*)down, padded_sz, PROT_EXEC | PROT_WRITE | PROT_READ,
                  MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
     } else
       return ret;
@@ -99,7 +99,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void * {
     // from a reasonable small value
     uptr alloc = dwAllocationGranularity, addr;
     while (alloc <= UINT64_C(0xFFffFFff)) {
-      if (0 == VirtualQuery((void *)alloc, &mbi, sizeof mbi))
+      if (0 == VirtualQuery((void*)alloc, &mbi, sizeof mbi))
         return nullptr;
       alloc = (uptr)mbi.BaseAddress + mbi.RegionSize;
       // clang-format off
@@ -128,7 +128,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void * {
       addr = ((uptr)mbi.BaseAddress + dwAllocationGranularity - 1) &
              ~(dwAllocationGranularity - 1);
       if (mbi.State & MEM_FREE && sz <= alloc - addr)
-        return VirtualAlloc((void *)addr, sz, MEM_COMMIT | MEM_RESERVE,
+        return VirtualAlloc((void*)addr, sz, MEM_COMMIT | MEM_RESERVE,
                             PAGE_EXECUTE_READWRITE);
     }
     return nullptr;
@@ -138,7 +138,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void * {
 #endif
 }
 
-void FreeVirtualChunk(void *ptr, [[maybe_unused]] usize sz) {
+void FreeVirtualChunk(void* ptr, [[maybe_unused]] usize sz) {
 #ifdef _WIN32
   VirtualFree(ptr, 0, MEM_RELEASE);
 #else

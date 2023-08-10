@@ -12,7 +12,8 @@
     #define ERROR_CONTROL_C_EXIT 0x23C
   #endif
 
-static auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
+namespace {
+[[noreturn]] auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
   #define S(x) x, lstrlenA(x)
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
                 nullptr);
@@ -20,6 +21,7 @@ static auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
   return TRUE;
   #undef S
 }
+} // namespace
 
 #else
   #include <signal.h>
@@ -67,7 +69,7 @@ int  exit_code = 0;
 bool prog_exit = false;
 
 #ifndef _WIN32
-auto Core0(void *) -> void * {
+auto Core0(void*) -> void* {
 #else
 auto WINAPI Core0(LPVOID) -> DWORD {
 #endif
@@ -86,7 +88,7 @@ auto WINAPI Core0(LPVOID) -> DWORD {
 
 } // namespace
 
-auto CmdLineBootText() -> char const * {
+auto CmdLineBootText() -> char const* {
   return boot_str.c_str();
 }
 
@@ -107,7 +109,7 @@ DWORD dwAllocationGranularity;
 #endif
 usize proc_cnt;
 
-auto main(int argc, char **argv) -> int {
+auto main(int argc, char** argv) -> int {
 #ifndef _WIN32
   // https://archive.md/5cufN#selection-2369.223-2369.272
   // Hilarious how Linux manpages won't teach me anything
@@ -128,7 +130,7 @@ auto main(int argc, char **argv) -> int {
       *noans;
   struct arg_file *cmdLineFiles, *TDriveArg, *HCRTArg;
 
-  void *argtable[] = {
+  void* argtable[] = {
       helpArg        = arg_lit0("h", "help", "Display this help message"),
       sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       commandLineArg = arg_lit0("c", "com", "Command line mode, cwd -> Z:/"),

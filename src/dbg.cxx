@@ -15,7 +15,7 @@
 
 namespace {
 
-auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) -> LONG {
+auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS* info) -> LONG {
   auto c = info->ExceptionRecord->ExceptionCode;
   switch (c) {
   #define FERR(code) case EXCEPTION_##code:
@@ -40,7 +40,7 @@ auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) -> LONG {
   default:
     return EXCEPTION_CONTINUE_EXECUTION;
   }
-  CONTEXT *ctx = info->ContextRecord;
+  CONTEXT* ctx = info->ContextRecord;
   #define REG(x) ctx->x
   u64 regs[] = {
       REG(Rax),    REG(Rcx), REG(Rdx), REG(Rbx), REG(Rsp), REG(Rbp),
@@ -48,7 +48,7 @@ auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS *info) -> LONG {
       REG(R12),    REG(R13), REG(R14), REG(R15), REG(Rip), (uptr)&ctx->FltSave,
       REG(EFlags),
   };
-  static void *fp = nullptr;
+  static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["DebuggerLandWin"].val;
   u64 sig = (c == EXCEPTION_BREAKPOINT || c == STATUS_SINGLE_STEP)
@@ -67,7 +67,7 @@ void SetupDebugger() {
 
 namespace {
 
-void routine(int sig, siginfo_t *, ucontext_t *ctx) {
+void routine(int sig, siginfo_t*, ucontext_t* ctx) {
   BackTrace();
   u64 sig_i64 = sig;
   #ifdef __linux__
@@ -104,7 +104,7 @@ void routine(int sig, siginfo_t *, ucontext_t *ctx) {
       REG(rflags),
   };
   #endif
-  static void *fp = nullptr;
+  static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["DebuggerLand"].val;
   FFI_CALL_TOS_2(fp, sig_i64, (uptr)regs);
@@ -115,7 +115,7 @@ void SetupDebugger() {
   struct sigaction inf;
   inf.sa_flags = SA_SIGINFO | SA_NODEFER;
   // ugly piece of shit
-  inf.sa_sigaction = (void (*)(int, siginfo_t *, void *))routine;
+  inf.sa_sigaction = (void (*)(int, siginfo_t*, void*))routine;
   sigemptyset(&inf.sa_mask);
   for (auto i : {SIGTRAP, SIGBUS, SIGSEGV, SIGFPE})
     sigaction(i, &inf, nullptr);

@@ -3,8 +3,10 @@ BasedOnStyle: LLVM
 TabWidth: '2'
 UseTab: Never
 Language: Cpp
-PointerAlignment: Right
-ReferenceAlignment: Right
+# a pointer is part of the type dumbass
+PointerAlignment: Left
+ReferenceAlignment: Left
+#
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Left
 AlignConsecutiveMacros: Consecutive
@@ -29,10 +31,11 @@ Standard: c++17
 LambdaBodyIndentation: Signature
 IndentPPDirectives: BeforeHash
 IndentCaseLabels: false
+# fuck you bill gates
 IncludeCategories: [
   {Regex: '<winsock.*\.h>', Priority: -3},
-  {Regex: '<windows\.h>', Priority: -2},
-  {Regex: '<winbase\.h>', Priority: -1},
-  {Regex: '<win.*\.h>'  , Priority: 0},
+  {Regex: '<windows\.h>'  , Priority: -2},
+  {Regex: '<winbase\.h>'  , Priority: -1},
+  {Regex: '<win.*\.h>'    , Priority:  0},
 ]
 ...

@@ -17,12 +17,12 @@ namespace {
 
 static bool win_init = false;
 struct CDrawWindow {
-  SDL_mutex    *screen_mutex;
-  SDL_cond     *screen_done_cond;
-  SDL_Window   *window;
-  SDL_Palette  *palette;
-  SDL_Surface  *surf;
-  SDL_Renderer *rend;
+  SDL_mutex*    screen_mutex;
+  SDL_cond*     screen_done_cond;
+  SDL_Window*   window;
+  SDL_Palette*  palette;
+  SDL_Surface*  surf;
+  SDL_Renderer* rend;
   Uint32        sz_x, sz_y;
   Sint32        margin_x, margin_y;
   ~CDrawWindow() noexcept {
@@ -40,12 +40,12 @@ struct CDrawWindow {
   }
 } win;
 
-void DrawWindowUpdate_EV(u8 *colors, u64 internal_width) {
+void DrawWindowUpdate_EV(u8* colors, u64 internal_width) {
   if (!win_init)
     return;
-  SDL_Surface *s = win.surf;
+  SDL_Surface* s = win.surf;
   SDL_LockSurface(s);
-  auto src = colors, dst = (u8 *)s->pixels;
+  auto src = colors, dst = (u8*)s->pixels;
   for (usize y = 0; y < 480; ++y) {
     memcpy(dst, src, 640);
     src += internal_width;
@@ -78,7 +78,7 @@ void DrawWindowUpdate_EV(u8 *colors, u64 internal_width) {
   rct.x          = margin;
   rct.w          = w2;
   rct.h          = h2;
-  SDL_Texture *t = SDL_CreateTextureFromSurface(win.rend, s);
+  SDL_Texture* t = SDL_CreateTextureFromSurface(win.rend, s);
   SDL_RenderClear(win.rend);
   SDL_RenderCopy(win.rend, t, nullptr, &rct);
   SDL_RenderPresent(win.rend);
@@ -220,7 +220,7 @@ auto constexpr K2SC(u8 ch) -> u64 {
   __builtin_unreachable();
 }
 
-auto ScanKey(u64 *sc, SDL_Event *ev) -> int {
+auto ScanKey(u64* sc, SDL_Event* ev) -> int {
   u64 mod = 0;
   if (ev->type == SDL_KEYDOWN) {
   ent:
@@ -453,12 +453,12 @@ auto ScanKey(u64 *sc, SDL_Event *ev) -> int {
   return -1;
 }
 
-static void *kb_cb      = nullptr;
-static void *kb_cb_data = nullptr;
+static void* kb_cb      = nullptr;
+static void* kb_cb_data = nullptr;
 static bool  kb_init    = false;
 static bool  ms_init    = false;
 
-auto SDLCALL KBCallback(void *, SDL_Event *e) -> int {
+auto SDLCALL KBCallback(void*, SDL_Event* e) -> int {
   u64 s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
     FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
@@ -466,9 +466,9 @@ auto SDLCALL KBCallback(void *, SDL_Event *e) -> int {
 }
 
 // x,y,z,(l<<1)|r
-static void *ms_cb = nullptr;
+static void* ms_cb = nullptr;
 
-auto SDLCALL MSCallback(void *, SDL_Event *e) -> int {
+auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
   static Sint32 x, y;
   static int    state;
   static int    z;
@@ -518,7 +518,7 @@ auto SDLCALL MSCallback(void *, SDL_Event *e) -> int {
 
 } // namespace
 
-void InputLoop(bool *off) {
+void InputLoop(bool* off) {
   SDL_Event e;
   while (!*off) {
     if (!SDL_WaitEvent(&e))
@@ -528,17 +528,17 @@ void InputLoop(bool *off) {
       *off = true;
       break;
     case SDL_USEREVENT:
-      DrawWindowUpdate_EV((u8 *)e.user.data1, (uptr)e.user.data2);
+      DrawWindowUpdate_EV((u8*)e.user.data1, (uptr)e.user.data2);
     }
   }
 }
 
-void SetClipboard(char const *text) {
+void SetClipboard(char const* text) {
   SDL_SetClipboardText(text);
 }
 
 auto ClipboardText() -> std::string {
-  char *sdl_clip = SDL_GetClipboardText();
+  char* sdl_clip = SDL_GetClipboardText();
   if (!sdl_clip)
     return {};
   std::string s = sdl_clip;
@@ -579,7 +579,7 @@ void NewDrawWindow() {
   win.window =
       SDL_CreateWindow("TINE Is Not an Emulator", SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_RESIZABLE);
-  SDL_Surface *icon = SDL_CreateRGBSurfaceWithFormat(
+  SDL_Surface* icon = SDL_CreateRGBSurfaceWithFormat(
       0, TINELogo.width, TINELogo.height,
       8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
   SDL_LockSurface(icon);
@@ -601,7 +601,7 @@ void NewDrawWindow() {
   SDL_ShowCursor(SDL_DISABLE);
 }
 
-void DrawWindowUpdate(u8 *colors, u64 internal_width) {
+void DrawWindowUpdate(u8* colors, u64 internal_width) {
   // https://archive.md/yD5QL
   SDL_Event     event;
   SDL_UserEvent userevent;
@@ -613,7 +613,7 @@ void DrawWindowUpdate(u8 *colors, u64 internal_width) {
   userevent.type  = SDL_USEREVENT;
   userevent.code  = 0;
   userevent.data1 = colors;
-  userevent.data2 = (void *)internal_width;
+  userevent.data2 = (void*)internal_width;
 
   event.type = SDL_USEREVENT;
   event.user = userevent;
@@ -621,11 +621,12 @@ void DrawWindowUpdate(u8 *colors, u64 internal_width) {
   SDL_LockMutex(win.screen_mutex);
   SDL_PushEvent(&event);
   // If there are lots of events,it may get lost
-  SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex, 30);
+  // but it wont happen :^)
+  SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex, 33);
   SDL_UnlockMutex(win.screen_mutex);
 }
 
-void SetKBCallback(void *fptr, void *data) {
+void SetKBCallback(void* fptr, void* data) {
   kb_cb      = fptr;
   kb_cb_data = data;
   if (kb_init)
@@ -634,7 +635,7 @@ void SetKBCallback(void *fptr, void *data) {
   SDL_AddEventWatch(KBCallback, data);
 }
 
-void SetMSCallback(void *fptr) {
+void SetMSCallback(void* fptr) {
   ms_cb = fptr;
   if (ms_init)
     return;

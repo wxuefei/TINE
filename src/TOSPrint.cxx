@@ -8,9 +8,9 @@
 #include "TOSPrint.hxx"
 
 namespace {
-auto UnescapeString(char *__restrict str, char *__restrict where) -> char * {
+auto UnescapeString(char* __restrict str, char* __restrict where) -> char* {
   while (*str) {
-    char const *__restrict to;
+    char const* __restrict to;
     switch (*str) {
 #define ESC(c, e) \
   case c:         \
@@ -56,7 +56,7 @@ auto UnescapeString(char *__restrict str, char *__restrict where) -> char * {
   return where;
 }
 
-auto MStrPrint(char const *fmt, u64, i64 *argv) -> std::string {
+auto MStrPrint(char const* fmt, u64, i64* argv) -> std::string {
   // this does not compare argument count(argc)
   // with StrOcc(fmt, '%'), be careful i guess
   // it also isn't a fully featured one but should
@@ -103,13 +103,13 @@ loop:
       ++start;
     }
   }
-#define FMT_CH(x, T)                                           \
-  do {                                                         \
-    usize sz  = snprintf(nullptr, 0, "%" x, ((T *)argv)[arg]); \
-    char *tmp = new (std::nothrow) char[sz + 1];               \
-    snprintf(tmp, sz + 1, "%" x, ((T *)argv)[arg]);            \
-    ret += tmp;                                                \
-    delete[] tmp;                                              \
+#define FMT_CH(x, T)                                         \
+  do {                                                       \
+    auto sz  = snprintf(nullptr, 0, "%" x, ((T*)argv)[arg]); \
+    auto tmp = new (std::nothrow) char[sz + 1];              \
+    snprintf(tmp, sz + 1, "%" x, ((T*)argv)[arg]);           \
+    ret += tmp;                                              \
+    delete[] tmp;                                            \
   } while (false);
   switch (*start) {
   case 'd':
@@ -126,11 +126,11 @@ loop:
     FMT_CH("f", f64);
     break;
   case 'p':
-    FMT_CH("p", void *);
+    FMT_CH("p", void*);
     break;
   case 'c': {
     while (--aux >= 0) {
-      auto chr = ((u64 *)argv)[arg];
+      auto chr = ((u64*)argv)[arg];
       // this accounts for HolyC's multichar character literals too
       while (chr > 0) {
         u8 c = chr & 0xff;
@@ -142,11 +142,11 @@ loop:
   } break;
   case 's': {
     while (--aux >= 0)
-      ret += ((char **)argv)[arg];
+      ret += ((char**)argv)[arg];
   } break;
   case 'q': {
-    char *str = ((char **)argv)[arg],
-         *buf = new (std::nothrow) char[strlen(str) * 4 + 1];
+    auto str = ((char**)argv)[arg];
+    auto buf = new (std::nothrow) char[strlen(str) * 4 + 1];
     UnescapeString(str, buf);
     ret += buf;
     delete[] buf;
@@ -161,7 +161,7 @@ loop:
 }
 } // namespace
 
-void TOSPrint(char const *fmt, u64 argc, i64 *argv) {
+void TOSPrint(char const* fmt, u64 argc, i64* argv) {
   auto s = MStrPrint(fmt, argc, argv);
   fputs(s.c_str(), stderr);
   fflush(stderr);
