@@ -8,9 +8,9 @@
 #include "TOSPrint.hxx"
 
 namespace {
-auto UnescapeString(char* __restrict str, char* __restrict where) -> char* {
+auto UnescapeString(char* str, char* where) -> char* {
   while (*str) {
-    char const* __restrict to;
+    char const* to;
     switch (*str) {
 #define ESC(c, e) \
   case c:         \

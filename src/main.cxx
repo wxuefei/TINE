@@ -18,7 +18,6 @@ namespace {
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
                 nullptr);
   ExitProcess(ERROR_CONTROL_C_EXIT);
-  return TRUE;
   #undef S
 }
 } // namespace
