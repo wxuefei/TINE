@@ -1,6 +1,17 @@
 # ![](./img/logo.png) TINE Is Not a (TempleOS) Emulator
  \* *logo courtesy of CrunkLord420*
 
+## table of contents
+ - [features](#features)
+ - [required skills](#required-skills)
+ - [system requirements](#system-requirements)
+ - [***building & running***](#building)
+ - [showcase](#showcase)
+ - [changes from vanilla TempleOS](#changes-from-vanilla-templeos)
+ - [contributing](#contributing)
+ - [documentation](#documentation)
+ - [short reference](#ref)
+
 ## features
 - seamless filesystem integration, no mounting virtual disks or anything(primary annoyance when working with vanilla TempleOS)
 - networking through FFI using the [dyad](https://github.com/rxi/dyad) library(powers builtin wiki)
@@ -11,6 +22,14 @@
 - run HolyC as a scripting language! `./tine -ctT <filename>.HC`
 - [CLI mode for quick a HolyC REPL in the terminal](#cli)
 
+# showcase
+![](./img/showcase.png)
+
+an example of HolyC/TempleOS' `#exe{}` and freedom of directly fiddling with system-level facilities mimicing `#undef` of ISO C
+
+## cli
+![](./img/cli_showcase.png)
+
 ## required skills
  - knowledge of TempleOS
  - knowledge of C(HolyC specifically but you'll catch on easily)
@@ -20,15 +39,8 @@
  - AMD64 architecture
  - Operating System: Linux, FreeBSD or Windows
 
-# showcase
-![](./img/showcase.png)
 
-an example of HolyC/TempleOS' `#exe{}` and freedom of directly fiddling with system-level facilities mimicing `#undef` of ISO C
-
-## cli
-![](./img/cli_showcase.png)
-
-# **building**
+# building
 ## windows users
 ### only supports >=Win10(complain to msys2 devs not me), msvc unsupported
 install msys2, launch the "MSYS2 MINGW64 Shell", and run the following
@@ -52,6 +64,7 @@ FOR MAINTAINERS AND CONTRIBUTORS: USE THE `-DBUILD_HCRT=OFF` FLAG TO DISABLE AUT
 ```
 ./tine -t T #-h for info on other flags
 ```
+
 # changes from vanilla TempleOS
 `Fs` and `Gs` are not `_intern` anymore, instead they are replaced by normal functions so `&Fs->member` must be replaced by `&(Fs->member)` <br>
 The Windows key functionality has been replaced with the Alt key <br>
