@@ -595,8 +595,8 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // the top of the loop into a rep movsb lmao
   }
   for (usize i = 0; i < ffi_list.size(); ++i)
-    TOSLoader.try_emplace(std::string{ffi_list.begin()[i].m_name}, HTT_FUN,
-                          blob + i * inst.m_sz);
+    TOSLoader.try_emplace(std::string{ffi_list.begin()[i].m_name}, //
+                          /*CSymbol*/ HTT_FUN, blob + i * inst.m_sz);
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))
   // HolyC ABI is __stdcall, the callee cleans up its own stack

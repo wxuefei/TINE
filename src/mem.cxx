@@ -14,15 +14,14 @@ extern DWORD dwAllocationGranularity;
   #include <sys/mman.h>
 #endif
 
-#include <array>
-
 #include <ctype.h>
 
 #include "main.hxx"
 #include "mem.hxx"
 
 #ifdef __linux__
-static inline auto Hex2U64(char* ptr, char** res) -> u64 {
+namespace {
+inline auto Hex2U64(char* ptr, char** res) -> u64 {
   u64  ret = 0;
   char c;
   while (isxdigit(c = *ptr)) {
@@ -33,6 +32,7 @@ static inline auto Hex2U64(char* ptr, char** res) -> u64 {
   *res = ptr;
   return ret;
 }
+} // namespace
 #endif
 
 auto NewVirtualChunk(usize sz, bool low32) -> void* {
@@ -51,11 +51,8 @@ auto NewVirtualChunk(usize sz, bool low32) -> void* {
       // for the code heap than on Windows or maybe FreeBSD(I don't have it
       // installed) but it won't really matter since machine code doesn't take
       // up a lot of space
-      std::array<char, 0x1000> buf;
-      // we make a generous assumption that one line would not exceed
-      // 4096 chars, even 0x100 would have done the job
-      char* buffer  = buf.data();
-      usize line_sz = buf.size();
+      char* buffer  = nullptr;
+      usize line_sz = 0;
       uptr  down    = 0;
       auto  map = fopen("/proc/self/maps", "rb"); // assumes its always there
       // just fs::file_size() wont work lmao
@@ -73,9 +70,9 @@ auto NewVirtualChunk(usize sz, bool low32) -> void* {
         ++ptr;
         u64 upper = Hex2U64(ptr, &ptr);
         down      = upper;
-        line_sz   = buf.size();
       }
     found:
+      free(buffer);
       fclose(map);
       if (down > UINT64_C(0xFFffFFff))
         return nullptr;

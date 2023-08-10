@@ -61,7 +61,8 @@ void LoadOneImport(u8** src_, u8* module_base) {
         decltype(TOSLoader)::iterator it;
         if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end()) {
           fprintf(stderr, "Unresolved reference %p\n", st_ptr);
-          TOSLoader.try_emplace(st_ptr, HTT_IMPORT_SYS_SYM, module_base,
+          TOSLoader.try_emplace(st_ptr, //
+                                /*CSymbol*/ HTT_IMPORT_SYS_SYM, module_base,
                                 (u8*)st_ptr - sizeof(u32) - 1);
         } else {
           auto& sym = it->second;
@@ -139,9 +140,10 @@ void LoadPass1(u8* src, u8* module_base) {
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
       if (etype != IET_IMM32_EXPORT && etype != IET_IMM64_EXPORT)
-        i += (uptr)module_base; // i gets reset at the
-                                // top of the loop so its fine
-      TOSLoader.try_emplace(st_ptr, HTT_EXPORT_SYS_SYM, (u8*)i);
+        i += (uptr)module_base;     // i gets reset at the
+                                    // top of the loop so its fine
+      TOSLoader.try_emplace(st_ptr, //
+                            /*CSymbol*/ HTT_EXPORT_SYS_SYM, (u8*)i);
       SysSymImportsResolve(st_ptr);
       break;
     case IET_REL_I0:

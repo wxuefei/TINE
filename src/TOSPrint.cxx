@@ -35,8 +35,7 @@ auto UnescapeString(char* __restrict str, char* __restrict where) -> char* {
 
   check_us_key: // you bear a striking resemblance
                 // you look just like my bathroom mirror
-    if (isalnum(*str) == 0 &&
-        !strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str)) {
+    if (!isalnum(*str) && !strchr(" ~!@#$%^&*()_+|{}[]\\;':\",./<>?", *str)) {
       // Note: this was giving me bizarre buffer overflow
       // errors and it turns out you MUST use u8 when
       // printing a 8 bit wide octal value to get the correct digits
