@@ -1,4 +1,4 @@
-# ![](./logo.png) TINE Is Not a (TempleOS) Emulator
+# ![](./img/logo.png) TINE Is Not a (TempleOS) Emulator
  \* *logo courtesy of CrunkLord420*
 
 ## features
@@ -8,6 +8,8 @@
     you may want to read dyad's source code(it's not big) and networking examples in `T/{Community,Server}`
 
 - [wiki that guides you through HolyC and TempleOS](#documentation)
+- run HolyC as a scripting language! `./tine -ctT <filename>.HC`
+- [CLI mode for quick a HolyC REPL in the terminal](#cli)
 
 ## required skills
  - knowledge of TempleOS
@@ -19,9 +21,12 @@
  - Operating System: Linux, FreeBSD or Windows
 
 # showcase
-![](./showcase.png)
+![](./img/showcase.png)
 
 an example of HolyC/TempleOS' `#exe{}` and freedom of directly fiddling with system-level facilities mimicing `#undef` of ISO C
+
+## cli
+![](./img/cli_showcase.png)
 
 # **building**
 ## windows users
