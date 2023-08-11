@@ -1,5 +1,6 @@
 #ifdef _WIN32
   #include <windows.h>
+  #include <winnt.h>
   #include <errhandlingapi.h>
 #else
   #include "signal_types.hxx"
@@ -40,20 +41,18 @@ auto WINAPI VectorHandler(struct _EXCEPTION_POINTERS* info) -> LONG {
   default:
     return EXCEPTION_CONTINUE_EXECUTION;
   }
-  CONTEXT* ctx = info->ContextRecord;
-  #define REG(x) ctx->x
-  u64 regs[] =
-      {
-          REG(Rax),    REG(Rcx), REG(Rdx),
-          REG(Rbx),    REG(Rsp), REG(Rbp),
-          REG(Rsi),    REG(Rdi), REG(R8),
-          REG(R9),     REG(R10), REG(R11),
-          REG(R12),    REG(R13), REG(R14),
-          REG(R15),    REG(Rip), (uptr)&ctx->FltSave,
-          REG(EFlags),
-      },
-      rbp = REG(Rbp), rip = REG(Rip);
-  BackTrace(rbp, rip);
+  PCONTEXT ctx = info->ContextRecord;
+  #define REG(x) static_cast<u64>(ctx->x)
+  u64 regs[] = {
+      REG(Rax),    REG(Rcx), REG(Rdx), //
+      REG(Rbx),    REG(Rsp), REG(Rbp), //
+      REG(Rsi),    REG(Rdi), REG(R8),  //
+      REG(R9),     REG(R10), REG(R11),
+      REG(R12),    REG(R13), REG(R14),
+      REG(R15),    REG(Rip), (uptr)&ctx->FltSave,
+      REG(EFlags),
+  };
+  BackTrace(REG(Rbp), REG(Rip));
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["DebuggerLandWin"].val;
@@ -83,38 +82,33 @@ void routine(int sig, siginfo_t*, ucontext_t* ctx) {
   // apparently ucontext is implementation defined idk
   // if your on musl or something fix this yourself and send me a patch
   // probably only works on glibc lmao
-  // heres why i dont take the address of fpregs on linux
   // https://github.com/bminor/glibc/blob/4290aed05135ae4c0272006442d147f2155e70d7/sysdeps/unix/sysv/linux/x86/sys/ucontext.h#L239
   //
   // clang-format on
-  u64 regs[] =
-      {
-          REG(RAX), REG(RCX), REG(RDX),
-          REG(RBX), REG(RSP), REG(RBP),
-          REG(RSI), REG(RDI), REG(R8),
-          REG(R9),  REG(R10), REG(R11),
-          REG(R12), REG(R13), REG(R14),
-          REG(R15), REG(RIP), (uptr)ctx->uc_mcontext.fpregs,
-          REG(EFL),
-      },
-      rip = REG(RIP), rbp = REG(RBP);
+  u64 regs[] = {
+      REG(RAX), REG(RCX), REG(RDX),
+      REG(RBX), REG(RSP), REG(RBP),
+      REG(RSI), REG(RDI), REG(R8),
+      REG(R9),  REG(R10), REG(R11),
+      REG(R12), REG(R13), REG(R14),
+      REG(R15), REG(RIP), (uptr)ctx->uc_mcontext.fpregs,
+      REG(EFL),
+  };
   #elif defined(__FreeBSD__)
     #define REG(X) static_cast<u64>(ctx->uc_mcontext.mc_##X)
   // freebsd seems to just use an
   // array of longs for their floating point context lmao
-  u64 regs[] =
-      {
-          REG(rax),    REG(rcx), REG(rdx),
-          REG(rbx),    REG(rsp), REG(rbp),
-          REG(rsi),    REG(rdi), REG(r8),
-          REG(r9),     REG(r10), REG(r11),
-          REG(r12),    REG(r13), REG(r14),
-          REG(r15),    REG(rip), (uptr)&ctx->uc_mcontext.mc_fpstate,
-          REG(rflags),
-      },
-      rip = REG(rip), rbp = REG(rbp);
+  u64 regs[] = {
+      REG(rax),    REG(rcx), REG(rdx),
+      REG(rbx),    REG(rsp), REG(rbp),
+      REG(rsi),    REG(rdi), REG(r8),
+      REG(r9),     REG(r10), REG(r11),
+      REG(r12),    REG(r13), REG(r14),
+      REG(r15),    REG(rip), (uptr)ctx->uc_mcontext.mc_fpstate,
+      REG(rflags),
+  };
   #endif
-  BackTrace(rbp, rip);
+  BackTrace(regs[5] /*RBP*/, regs[15] /*RIP*/);
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["DebuggerLand"].val;
