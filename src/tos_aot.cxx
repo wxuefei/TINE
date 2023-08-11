@@ -272,29 +272,17 @@ void InitSortedSyms() {
 }
 } // namespace
 
-void BackTrace() {
+void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
   if (!sorted_syms_init)
     InitSortedSyms();
-  putchar('\n');
-  void* rbp = __builtin_frame_address(0);
+  fputc('\n', stderr);
+  auto rbp = reinterpret_cast<void*>(ctx_rbp);
+  auto ptr = reinterpret_cast<void*>(ctx_rip);
   void* oldp;
-  // its 1 because we want to know the return
-  // addr of BackTrace()'s caller
-  void* ptr = __builtin_return_address(1);
-  //
   std::string const* last;
   while (rbp) {
     oldp = nullptr;
-    last = &unknown_fun; // this will never be printed
-                         // here's the thing: i have to scour through the whole
-                         // debug info and function body to mimic
-                         // StrPrintFunSeg()'s behavior and a 64kb difference
-                         // might seem like a reasonable magic number but that's
-                         // kinda just a really stupid way to do it so i decided
-                         // to just not do it also BackTrace() runs in
-                         // a pretty confined situation so i dont think actually
-                         // implementing the thing is worth it either, plus, the
-                         // HolyC side has its own backtrace too anyways
+    last = &unknown_fun;
     for (auto const& s : sorted_syms) {
       void* curp = TOSLoader[s].val;
       if (curp == ptr) {
@@ -311,7 +299,7 @@ void BackTrace() {
     ptr = static_cast<void**>(rbp)[1]; // [RBP+0x8] is the return address
     rbp = static_cast<void**>(rbp)[0]; // [RBP] is the previous base pointer
   }
-  putchar('\n');
+  fputc('\n', stderr);
 }
 
 // who the fuck cares about memory leaks

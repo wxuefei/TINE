@@ -23,7 +23,7 @@ struct CSymbol {
 
 extern std::unordered_map<std::string, CSymbol> TOSLoader;
 
-void BackTrace();
+void BackTrace(uptr /*RBP*/, uptr /*RIP*/);
 void LoadHCRT(std::string const&);
 
 // clang-format off
