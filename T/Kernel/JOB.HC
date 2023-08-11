@@ -556,7 +556,10 @@ U0 CoreAPSethTask()
   I64 us,t;
   while (TRUE) {
     do {
+      while(LBts(&(Fs->task_flags),TASKf_KILL_DYING_LOCK)) 
+        PAUSE;
       TaskKillDying;
+      LBtr(&(Fs->task_flags),TASKf_KILL_DYING_LOCK);
       do PAUSE
       while (LBts(&ctrl->flags,JOBCf_LOCKED));
     } while (ctrl->next_waiting!=ctrl && JobRunOne(GetRFlags,ctrl));

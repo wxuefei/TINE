@@ -214,8 +214,33 @@ I64 ExeCmdLine(CCmpCtrl *cc)
 }
 Bool TaskValidate(CTask *task)
 {//return TRUE if task looks valid.
+  I64 c=0,found=FALSE,unlock=FALSE;
+  CTask *t,*t2;
   if(!__IsValidPtr(task)||!task)
     return FALSE;
+  if(!cpu_structs) goto defacto;
+  for(c=0;c!=mp_cnt;c++) {
+    t=cpu_structs[c]->seth_task;
+    if(!t) goto defacto;
+    if(!LBts(&t->task_flags,TASKf_KILL_DYING_LOCK)) {
+      unlock=TRUE;
+      while(!LBts(&t->task_flags,TASKf_KILL_DYING_LOCK))
+        PAUSE;
+    }
+    if(t!=task) { 
+      for(t2=t->next_task;t2!=t;t2=t2->next_task) {
+        if(task==t2) {
+          found=TRUE;
+          break;
+        }
+      }
+    } else 
+      found=TRUE;
+    if(unlock)
+      LBtr(&t->task_flags,TASKf_KILL_DYING_LOCK);
+  }
+  if(!found) return FALSE;
+defacto:
   if(task->task_signature!=TASK_SIGNATURE_VAL)
     return FALSE;
   else
@@ -406,7 +431,7 @@ U0 KillAdam() {
   Kill(adam_task);
 }
 U0 TaskKillDying() {
-  while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
+  while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     PAUSE;
   CTaskDying *task=Gs->next_dying,*task1;
   while (task!=&(Gs->next_dying)) {

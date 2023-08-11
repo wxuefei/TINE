@@ -3481,6 +3481,8 @@ public class CTaskSettings
 #define TASKf_NONTIMER_RAND	14
 //Added in TINE 
 #define TASKf_JUST_STEPPED 15
+//Added in TINE,used to lock a seth task to not call TaskKillDying
+#define TASKf_KILL_DYING_LOCK 16
 
 //CTask.display_flags
 #define DISPLAYf_SHOW			0
