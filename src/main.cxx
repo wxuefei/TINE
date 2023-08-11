@@ -6,6 +6,9 @@
   #include <processenv.h>
   #include <processthreadsapi.h>
 
+  // double include, i know, fuck you
+  #include "multic.hxx"
+
   // for mingw
   // https://archive.md/HEZm2#selection-3667.0-3698.0
   #ifndef ERROR_CONTROL_C_EXIT
@@ -17,8 +20,10 @@ namespace {
   #define S(x) x, lstrlenA(x)
   WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
                 nullptr);
+  ShutdownCores(ERROR_CONTROL_C_EXIT);
   ExitProcess(ERROR_CONTROL_C_EXIT);
   #undef S
+  return TRUE;
 }
 } // namespace
 

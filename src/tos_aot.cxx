@@ -276,9 +276,10 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
   if (!sorted_syms_init)
     InitSortedSyms();
   fputc('\n', stderr);
-  auto rbp = reinterpret_cast<void*>(ctx_rbp);
-  auto ptr = reinterpret_cast<void*>(ctx_rip);
+  auto  rbp = reinterpret_cast<void*>(ctx_rbp);
+  auto  ptr = reinterpret_cast<void*>(ctx_rip);
   void* oldp;
+  //
   std::string const* last;
   while (rbp) {
     oldp = nullptr;
@@ -288,8 +289,10 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
       if (curp == ptr) {
         fprintf(stderr, "%s\n", s.c_str());
       } else if (curp > ptr) {
-        fprintf(stderr, "%s [%p+%#" PRIx64 "] %p %p %p\n", last->c_str(), ptr,
-                (u8*)ptr - (u8*)oldp, curp, ptr, oldp);
+        // i know im supposed to use %p but it's weird beecause on windows it's
+        // fucky wucky(prints numbers with 0s)
+        fprintf(stderr, "%s [%#" PRIx64 "+%#" PRIx64 "] %#" PRIx64 "\n",
+                last->c_str(), (uptr)ptr, (u8*)ptr - (u8*)oldp, (uptr)curp);
         goto next;
       }
       oldp = curp;
