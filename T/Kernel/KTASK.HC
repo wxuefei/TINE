@@ -222,11 +222,6 @@ Bool TaskValidate(CTask *task)
   for(c=0;c!=mp_cnt;c++) {
     t=cpu_structs[c]->seth_task;
     if(!t) goto defacto;
-    if(!LBts(&t->task_flags,TASKf_KILL_DYING_LOCK)) {
-      unlock=TRUE;
-      while(!LBts(&t->task_flags,TASKf_KILL_DYING_LOCK))
-        PAUSE;
-    }
     if(t!=task) { 
       for(t2=t->next_task;t2!=t;t2=t2->next_task) {
         if(task==t2) {
@@ -236,8 +231,6 @@ Bool TaskValidate(CTask *task)
       }
     } else 
       found=TRUE;
-    if(unlock)
-      LBtr(&t->task_flags,TASKf_KILL_DYING_LOCK);
   }
   if(!found) return FALSE;
 defacto:
@@ -432,7 +425,7 @@ U0 KillAdam() {
 }
 U0 TaskKillDying() {
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
-    PAUSE;
+    PAUSE
   CTaskDying *task=Gs->next_dying,*task1;
   while (task!=&(Gs->next_dying)) {
     task1=task->next;

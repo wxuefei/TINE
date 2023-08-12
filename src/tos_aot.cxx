@@ -65,7 +65,7 @@ void LoadOneImport(u8** src_, u8* module_base) {
                                 /*CSymbol*/ HTT_IMPORT_SYS_SYM, module_base,
                                 (u8*)st_ptr - sizeof(u32) - 1);
         } else {
-          auto& sym = it->second;
+          auto const& [_, sym] = *it;
           if (sym.type != HTT_IMPORT_SYS_SYM)
             i = (uptr)sym.val;
         }
@@ -117,7 +117,7 @@ void SysSymImportsResolve(char* st_ptr) {
   decltype(TOSLoader)::iterator it;
   if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end())
     return;
-  auto& sym = it->second;
+  auto& [_, sym] = *it;
   if (sym.type != HTT_IMPORT_SYS_SYM)
     return;
   LoadOneImport(&sym.module_header_entry, sym.module_base);
@@ -241,7 +241,7 @@ void LoadHCRT(std::string const& name) {
   fclose(f);
   // I think this breaks strict aliasing but
   // I dont think it matters because its packed(?)
-  auto bfh = (CBinFile*)bfh_addr;
+  auto bfh = reinterpret_cast<CBinFile*>(bfh_addr);
   if (memcmp(bfh->bin_signature, "TOSB" /*BIN_SIGNATURE_VAL*/, 4)) {
     fprintf(stderr, "INVALID TEMPLEOS BINARY FILE %s\n", name.c_str());
     _Exit(1);
@@ -262,8 +262,8 @@ bool                     sorted_syms_init = false;
 std::string const        unknown_fun{"UNKNOWN"};
 
 void InitSortedSyms() {
-  for (auto const& e : TOSLoader)
-    sorted_syms.emplace_back(e.first);
+  for (auto const& [name, _] : TOSLoader)
+    sorted_syms.emplace_back(name);
   std::sort(sorted_syms.begin(), sorted_syms.end(),
             [](auto const& a, auto const& b) -> bool {
               return TOSLoader[a].val < TOSLoader[b].val;
@@ -287,7 +287,7 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
     for (auto const& s : sorted_syms) {
       void* curp = TOSLoader[s].val;
       if (curp == ptr) {
-        fprintf(stderr, "%s\n", s.c_str());
+        fprintf(stderr, "%s [%#" PRIx64 "]\n", s.c_str(), (uptr)ptr);
       } else if (curp > ptr) {
         // i know im supposed to use %p but it's weird beecause on windows it's
         // fucky wucky(prints numbers with 0s)
@@ -317,14 +317,11 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
 [[gnu::used, gnu::visibility("default")]] auto WhichFun(void* ptr) -> char* {
   if (!sorted_syms_init)
     InitSortedSyms();
-  std::string const* last;
+  std::string const* last = &unknown_fun;
   for (auto const& s : sorted_syms) {
     void* curp = TOSLoader[s].val;
-    if (curp == ptr) {
-      fprintf(stderr, "%s\n", s.c_str());
-    } else if (curp > ptr) {
+    if (curp >= ptr)
       return STR_DUP(last);
-    }
     last = &s;
   }
   return STR_DUP(last);

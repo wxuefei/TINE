@@ -533,7 +533,7 @@ I64 seth_tasks_ready=0;
 I64 idx;
 for(idx=mp_cnt;idx--;) 
 	seth_tasks[idx]=CAlloc(sizeof(CTask),&ahd);
-U0 CoreAPSethTask()
+U0 CoreAPSethTask()
 {
   //Fs must be set for Gs allocates memory and wants an Fs
   if(!Fs) {
@@ -556,10 +556,7 @@ U0 CoreAPSethTask()
   I64 us,t;
   while (TRUE) {
     do {
-      while(LBts(&(Fs->task_flags),TASKf_KILL_DYING_LOCK)) 
-        PAUSE;
       TaskKillDying;
-      LBtr(&(Fs->task_flags),TASKf_KILL_DYING_LOCK);
       do PAUSE
       while (LBts(&ctrl->flags,JOBCf_LOCKED));
     } while (ctrl->next_waiting!=ctrl && JobRunOne(GetRFlags,ctrl));

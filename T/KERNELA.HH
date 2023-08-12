@@ -3481,8 +3481,6 @@ public class CTaskSettings
 #define TASKf_NONTIMER_RAND	14
 //Added in TINE 
 #define TASKf_JUST_STEPPED 15
-//Added in TINE,used to lock a seth task to not call TaskKillDying
-#define TASKf_KILL_DYING_LOCK 16
 
 //CTask.display_flags
 #define DISPLAYf_SHOW			0
@@ -3589,7 +3587,7 @@ public class CTask //The Fs segment reg points to current CTask.
   CWinScroll horz_scroll,vert_scroll;
 
   I64	user_data;
-};
+};
 class CTSS
 {
   U32	res1;
