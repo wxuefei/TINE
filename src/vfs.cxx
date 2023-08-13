@@ -97,11 +97,13 @@ auto VFsDel(char const* p) -> bool {
   if (!FExists(path))
     return false;
   std::error_code e;
-  // remove_all can still throw but
-  // only when it's out of memory which
-  // SHOULD terminate
+  // remove_all can still throw but only when it's out of memory which SHOULD
+  // terminate and im not going to write an OOM handler and enable exceptions
+  // just for this, not to mention that exceptions themselves allocate memory so
+  // the thing will just go kablooey anyway and the OS will be frozen before the
+  // program will be able to do anything meaningful
   // https://archive.md/kkVNq#selection-56944.0-56944.3
-  return (static_cast<umax>(-1) != fs::remove_all(path, e)) && !e;
+  return static_cast<umax>(-1) != fs::remove_all(path, e);
 }
 
 auto VFsFSize(char const* name) -> i64 {

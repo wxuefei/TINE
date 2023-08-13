@@ -57,10 +57,10 @@ void LoadOneImport(u8** src_, u8* module_base) {
         *src_ = (u8*)st_ptr - sizeof(u32) - 1;
         return;
       } else {
-        first = false;
-        decltype(TOSLoader)::iterator it;
-        if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end()) {
-          fprintf(stderr, "Unresolved reference %p\n", st_ptr);
+        first   = false;
+        auto it = TOSLoader.find(st_ptr);
+        if (it == TOSLoader.end()) {
+          fprintf(stderr, "Unresolved reference %s\n", st_ptr);
           TOSLoader.try_emplace(st_ptr, //
                                 /*CSymbol*/ HTT_IMPORT_SYS_SYM, module_base,
                                 (u8*)st_ptr - sizeof(u32) - 1);
@@ -114,8 +114,8 @@ void LoadOneImport(u8** src_, u8* module_base) {
 }
 
 void SysSymImportsResolve(char* st_ptr) {
-  decltype(TOSLoader)::iterator it;
-  if ((it = TOSLoader.find(st_ptr)) == TOSLoader.end())
+  auto it = TOSLoader.find(st_ptr);
+  if (it == TOSLoader.end())
     return;
   auto& [_, sym] = *it;
   if (sym.type != HTT_IMPORT_SYS_SYM)
@@ -284,6 +284,8 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
   while (rbp) {
     oldp = nullptr;
     last = &unknown_fun;
+    // linear search that iterates over symbols sorted in ascending address
+    // order to find out where we were
     for (auto const& s : sorted_syms) {
       void* curp = TOSLoader[s].val;
       if (curp == ptr) {
@@ -319,8 +321,7 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
     InitSortedSyms();
   std::string const* last = &unknown_fun;
   for (auto const& s : sorted_syms) {
-    void* curp = TOSLoader[s].val;
-    if (curp >= ptr)
+    if (TOSLoader[s].val >= ptr)
       return STR_DUP(last);
     last = &s;
   }
