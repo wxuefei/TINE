@@ -19,6 +19,8 @@
 #include <atomic>
 #include <vector>
 
+#include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <tos_ffi.h>
@@ -188,7 +190,9 @@ void CreateCore(usize core, void* fp) {
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
 #else
   pthread_create(&cores[core].thread, nullptr, LaunchCore, core_n);
-  pthread_setname_np(cores[core].thread, "Seth");
+  char buf[16]{};
+  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", core);
+  pthread_setname_np(cores[core].thread, buf);
 #endif
 }
 
