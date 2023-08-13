@@ -133,7 +133,7 @@ auto main(int argc, char** argv) -> int {
   struct arg_lit *helpArg, *sixty_fps, *commandLineArg, *cb_sanitize, *ndebug,
       *noans;
   struct arg_file *cmdLineFiles, *TDriveArg, *HCRTArg;
-
+  //
   void* argtable[] = {
       helpArg        = arg_lit0("h", "help", "Display this help message"),
       sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
@@ -159,6 +159,7 @@ auto main(int argc, char** argv) -> int {
     VFsMountDrive('T', TDriveArg->filename[0]);
   } else if (e) {
     fprintf(stderr, "SYSTEM ERROR OCCURED: %s\n", e.message().c_str());
+    return 1;
   } else {
     fprintf(stderr, "%s DOES NOT EXIST\n", TDriveArg->filename[0]);
     return 1;
@@ -193,6 +194,7 @@ auto main(int argc, char** argv) -> int {
       fprintf(stderr, "Using %s as the kernel.\n", bin_path.c_str());
   } else if (e) {
     fprintf(stderr, "SYSTEM ERROR OCCURED: %s\n", e.message().c_str());
+    return 1;
   } else {
     fprintf(stderr,
             "%s DOES NOT EXIST, MAYBE YOU FORGOT TO BOOTSTRAP IT? REFER TO "
@@ -201,10 +203,10 @@ auto main(int argc, char** argv) -> int {
     return 1;
   }
   BootstrapLoader();
-  if (!is_cmd_line)
+  if (!is_cmd_line) {
     NewDrawWindow();
-  if (is_win || !is_cmd_line)
     InitSound();
+  }
   LaunchCore0(Core0);
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   if (!is_cmd_line) {

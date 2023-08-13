@@ -36,12 +36,12 @@ thread_local u8          thrd_drv;
 
 inline auto FExists(std::string const& path) -> bool {
   std::error_code e;
-  return fs::exists(path, e) && !e; // shortcircuit ops are well defined
+  return fs::exists(path, e);
 }
 
 inline auto FIsDir(std::string const& path) -> bool {
   std::error_code e;
-  return fs::is_directory(path, e) && !e;
+  return fs::is_directory(path, e);
 }
 
 std::array<std::string, 'z' - 'a' + 1> mount_points;
@@ -89,7 +89,7 @@ auto VFsDirMk(char const* to) -> bool {
     return true;
   }
   std::error_code e;
-  return fs::create_directory(p, e) && !e;
+  return fs::create_directory(p, e);
 }
 
 auto VFsDel(char const* p) -> bool {
