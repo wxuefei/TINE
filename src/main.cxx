@@ -119,6 +119,9 @@ auto main(int argc, char** argv) -> int {
   rl.rlim_cur = rl.rlim_max;
   setrlimit(RLIMIT_NOFILE, &rl);
   page_size = sysconf(_SC_PAGESIZE);
+  signal(SIGINT, [](int) {
+    ShutdownCores(1);
+  });
 #else
   SYSTEM_INFO si;
   GetSystemInfo(&si);
