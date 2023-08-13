@@ -219,9 +219,9 @@ void ShutdownCores(int ec) {
   for (usize c = 0; c < proc_cnt; ++c)
     if (c != core_num)
       ShutdownCore(c);
-  // This is the same as calling Core0Exit
-  // with the difference of being able to exit
-  // with a specific exit code
+  // on Windows this might not fully "close"
+  // the application so we must issue an
+  // ExitProcess() after this
   exit(ec);
 }
 
