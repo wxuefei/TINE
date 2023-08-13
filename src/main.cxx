@@ -59,13 +59,6 @@ using std::thread;
 
 namespace {
 
-constexpr bool is_win =
-#ifdef _WIN32
-    true;
-#else
-    false;
-#endif
-
 std::string boot_str;
 std::string bin_path{"HCRT.BIN"};
 
@@ -92,6 +85,9 @@ auto WINAPI Core0(LPVOID) -> DWORD {
 
 } // namespace
 
+bool sanitize_clipboard = false;
+bool is_cmd_line        = false;
+
 auto CmdLineBootText() -> char const* {
   return boot_str.c_str();
 }
@@ -99,11 +95,11 @@ auto CmdLineBootText() -> char const* {
 void ShutdownTINE(int ec) {
   prog_exit = true;
   exit_code = ec;
-  ShutdownCores(ec);
+  if (is_cmd_line)
+    ShutdownCores(ec); // WaitForCore0 is just a thread joiner
+                       // so control flow wont reach the end of main()
+                       // thus we manually terminate
 }
-
-bool sanitize_clipboard = false;
-bool is_cmd_line        = false;
 
 #ifndef _WIN32
 usize page_size; // used for allocation
@@ -217,6 +213,7 @@ auto main(int argc, char** argv) -> int {
   } else {
     WaitForCore0();
   }
+  ShutdownCores(exit_code);
   return exit_code;
 }
 
