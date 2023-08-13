@@ -29,6 +29,7 @@ namespace {
 
 #else
   #include "signal_types.hxx"
+  #include <string.h>
   #include <sys/resource.h>
   #include <unistd.h>
 #endif
@@ -120,7 +121,10 @@ auto main(int argc, char** argv) -> int {
   setrlimit(RLIMIT_NOFILE, &rl);
   page_size = sysconf(_SC_PAGESIZE);
   signal(SIGINT, [](int) {
+  #define S(x) x, strlen(x)
+    write(2, S("User abort.\n"));
     ShutdownCores(1);
+  #undef S
   });
 #else
   SYSTEM_INFO si;
