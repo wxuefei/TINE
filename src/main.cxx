@@ -78,6 +78,10 @@ auto WINAPI Core0(LPVOID) -> DWORD {
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });
+  static void* fp = nullptr;
+  if (!fp)
+    fp = TOSLoader["__InterruptCoreRoutine"].val;
+  signal(SIGUSR2, (SignalCallback*)fp);
   return nullptr;
 #else
   return 0;

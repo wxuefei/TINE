@@ -247,12 +247,6 @@ void LoadHCRT(std::string const& name) {
     _Exit(1);
   }
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
-#ifndef _WIN32
-  static void* fp = nullptr;
-  if (!fp)
-    fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (SignalCallback*)fp);
-#endif
   LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
 }
 

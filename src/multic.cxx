@@ -83,13 +83,13 @@ auto WINAPI LaunchCore(LPVOID c) -> DWORD {
   SetupDebugger();
   core_num = (uptr)c;
 #ifndef _WIN32
+  signal(SIGUSR1, [](int) {
+    pthread_exit(nullptr);
+  });
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   signal(SIGUSR2, (SignalCallback*)fp);
-  signal(SIGUSR1, [](int) {
-    pthread_exit(nullptr);
-  });
 #endif
   // CoreAPSethTask(...) (T/FULL_PACKAGE.HC)
   // ZERO_BP so the return addr&rbp is 0 and
