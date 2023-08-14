@@ -153,7 +153,7 @@ auto main(int argc, char** argv) -> int {
       arg_end_(1),
   };
   int errs = arg_parse(argc, argv, argtable);
-  if (helpArg->count > 0 || errs > 0 || TDriveArg->count == 0) {
+  if (helpArg->count > 0 || errs > 0 || !TDriveArg->count) {
     fprintf(stderr, "Usage: %s", argv[0]);
     arg_print_syntaxv(stderr, argtable, "\n");
     arg_print_glossary_gnu(stderr, argtable);
@@ -175,9 +175,9 @@ auto main(int argc, char** argv) -> int {
   }
   if (cb_sanitize->count > 0)
     sanitize_clipboard = true;
-  if (ndebug->count == 0)
+  if (!ndebug->count)
     boot_str += "__EnableDbg;\n";
-  if (noans->count == 0)
+  if (!noans->count)
     boot_str += "__EnableAns;\n";
   if (is_cmd_line) {
     boot_str += "#exe {Drv('Z');};\n";
@@ -190,12 +190,12 @@ auto main(int argc, char** argv) -> int {
     std::replace(boot_str.begin(), boot_str.end(), '\\', '/');
 #endif
   }
-  if (sixty_fps->count != 0)
+  if (sixty_fps->count)
     boot_str += "SetFPS(60.);\n";
   if (HCRTArg->count > 0)
     bin_path = HCRTArg->filename[0];
   if (std::error_code e; fs::exists(bin_path, e)) {
-    if (ndebug->count == 0)
+    if (!ndebug->count)
       fprintf(stderr, "Using %s as the kernel.\n", bin_path.c_str());
   } else if (e) {
     fprintf(stderr, "SYSTEM ERROR OCCURED: %s\n", e.message().c_str());
@@ -207,13 +207,13 @@ auto main(int argc, char** argv) -> int {
             bin_path.c_str());
     return 1;
   }
+  arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
   if (!is_cmd_line) {
     NewDrawWindow();
     InitSound();
   }
   LaunchCore0(Core0);
-  arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   if (!is_cmd_line) {
 #ifdef _WIN32
     SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);

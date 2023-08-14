@@ -128,7 +128,7 @@ loop:
   case 'p':
     FMT_CH("p", void*);
     break;
-  case 'c': {
+  case 'c':
     while (--aux >= 0) {
       auto chr = ((u64*)argv)[arg];
       // this accounts for HolyC's multichar character literals too
@@ -139,19 +139,18 @@ loop:
           ret += static_cast<char>(c);
       }
     }
-  } break;
-  case 's': {
+    break;
+  case 's':
     while (--aux >= 0)
       ret += ((char**)argv)[arg];
-  } break;
+    break;
   case 'q': {
     auto str = ((char**)argv)[arg];
     auto buf = new (std::nothrow) char[strlen(str) * 4 + 1];
     UnescapeString(str, buf);
     ret += buf;
     delete[] buf;
-    break;
-  }
+  } break;
   case '%':
     ret += '%';
     break;

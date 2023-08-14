@@ -58,7 +58,7 @@ auto VFsFNameAbs(char const* name) -> std::string {
               + 3 /* probably 2 will work but to be sure */);
   ret += drv_path;
   ret += delim;
-  if (thrd_pwd.size() > 1) {
+  if (thrd_pwd.size() > 1) { // thrd_pwd is not "/"
     // c++20 supports ranges but oh well.
     ret += std::string_view{
         thrd_pwd.data() + 1, // ignore '/'

@@ -65,32 +65,36 @@ struct CCore {
   // failed on my machine
 #endif
   void* fp;
+  usize core_num;
 };
 
+// TempleOS has a hardcoded maximum core count of 128 but oh well,
+// let's be flexible in case we get machines with more of them
 std::vector<CCore> cores;
 thread_local usize core_num;
 
 #ifndef _WIN32
-auto LaunchCore(void* c) -> void* {
+auto LaunchCore(void* self_arg) -> void* {
 #else
-auto WINAPI LaunchCore(LPVOID c) -> DWORD {
+auto WINAPI LaunchCore(LPVOID self_arg) -> DWORD {
 #endif
+  auto self = static_cast<CCore*>(self_arg);
   VFsThrdInit();
   SetupDebugger();
-  core_num = (uptr)c;
+  core_num = self->core_num;
 #ifndef _WIN32
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
   });
-  static void* fp = nullptr;
-  if (!fp)
-    fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (SignalCallback*)fp);
+  static void* sig_fp = nullptr;
+  if (!sig_fp)
+    sig_fp = TOSLoader["__InterruptCoreRoutine"].val;
+  signal(SIGUSR2, (SignalCallback*)sig_fp);
 #endif
   // CoreAPSethTask(...) (T/FULL_PACKAGE.HC)
   // ZERO_BP so the return addr&rbp is 0 and
   // stack traces don't climb up the C++ stack
-  FFI_CALL_TOS_0_ZERO_BP(cores[core_num].fp);
+  FFI_CALL_TOS_0_ZERO_BP(self->fp);
 #ifdef _WIN32
   return 0;
 #else
@@ -139,11 +143,12 @@ auto CoreNum() -> usize {
 // we have to set RIP manually(this routine is called
 // when CTRL+ALT+C is pressed inside TempleOS
 void InterruptCore(usize core) {
+  auto& c = cores[core];
 #ifdef _WIN32
   CONTEXT ctx{};
   ctx.ContextFlags = CONTEXT_FULL;
-  SuspendThread(cores[core].thread);
-  GetThreadContext(cores[core].thread, &ctx);
+  SuspendThread(c.thread);
+  GetThreadContext(c.thread, &ctx);
   // push rip
   ctx.Rsp -= sizeof(DWORD64) /*8*/;
   ((DWORD64*)ctx.Rsp)[0] = ctx.Rip;
@@ -152,45 +157,48 @@ void InterruptCore(usize core) {
   if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
   // movabs rip, <fp>
-  ctx.Rip = (uptr)fp;
-  SetThreadContext(cores[core].thread, &ctx);
-  ResumeThread(cores[core].thread);
+  ctx.Rip = reinterpret_cast<uptr>(fp);
+  SetThreadContext(c.thread, &ctx);
+  ResumeThread(c.thread);
 #else
-  pthread_kill(cores[core].thread, SIGUSR2);
+  pthread_kill(c.thread, SIGUSR2);
 #endif
 }
 
 void LaunchCore0(ThreadCallback* fp) {
   cores.resize(proc_cnt);
+  auto& c    = cores[0];
+  c.core_num = 0;
 #ifdef _WIN32
-  cores[0].thread = CreateThread(nullptr, 0, fp, nullptr, 0, nullptr);
-  cores[0].mtx    = CreateMutex(nullptr, FALSE, nullptr);
-  cores[0].event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-  SetThreadPriority(cores[0].thread, THREAD_PRIORITY_HIGHEST);
+  c.thread = CreateThread(nullptr, 0, fp, nullptr, 0, nullptr);
+  c.mtx    = CreateMutex(nullptr, FALSE, nullptr);
+  c.event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+  SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
   // im not going to use SEH or some crazy bulllshit to set the
   // thread name on windows(https://archive.md/9jiD5)
 #else
-  pthread_create(&cores[0].thread, nullptr, fp, nullptr);
-  pthread_setname_np(cores[0].thread, "Seth(Core0)");
+  pthread_create(&c.thread, nullptr, fp, nullptr);
+  pthread_setname_np(c.thread, "Seth(Core0)");
 #endif
 }
 
 void CreateCore(usize core, void* fp) {
-  auto core_n = (void*)core;
+  auto& c = cores[core];
   // CoreAPSethTask(...) passed from SpawnCore
-  cores[core].fp = fp;
+  c.fp       = fp;
+  c.core_num = core;
 #ifdef _WIN32
-  cores[core].thread = CreateThread(nullptr, 0, LaunchCore, core_n, 0, nullptr);
-  cores[core].mtx    = CreateMutex(nullptr, FALSE, nullptr);
-  cores[core].event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-  SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
+  c.thread = CreateThread(nullptr, 0, LaunchCore, &c, 0, nullptr);
+  c.mtx    = CreateMutex(nullptr, FALSE, nullptr);
+  c.event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+  SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
 #else
-  pthread_create(&cores[core].thread, nullptr, LaunchCore, core_n);
+  pthread_create(&c.thread, nullptr, LaunchCore, &c);
   char buf[16]{}; // pxor xmm0,xmm0; movups XMMWORD PTR[buf],xmm0
                   // other than that, pthread_setname_np() for Linux
                   // requires a maximum buf len of 16
   snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", core);
-  pthread_setname_np(cores[core].thread, buf);
+  pthread_setname_np(c.thread, buf);
 #endif
 }
 
@@ -203,15 +211,16 @@ void WaitForCore0() {
 }
 
 void ShutdownCore(usize core) {
+  auto& t = cores[core].thread;
 #ifdef _WIN32
-  TerminateThread(cores[core].thread, 0);
+  TerminateThread(t, 0);
 #else
   // you actually cant terminate a thread from core 0
   // with pthreads, you need some signal handler
   // in that thread that terminates itself and
   // i basically tell it to kill itself
-  pthread_kill(cores[core].thread, SIGUSR1);
-  pthread_join(cores[core].thread, nullptr);
+  pthread_kill(t, SIGUSR1);
+  pthread_join(t, nullptr);
 #endif
 }
 
@@ -226,20 +235,21 @@ void ShutdownCores(int ec) {
 }
 
 void AwakeFromSleeping(usize core) {
+  auto& c = cores[core];
 #ifdef _WIN32
-  WaitForSingleObject(cores[core].mtx, INFINITE);
-  cores[core].awake_at = 0;
-  SetEvent(cores[core].event);
-  ReleaseMutex(cores[core].mtx);
+  WaitForSingleObject(c.mtx, INFINITE);
+  c.awake_at = 0;
+  SetEvent(c.event);
+  ReleaseMutex(c.mtx);
 #else
   u32 old = 1;
-  __atomic_compare_exchange_n(&cores[core].is_sleeping, &old, 0u, false,
+  __atomic_compare_exchange_n(&c.is_sleeping, &old, 0u, false,
                               __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
   #ifdef __linux__
-  syscall(SYS_futex, &cores[core].is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr,
+  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr,
           0);
   #elif defined(__FreeBSD__)
-  _umtx_op(&cores[core].is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
+  _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
   #endif
 #endif
 }
@@ -287,21 +297,22 @@ auto GetTicksHP() -> u64 {
 #endif
 
 void SleepHP(u64 us) {
+  auto& c = cores[core_num];
 #ifdef _WIN32
   auto const s = GetTicksHP();
-  WaitForSingleObject(cores[core_num].mtx, INFINITE);
-  cores[core_num].awake_at = s + us / 1000;
-  ReleaseMutex(cores[core_num].mtx);
-  WaitForSingleObject(cores[core_num].event, INFINITE);
+  WaitForSingleObject(c.mtx, INFINITE);
+  c.awake_at = s + us / 1000;
+  ReleaseMutex(c.mtx);
+  WaitForSingleObject(c.event, INFINITE);
 #else
   struct timespec ts {};
   ts.tv_nsec = us * 1000;
-  __atomic_store_n(&cores[core_num].is_sleeping, 1u, __ATOMIC_SEQ_CST);
+  __atomic_store_n(&c.is_sleeping, 1u, __ATOMIC_SEQ_CST);
   #ifdef __linux__
-  syscall(SYS_futex, &cores[core_num].is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr,
+  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr,
           0);
   #elif defined(__FreeBSD__)
-  _umtx_op(&cores[core_num].is_sleeping, UMTX_OP_WAIT_UINT, 1u,
+  _umtx_op(&c.is_sleeping, UMTX_OP_WAIT_UINT, 1u,
            (void*)sizeof(struct timespec), &ts);
   #endif
 #endif

@@ -96,7 +96,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void* {
     // from a reasonable small value
     uptr alloc = dwAllocationGranularity, addr;
     while (alloc <= UINT64_C(0xFFffFFff)) {
-      if (0 == VirtualQuery((void*)alloc, &mbi, sizeof mbi))
+      if (!VirtualQuery((void*)alloc, &mbi, sizeof mbi))
         return nullptr;
       alloc = (uptr)mbi.BaseAddress + mbi.RegionSize;
       // clang-format off
