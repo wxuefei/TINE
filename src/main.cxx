@@ -28,7 +28,6 @@ namespace {
 } // namespace
 
 #else
-  #include "signal_types.hxx"
   #include <string.h>
   #include <sys/resource.h>
   #include <unistd.h>
@@ -51,7 +50,6 @@ namespace {
 #include "sdl_window.hxx"
 #include "sound.h"
 #include "tos_aot.hxx"
-#include "types.h"
 #include "vfs.hxx"
 
 namespace fs = std::filesystem;

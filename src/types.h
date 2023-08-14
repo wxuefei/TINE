@@ -22,6 +22,9 @@ typedef int8_t    i8;
 typedef double    f64;
 typedef float     f32;
 
+#include <signal.h>
+typedef void SignalCallback(int);
+
 #ifdef __cplusplus
 }
 #endif

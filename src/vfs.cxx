@@ -8,6 +8,7 @@
 #include <array>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
@@ -46,6 +47,32 @@ inline auto FIsDir(std::string const& path) -> bool {
 
 std::array<std::string, 'z' - 'a' + 1> mount_points;
 
+auto VFsFNameAbs(char const* name) -> std::string {
+  auto name_len = strlen(name);
+  // thrd_drv is always uppercase
+  auto const& drv_path = mount_points[thrd_drv - 'A'];
+  std::string ret;
+  ret.reserve(drv_path.size()   //
+              + thrd_pwd.size() //
+              + name_len        //
+              + 3 /* probably 2 will work but to be sure */);
+  ret += drv_path;
+  ret += delim;
+  if (thrd_pwd.size() > 1) {
+    // c++20 supports ranges but oh well.
+    ret += std::string_view{
+        thrd_pwd.data() + 1, // ignore '/'
+        thrd_pwd.size() - 1,
+    };
+    ret += delim;
+  }
+  ret += std::string_view{
+      name,
+      name_len,
+  };
+  return ret;
+}
+
 } // namespace
 
 void VFsThrdInit() {
@@ -69,22 +96,8 @@ void VFsSetPwd(char const* pwd) {
   thrd_pwd = pwd;
 }
 
-auto VFsFNameAbs(char const* name) -> std::string {
-  std::string ret;
-  // thrd_drv is always uppercase
-  ret += mount_points[thrd_drv - 'A']; // T
-  ret += delim;                        // /
-  if (thrd_pwd.size() > 1) {
-    ret.pop_back();
-    ret += thrd_pwd; // /
-    ret += delim;    // /
-  }
-  ret += name; // Name
-  return ret;
-}
-
 auto VFsDirMk(char const* to) -> bool {
-  std::string p = VFsFNameAbs(to);
+  auto p = VFsFNameAbs(to);
   if (FExists(p) && FIsDir(p)) {
     return true;
   }
@@ -93,7 +106,7 @@ auto VFsDirMk(char const* to) -> bool {
 }
 
 auto VFsDel(char const* p) -> bool {
-  std::string path = VFsFNameAbs(p);
+  auto path = VFsFNameAbs(p);
   if (!FExists(path))
     return false;
   std::error_code e;
@@ -107,7 +120,7 @@ auto VFsDel(char const* p) -> bool {
 }
 
 auto VFsFSize(char const* name) -> i64 {
-  std::string fn = VFsFNameAbs(name);
+  auto fn = VFsFNameAbs(name);
   if (!FExists(fn)) {
     return -1;
   } else if (FIsDir(fn)) {
@@ -122,7 +135,7 @@ auto VFsFSize(char const* name) -> i64 {
 }
 
 auto VFsFOpen(char const* path, char const* mode) -> FILE* {
-  std::string p = VFsFNameAbs(path);
+  auto p = VFsFNameAbs(path);
   return fopen(p.c_str(), mode);
 }
 
@@ -134,7 +147,7 @@ void VFsFTrunc(char const* name, usize sz) {
 }
 
 auto VFsFUnixTime(char const* name) -> u64 {
-  std::string fn = VFsFNameAbs(name);
+  auto fn = VFsFNameAbs(name);
   if (!FExists(fn))
     return 0;
   struct stat s;
@@ -143,7 +156,7 @@ auto VFsFUnixTime(char const* name) -> u64 {
 }
 
 auto VFsFWrite(char const* name, char const* data, usize len) -> bool {
-  std::string p = VFsFNameAbs(name);
+  auto p = VFsFNameAbs(name);
   if (name) {
     auto fp = fopen(p.c_str(), "wb");
     if (fp) {
@@ -159,7 +172,7 @@ auto VFsFRead(char const* name, u64* len_ptr) -> u8* {
     *len_ptr = 0;
   if (!name)
     return nullptr;
-  std::string p = VFsFNameAbs(name);
+  auto p = VFsFNameAbs(name);
   if (!FExists(p) || FIsDir(p))
     return nullptr;
   auto fp = fopen(p.c_str(), "rb");
@@ -182,7 +195,7 @@ auto VFsFRead(char const* name, u64* len_ptr) -> u8* {
 }
 
 auto VFsDir() -> char** {
-  std::string file = VFsFNameAbs("");
+  auto file = VFsFNameAbs("");
   if (!FIsDir(file))
     return nullptr;
 #define SD(s) HolyStrDup(s)
@@ -215,7 +228,7 @@ auto VFsFExists(char const* path) -> bool {
   return FExists(VFsFNameAbs(path));
 }
 
-void VFsMountDrive(char const let, char const* path) {
+void VFsMountDrive(char let, char const* path) {
   mount_points[toupper(let) - 'A'] = path;
 }
 

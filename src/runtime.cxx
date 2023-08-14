@@ -4,7 +4,6 @@
   #include <winbase.h>
   #include <memoryapi.h>
 #else
-  #include "signal_types.hxx"
   #include <sys/mman.h>
 #endif
 
@@ -56,9 +55,9 @@ auto HolyStrDup(char const* str) -> char* {
 
 [[noreturn]] void HolyThrow(std::string_view sv) {
   union {
-    char s[8]{}; // zero-init
-    u64  i;
-  } u;
+    char s[8]; // zero-init
+    u64  i = 0;
+  } u; // mov QWORD PTR[&u],0
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["throw"].val;
@@ -207,12 +206,8 @@ void STK__GrPaletteColorSet(u64* stk) {
 
 auto STK___IsValidPtr(uptr* stk) -> u64 {
 #ifdef _WIN32
-  // Wine doesnt like the
-  // IsBadReadPtr,so use a polyfill
-
-  // wtf IsBadReadPtr gives me a segfault so i just have to use this
-  // polyfill lmfao
-  // #ifdef __WINE__
+  // return !IsBadReadPtr((void*)stk[0], 8);
+  // wtf IsBadReadPtr gives me a segfault so i use a polyfill
   MEMORY_BASIC_INFORMATION mbi{};
   if (VirtualQuery((void*)stk[0], &mbi, sizeof mbi)) {
     // https://archive.md/ehBq4
@@ -222,10 +217,6 @@ auto STK___IsValidPtr(uptr* stk) -> u64 {
     return !!(mbi.Protect & mask);
   }
   return false;
-  /*#else
-    return !IsBadReadPtr((void*)stk[0], 8);
-  #endif*/
-
 #else
   /* round down to page boundary (equiv to stk[0] / page_size * page_size)
    *   0b100101010 (x)
@@ -465,7 +456,10 @@ template <usize S> struct ByteLiteral {
   usize       m_sz;
   char const* m_lit;
   // char is fine here because we aren't doing any arithmetic on them
-  constexpr ByteLiteral(char const (&s)[S]) : m_sz{S - 1}, m_lit{s} {}
+  using StrLit = char[S];
+  constexpr ByteLiteral(StrLit const& s) //
+      : m_sz{S - 1}, m_lit{s}            //
+  {}
 };
 
 void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {

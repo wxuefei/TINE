@@ -13,7 +13,7 @@ static void AudioCB(void* userdata, Uint8* out, int len) {
   (void)userdata;
   for (int i = 0; i < len / have.channels; ++i) {
     f64   t     = (f64)++sample / have.freq;
-    f64   amp   = -1.0 + 2.0 * roundf(fmod(2.0 * t * freq, 1.0));
+    f64   amp   = -1. + 2. * roundf(fmod(2. * t * freq, 1.));
     Sint8 maxed = (amp > 0) ? 127 : -127;
     maxed *= vol;
     if (!freq)
@@ -24,16 +24,18 @@ static void AudioCB(void* userdata, Uint8* out, int len) {
 }
 
 void InitSound(void) {
-  SDL_AudioSpec want = {
-      .freq     = 24000,
-      .format   = AUDIO_S8,
-      .channels = 2,
-      .samples  = 256,
-      .callback = AudioCB,
-  };
-  output = SDL_OpenAudioDevice(NULL, 0, &want, &have,
-                               SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
-                                   SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
+  output = SDL_OpenAudioDevice(
+      NULL, 0,
+      &(SDL_AudioSpec){
+          .freq     = 24000,
+          .format   = AUDIO_S8,
+          .channels = 2,
+          .samples  = 256,
+          .callback = AudioCB,
+          .userdata = "you look just like my bathroom mirror",
+      },
+      &have,
+      SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
   SDL_PauseAudioDevice(output, 0);
 }
 

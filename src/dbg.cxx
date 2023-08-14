@@ -3,9 +3,10 @@
   #include <winnt.h>
   #include <errhandlingapi.h>
 #else
-  #include "signal_types.hxx"
   #include <ucontext.h>
 #endif
+
+#include <initializer_list>
 
 #include <tos_ffi.h>
 
@@ -69,12 +70,11 @@ void SetupDebugger() {
 }
 
 #else
-  #include <initializer_list>
 
 namespace {
 
-void routine(int sig, siginfo_t*, ucontext_t* ctx) {
-  u64 sig_i64 = sig;
+void routine(int sig, siginfo_t*, void* ctx_ucontext) {
+  auto ctx = static_cast<ucontext_t*>(ctx_ucontext);
   #ifdef __linux__
     #define REG(x) static_cast<u64>(ctx->uc_mcontext.gregs[REG_##x])
   // clang-format off
@@ -112,14 +112,14 @@ void routine(int sig, siginfo_t*, ucontext_t* ctx) {
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["DebuggerLand"].val;
-  FFI_CALL_TOS_2(fp, sig_i64, (uptr)regs);
+  FFI_CALL_TOS_2(fp, sig, (uptr)regs);
 }
 } // namespace
 
 void SetupDebugger() {
   struct sigaction inf;
   inf.sa_flags     = SA_SIGINFO | SA_NODEFER;
-  inf.sa_sigaction = (SigActionCallback*)routine;
+  inf.sa_sigaction = routine;
   sigemptyset(&inf.sa_mask);
   for (auto i : {SIGTRAP, SIGBUS, SIGSEGV, SIGFPE})
     sigaction(i, &inf, nullptr);

@@ -12,11 +12,9 @@
     #include <sys/types.h>
     #include <sys/umtx.h>
   #endif
-  #include "signal_types.hxx"
   #include <pthread.h>
 #endif
 
-#include <atomic>
 #include <vector>
 
 #include <inttypes.h>
@@ -37,8 +35,8 @@ auto GetTicks() -> u64 {
 #else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (u64)ts.tv_nsec / UINT64_C(1000000) //
-       + UINT64_C(1000) * (u64)ts.tv_sec;
+  return static_cast<u64>(ts.tv_nsec) / UINT64_C(1000000) //
+       + static_cast<u64>(ts.tv_sec) * UINT64_C(1000);
 #endif
 }
 
@@ -46,9 +44,7 @@ namespace {
 
 struct CCore {
 #ifdef _WIN32
-  HANDLE thread;
-  HANDLE event;
-  HANDLE mtx;
+  HANDLE thread, event, mtx;
   u64    awake_at;
 #else
   pthread_t thread;
@@ -113,8 +109,8 @@ auto WINAPI LaunchCore(LPVOID c) -> DWORD {
  * ThisCPU repectively but it's because they are stored in the F Segment and G
  * Segment registers. (https://archive.md/pf2td)
  */
-thread_local std::atomic<void*> Fs = nullptr;
-thread_local std::atomic<void*> Gs = nullptr;
+thread_local void* Fs = nullptr;
+thread_local void* Gs = nullptr;
 
 } // namespace
 
@@ -149,7 +145,7 @@ void InterruptCore(usize core) {
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
   // push rip
-  ctx.Rsp -= 8;
+  ctx.Rsp -= sizeof(DWORD64) /*8*/;
   ((DWORD64*)ctx.Rsp)[0] = ctx.Rip;
   //
   static void* fp = nullptr;
@@ -166,7 +162,6 @@ void InterruptCore(usize core) {
 
 void LaunchCore0(ThreadCallback* fp) {
   cores.resize(proc_cnt);
-  cores[0].fp = nullptr;
 #ifdef _WIN32
   cores[0].thread = CreateThread(nullptr, 0, fp, nullptr, 0, nullptr);
   cores[0].mtx    = CreateMutex(nullptr, FALSE, nullptr);
@@ -181,9 +176,9 @@ void LaunchCore0(ThreadCallback* fp) {
 }
 
 void CreateCore(usize core, void* fp) {
+  auto core_n = (void*)core;
   // CoreAPSethTask(...) passed from SpawnCore
   cores[core].fp = fp;
-  auto core_n    = (void*)core;
 #ifdef _WIN32
   cores[core].thread = CreateThread(nullptr, 0, LaunchCore, core_n, 0, nullptr);
   cores[core].mtx    = CreateMutex(nullptr, FALSE, nullptr);
@@ -191,7 +186,9 @@ void CreateCore(usize core, void* fp) {
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
 #else
   pthread_create(&cores[core].thread, nullptr, LaunchCore, core_n);
-  char buf[16]{};
+  char buf[16]{}; // pxor xmm0,xmm0; movups XMMWORD PTR[buf],xmm0
+                  // other than that, pthread_setname_np() for Linux
+                  // requires a maximum buf len of 16
   snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", core);
   pthread_setname_np(cores[core].thread, buf);
 #endif
@@ -211,15 +208,17 @@ void ShutdownCore(usize core) {
 #else
   // you actually cant terminate a thread from core 0
   // with pthreads, you need some signal handler
+  // in that thread that terminates itself and
+  // i basically tell it to kill itself
   pthread_kill(cores[core].thread, SIGUSR1);
   pthread_join(cores[core].thread, nullptr);
 #endif
 }
 
 void ShutdownCores(int ec) {
-  for (usize c = 0; c < proc_cnt; ++c)
-    if (c != core_num)
-      ShutdownCore(c);
+  for (usize i = 0; i < proc_cnt; ++i)
+    if (i != core_num)
+      ShutdownCore(i);
   // on Windows this might not fully "close"
   // the application so we must issue an
   // ExitProcess() after this

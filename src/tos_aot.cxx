@@ -15,7 +15,6 @@
 #include "alloc.hxx"
 #include "dbg.hxx"
 #include "mem.hxx"
-#include "signal_types.hxx"
 #include "tos_aot.hxx"
 
 namespace fs = std::filesystem;
@@ -306,7 +305,7 @@ void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
 // the entire debug session not to mention
 // WhichFun() wont even be called in normal
 // circumstances
-#define STR_DUP(s) (strcpy(new (std::nothrow) char[s->size() + 1], s->c_str()))
+#define STR_DUP(s) strcpy(new (std::nothrow) char[s->size() + 1], s->c_str())
 
 // great when you use lldb and get a fault
 // (lldb) p (char*)WhichFun($pc)

@@ -65,7 +65,8 @@ auto MStrPrint(char const* fmt, u64, i64* argv) -> std::string {
   i64         arg = -1;
 loop:
   ++arg;
-  if (nullptr == (end = strchr(start, '%')))
+  end = strchr(start, '%');
+  if (!end)
     end = start + strlen(start);
   ret.append(start, end - start);
   if (*end == '\0')

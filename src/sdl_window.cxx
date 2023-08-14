@@ -15,7 +15,6 @@
 
 namespace {
 
-static bool win_init = false;
 struct CDrawWindow {
   SDL_mutex*    screen_mutex;
   SDL_cond*     screen_done_cond;
@@ -25,24 +24,22 @@ struct CDrawWindow {
   SDL_Renderer* rend;
   Uint32        sz_x, sz_y;
   Sint32        margin_x, margin_y;
-  ~CDrawWindow() noexcept {
+  // somehow segfaults idk lmao im just gonna leak memory for a
+  // microsecond fuck you
+  /*~CDrawWindow() noexcept {
     if (!win_init)
       return;
-    // somehow segfaults idk lmao im just gonna leak memory for a
-    // microsecond fuck you
-    /*SDL_DestroyCond(screen_done_cond);
+    SDL_DestroyCond(screen_done_cond);
     SDL_DestroyMutex(screen_mutex);
     SDL_FreePalette(palette);
     SDL_FreeSurface(surf);
-    SDL_DestroyRenderer(rend);*/
+    SDL_DestroyRenderer(rend);
     SDL_DestroyWindow(window);
     SDL_Quit();
-  }
+  }*/
 } win;
 
-void DrawWindowUpdate_EV(u8* colors, u64 internal_width) {
-  if (!win_init)
-    return;
+void EventDrawWindowUpdate(u8* colors, u64 internal_width) {
   SDL_Surface* s = win.surf;
   SDL_LockSurface(s);
   auto src = colors, dst = (u8*)s->pixels;
@@ -518,17 +515,18 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 
 } // namespace
 
-void InputLoop(bool* off) {
+void InputLoop(bool* off_ptr) {
   SDL_Event e;
-  while (!*off) {
+  bool&     off = *off_ptr;
+  while (!off) {
     if (!SDL_WaitEvent(&e))
       continue;
     switch (e.type) {
     case SDL_QUIT:
-      *off = true;
+      off = true;
       break;
     case SDL_USEREVENT:
-      DrawWindowUpdate_EV((u8*)e.user.data1, (uptr)e.user.data2);
+      EventDrawWindowUpdate((u8*)e.user.data1, (uptr)e.user.data2);
     }
   }
 }
@@ -564,7 +562,6 @@ void NewDrawWindow() {
             SDL_GetError());
     _Exit(1);
   }
-  win_init = true;
   /*
    // i removed this line to improve startup speeds in x11 but if you absolutely
   need
@@ -644,8 +641,6 @@ void SetMSCallback(void* fptr) {
 }
 
 void GrPaletteColorSet(u64 i, bgr_48 u) {
-  if (!win_init)
-    return;
   // 0xffff is 100% so 0x7fff/0xffff would be about .50
   // this gets multiplied by 0xff to get 0x7f
   Uint8 b = u.b / (f64)0xffff * 0xff, g = u.g / (f64)0xffff * 0xff,
