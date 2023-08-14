@@ -37,7 +37,8 @@ auto GetTicks() -> u64 {
 #else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (u64)ts.tv_nsec / UINT64_C(1000000) + UINT64_C(1000) * (u64)ts.tv_sec;
+  return (u64)ts.tv_nsec / UINT64_C(1000000) //
+       + UINT64_C(1000) * (u64)ts.tv_sec;
 #endif
 }
 
