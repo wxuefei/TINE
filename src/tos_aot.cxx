@@ -255,6 +255,7 @@ bool                     sorted_syms_init = false;
 std::string const        unknown_fun{"UNKNOWN"};
 
 void InitSortedSyms() {
+  sorted_syms.reserve(TOSLoader.size());
   for (auto const& [name, _] : TOSLoader)
     sorted_syms.emplace_back(name);
   std::sort(sorted_syms.begin(), sorted_syms.end(),

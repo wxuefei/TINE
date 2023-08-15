@@ -200,8 +200,7 @@ auto VFsDir() -> char** {
     return nullptr;
 #define SD(s) HolyStrDup(s)
   // https://archive.md/1Ojr3#7
-  using DirEnt = char*;
-  std::vector<DirEnt> items{
+  std::vector<char*> items{
       SD("."),
       SD(".."),
   };
@@ -213,9 +212,9 @@ auto VFsDir() -> char** {
     if (s.size() <= 38 - 1)
       items.emplace_back(SD(s.c_str()));
   }
-  auto ret          = HolyAlloc<DirEnt>(items.size() + 1);
+  auto ret          = HolyAlloc<char*>(items.size() + 1);
   ret[items.size()] = nullptr;
-  memcpy(ret, items.data(), items.size() * sizeof(DirEnt));
+  memcpy(ret, items.data(), items.size() * sizeof(char*));
   return ret;
 #undef SD
 }

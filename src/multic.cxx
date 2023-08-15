@@ -58,9 +58,9 @@ struct CCore {
    * UMTX_OP_WAIT)
    */
   alignas(4) u32 is_sleeping;
-  // not using atomics here(instead using atomic builtins that operate on plain
-  // values) because i need them for system calls and casting std::atomic<T>* to
-  // T* is potentially UB and
+  // not using std::atomic<T> here(instead using atomic builtins that operate on
+  // plain values) because i need them for system calls and casting
+  // std::atomic<T>* to T* is potentially UB and
   // static_assert(std::is_layout_compatible_v<std::atomic<u32>, u32>)
   // failed on my machine
 #endif
