@@ -28,8 +28,8 @@
 #include <string.h>
 
 #include <dyad.h>
+#include <immintrin.h>
 #include <linenoise-ng/linenoise.h>
-
 #include <tos_ffi.h>
 
 void HolyFree(void* ptr) {
@@ -574,13 +574,26 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   usize constexpr arity_off = inst.m_sz - 2;
 
   auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
+  __builtin_prefetch(blob, 1 /*w*/);
+  // this is important, the reason i pack all the machine instructions into
+  // one string literal is because i want simd instructions to move it
+  // quickly and modify only a small portion of it
+  __builtin_prefetch(inst.m_lit, 0 /*r*/);
   for (usize i = 0; i < ffi_list.size(); ++i) {
-    auto const& hf      = ffi_list.begin()[i]; // looks weird af lmao
-    u8*         cur_pos = blob + i * inst.m_sz;
-    // this is important, the reason i pack all the machine instructions into
-    // one string literal is because i want simd instructions to move it
-    // quickly and modify only a small portion of it
-    memcpy(cur_pos, inst.m_lit, inst.m_sz);
+    u8* cur_pos = blob + i * inst.m_sz;
+    // handwritten simd because the compiler kept
+    // fucking compiling memcpy to a rep movsb
+#define MOVUPS_GET(mem)      _mm_loadu_ps((float const*)(mem))
+#define MOVUPS_PUT(mem, reg) _mm_storeu_ps((float*)(mem), (__m128)(reg))
+    static_assert(sizeof(__m128) == 16);
+    for (usize j = 0; j < inst.m_sz / sizeof(__m128); ++j) {
+      auto off = j * sizeof(__m128);
+      MOVUPS_PUT(cur_pos + off, MOVUPS_GET(inst.m_lit + off));
+    }
+    auto constexpr off = inst.m_sz - inst.m_sz % sizeof(__m128);
+    __builtin_memcpy(cur_pos + off, inst.m_lit + off, inst.m_sz - off);
+    //
+    auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
     // mov QWORD PTR[cur_pos+fp_off],hf.m_fp
     memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(uptr));
@@ -588,12 +601,9 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // mov WORD PTR[cur_pos+arity_off],hf.m_arity*8
     usize ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
     memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
-    // i tried placing try_emplace() here but it pessimised the big memcpy up at
-    // the top of the loop into a rep movsb lmao
-  }
-  for (usize i = 0; i < ffi_list.size(); ++i)
-    TOSLoader.try_emplace(std::string{ffi_list.begin()[i].m_name}, //
+    TOSLoader.try_emplace(std::string{hf.m_name}, //
                           /*CSymbol*/ HTT_FUN, blob + i * inst.m_sz);
+  }
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))
   // HolyC ABI is __stdcall, the callee cleans up its own stack

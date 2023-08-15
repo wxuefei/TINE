@@ -94,6 +94,7 @@ target_compile_features(${PROJECT_NAME}
     cxx_uniform_initialization
     cxx_generalized_initializers
     cxx_trailing_return_types
+    cxx_static_assert
     cxx_strong_enums
     cxx_lambdas
     cxx_generic_lambdas
