@@ -221,14 +221,13 @@ void AwakeCore(usize core) {
   SetEvent(c.event);
   ReleaseMutex(c.mtx);
 #else
-  u32 old = 1;
-  __atomic_compare_exchange_n(&c.is_sleeping, &old, 0u, false, __ATOMIC_SEQ_CST,
-                              __ATOMIC_SEQ_CST);
+  if (c.is_sleeping) {
   #ifdef __linux__
-  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr, 0);
+    syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr, 0);
   #elif defined(__FreeBSD__)
-  _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
+    _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
   #endif
+  }
 #endif
 }
 
@@ -277,14 +276,16 @@ auto GetTicksHP() -> u64 {
 void SleepHP(u64 us) {
   auto& c = cores[self->core_num];
 #ifdef _WIN32
-  auto const s = GetTicksHP();
+  auto const t = GetTicksHP();
   WaitForSingleObject(c.mtx, INFINITE);
-  c.awake_at = s + us / 1000;
+  // windows doesnt have accurate microsecond sleep :(
+  c.awake_at = t + us / 1000;
   ReleaseMutex(c.mtx);
   WaitForSingleObject(c.event, INFINITE);
 #else
   struct timespec ts {};
-  ts.tv_nsec = us * 1000;
+  ts.tv_nsec = (us % 1000000) * 1000;
+  ts.tv_sec = us / 1000000;
   __atomic_store_n(&c.is_sleeping, 1u, __ATOMIC_SEQ_CST);
   #ifdef __linux__
   syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr, 0);
@@ -292,6 +293,7 @@ void SleepHP(u64 us) {
   _umtx_op(&c.is_sleeping, UMTX_OP_WAIT_UINT, 1u,
            (void*)sizeof(struct timespec), &ts);
   #endif
+  __atomic_store_n(&c.is_sleeping, 0u, __ATOMIC_SEQ_CST);
 #endif
 }
 

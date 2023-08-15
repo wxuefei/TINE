@@ -4,7 +4,7 @@
 
 #include <vector>
 
-// self-explanatory
+// elapsed milliseconds since an unspecified time
 auto GetTicks() -> u64;
 
 // Set calling thread's CTask
