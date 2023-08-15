@@ -1,6 +1,3 @@
-U8 *GetFs2() {
-	return Fs;
-}
 asm {
 //************************************
 //See $LK,"::/Doc/Credits.DD"$.
@@ -21,7 +18,7 @@ _MALLOC::
 	MOV R8,RDX
 	TEST	RDX,RDX
 	JNZ	@@05
-	CALL &GetFs2
+	CALL    &Fs
 	MOV	RDX,RAX
 	MOV	R8,RAX
 @@05:	CMP	U32 CTask.task_signature[RDX],TASK_SIGNATURE_VAL

@@ -1,16 +1,16 @@
+#include "sound.h"
+
 #include <math.h>
 
 #include <SDL2/SDL.h>
-
-#include "sound.h"
 
 static SDL_AudioDeviceID output;
 static u64               sample, freq;
 static SDL_AudioSpec     have;
 static f64               vol = .1;
 
-static void AudioCB(void* userdata, Uint8* out, int len) {
-  (void)userdata;
+static void AudioCB(void* ud, Uint8* out, int len) {
+  (void)ud;
   for (int i = 0; i < len / have.channels; ++i) {
     f64   t     = (f64)++sample / have.freq;
     f64   amp   = -1. + 2. * roundf(fmod(2. * t * freq, 1.));

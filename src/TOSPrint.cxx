@@ -1,11 +1,11 @@
+#include "TOSPrint.hxx"
+
 #include <string>
 
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "TOSPrint.hxx"
 
 namespace {
 auto UnescapeString(char* str, char* where) -> char* {

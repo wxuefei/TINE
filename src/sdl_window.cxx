@@ -1,3 +1,7 @@
+#include "sdl_window.hxx"
+#include "logo.hxx"
+#include "main.hxx"
+
 #include <algorithm>
 #include <string>
 
@@ -8,10 +12,6 @@
 #include <SDL2/SDL.h>
 
 #include <tos_ffi.h>
-
-#include "logo.hxx"
-#include "main.hxx"
-#include "sdl_window.hxx"
 
 namespace {
 
@@ -562,13 +562,10 @@ void NewDrawWindow() {
             SDL_GetError());
     _Exit(1);
   }
-  /*
-   // i removed this line to improve startup speeds in x11 but if you absolutely
-  need
-   // your compositor to be running then uncomment this line
+  // i removed this line to improve startup speeds in x11 but if you absolutely
+  // need your compositor to be running then uncomment this line
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
-  */
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   win.screen_mutex     = SDL_CreateMutex();

@@ -1,3 +1,6 @@
+#include "vfs.hxx"
+#include "alloc.hxx"
+
 // clang-format off
 // Windows requires sys/stat to be included after sys/types
 // fuck bill gates
@@ -15,9 +18,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "alloc.hxx"
-#include "vfs.hxx"
 
 #ifdef _WIN32
   #define delim '\\'

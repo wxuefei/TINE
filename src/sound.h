@@ -6,9 +6,13 @@ extern "C" {
 
 #include "types.h"
 
+// self explanatory
 void InitSound(void);
+// sets frequency
 void SndFreq(u64);
-f64  GetVolume(void);
+// self explanatory
+f64 GetVolume(void);
+// self explanatory
 void SetVolume(f64);
 
 #ifdef __cplusplus

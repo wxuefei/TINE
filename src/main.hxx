@@ -2,7 +2,10 @@
 
 #include "types.h"
 
+// Shuts down the loader
 void ShutdownTINE(int);
+// Gets command line boot text that will be executed
+// after boot, basically AUTOEXEC.BAT in text form
 auto CmdLineBootText() -> char const*;
 
 extern bool sanitize_clipboard;

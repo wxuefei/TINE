@@ -1,3 +1,12 @@
+#include "main.hxx"
+#include "dbg.hxx"
+#include "multic.hxx"
+#include "runtime.hxx"
+#include "sdl_window.hxx"
+#include "sound.h"
+#include "tos_aot.hxx"
+#include "vfs.hxx"
+
 #ifdef _WIN32
   #include <windows.h>
   #include <winbase.h>
@@ -5,28 +14,11 @@
   #include <winerror.h>
   #include <processenv.h>
   #include <processthreadsapi.h>
-
-  // double include, i know, fuck you
-  #include "multic.hxx"
-
   // for mingw
   // https://archive.md/HEZm2#selection-3667.0-3698.0
   #ifndef ERROR_CONTROL_C_EXIT
     #define ERROR_CONTROL_C_EXIT 0x23C
   #endif
-
-namespace {
-[[noreturn]] auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
-  #define S(x) x, lstrlenA(x)
-  WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
-                nullptr);
-  ShutdownCores(ERROR_CONTROL_C_EXIT);
-  ExitProcess(ERROR_CONTROL_C_EXIT);
-  #undef S
-  return TRUE;
-}
-} // namespace
-
 #else
   #include <string.h>
   #include <sys/resource.h>
@@ -37,20 +29,14 @@ namespace {
 #include <filesystem>
 #include <system_error>
 #include <thread>
+#include <utility>
 
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <argtable3.h>
 
-#include "dbg.hxx"
-#include "main.hxx"
-#include "multic.hxx"
-#include "runtime.hxx"
-#include "sdl_window.hxx"
-#include "sound.h"
-#include "tos_aot.hxx"
-#include "vfs.hxx"
+#include <tos_ffi.h>
 
 namespace fs = std::filesystem;
 
@@ -64,27 +50,16 @@ std::string bin_path{"HCRT.BIN"};
 int  exit_code = 0;
 bool prog_exit = false;
 
-#ifndef _WIN32
-auto Core0(void*) -> void* {
-#else
-auto WINAPI Core0(LPVOID) -> DWORD {
-#endif
-  VFsThrdInit();
-  LoadHCRT(bin_path);
-  SetupDebugger();
-#ifndef _WIN32
-  signal(SIGUSR1, [](int) {
-    pthread_exit(nullptr);
-  });
-  static void* fp = nullptr;
-  if (!fp)
-    fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (SignalCallback*)fp);
-  return nullptr;
-#else
-  return 0;
-#endif
+#ifdef _WIN32
+[[noreturn]] auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
+  #define S(x) x, lstrlenA(x)
+  WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), S("User Abort.\n"), nullptr,
+                nullptr);
+  _Exit(ERROR_CONTROL_C_EXIT);
+  #undef S
+  return TRUE;
 }
+#endif
 
 } // namespace
 
@@ -98,10 +73,7 @@ auto CmdLineBootText() -> char const* {
 void ShutdownTINE(int ec) {
   prog_exit = true;
   exit_code = ec;
-  if (is_cmd_line)
-    ShutdownCores(ec); // WaitForCore0 is just a thread joiner
-                       // so control flow wont reach the end of main()
-                       // thus we manually terminate
+  _Exit(exit_code);
 }
 
 #ifndef _WIN32
@@ -125,7 +97,7 @@ auto main(int argc, char** argv) -> int {
   signal(SIGINT, [](int) {
   #define S(x) x, strlen(x)
     write(2, S("User abort.\n"));
-    ShutdownCores(1);
+    _Exit(1);
   #undef S
   });
 #else
@@ -159,7 +131,6 @@ auto main(int argc, char** argv) -> int {
     arg_print_glossary_gnu(stderr, argtable);
     return 1;
   }
-
   if (std::error_code e; fs::exists(TDriveArg->filename[0], e)) {
     VFsMountDrive('T', TDriveArg->filename[0]);
   } else if (e) {
@@ -209,11 +180,12 @@ auto main(int argc, char** argv) -> int {
   }
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
+  auto init_fps = LoadHCRT(bin_path);
   if (!is_cmd_line) {
     NewDrawWindow();
     InitSound();
   }
-  LaunchCore0(Core0);
+  CreateCore(0, std::move(init_fps));
   if (!is_cmd_line) {
 #ifdef _WIN32
     SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
@@ -222,7 +194,6 @@ auto main(int argc, char** argv) -> int {
   } else {
     WaitForCore0();
   }
-  ShutdownCores(exit_code);
   return exit_code;
 }
 

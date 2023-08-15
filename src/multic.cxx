@@ -1,3 +1,9 @@
+#include "multic.hxx"
+#include "dbg.hxx"
+#include "main.hxx"
+#include "tos_aot.hxx"
+#include "vfs.hxx"
+
 #ifdef _WIN32
   #include <windows.h>
   #include <processthreadsapi.h>
@@ -15,6 +21,7 @@
   #include <pthread.h>
 #endif
 
+#include <utility>
 #include <vector>
 
 #include <inttypes.h>
@@ -22,12 +29,6 @@
 #include <stdlib.h>
 
 #include <tos_ffi.h>
-
-#include "dbg.hxx"
-#include "main.hxx"
-#include "multic.hxx"
-#include "tos_aot.hxx"
-#include "vfs.hxx"
 
 auto GetTicks() -> u64 {
 #ifdef _WIN32
@@ -45,7 +46,11 @@ namespace {
 struct CCore {
 #ifdef _WIN32
   HANDLE thread, event, mtx;
-  u64    awake_at;
+  // When are we going to wake up at?
+  // winmm callback checks for this constantly
+  // check out GetTicksHP() for an explanation
+  // 0 means it's not sleeping
+  u64 awake_at;
 #else
   pthread_t thread;
   /*
@@ -57,6 +62,7 @@ struct CCore {
    * u32 too(though i have to specify UMTX_OP_WAIT_UINT instead of
    * UMTX_OP_WAIT)
    */
+  // Is this thread sleeping?
   alignas(4) u32 is_sleeping;
   // not using std::atomic<T> here(instead using atomic builtins that operate on
   // plain values) because i need them for system calls and casting
@@ -64,25 +70,24 @@ struct CCore {
   // static_assert(std::is_layout_compatible_v<std::atomic<u32>, u32>)
   // failed on my machine
 #endif
-  void* fp;
+  // self-referenced core number
   usize core_num;
+  // HolyC function pointers it needs to execute on launch
+  std::vector<HolyFP> fps;
 };
 
 // TempleOS has a hardcoded maximum core count of 128 but oh well,
 // let's be flexible in case we get machines with more of them
 std::vector<CCore> cores;
-// Initially I had a model of thread_local CCore* self but it seems
-// that the thread local model doesnt really like HolyC using it(fucks up
-// everything in thread local storage) so I just changed it back
-thread_local usize core_num;
+// Thread local self-referenced CCore structure
+thread_local CCore* self;
 
 #ifndef _WIN32
-auto LaunchCore(void* self_arg) -> void* {
+auto LaunchCore(void* arg) -> void* {
 #else
-auto WINAPI LaunchCore(LPVOID self_arg) -> DWORD {
+auto WINAPI LaunchCore(LPVOID arg) -> DWORD {
 #endif
-  auto self = static_cast<CCore*>(self_arg);
-  core_num  = self->core_num;
+  self = static_cast<CCore*>(arg);
   VFsThrdInit();
   SetupDebugger();
 #ifndef _WIN32
@@ -92,12 +97,18 @@ auto WINAPI LaunchCore(LPVOID self_arg) -> DWORD {
   static void* sig_fp = nullptr;
   if (!sig_fp)
     sig_fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR2, (SignalCallback*)sig_fp);
+  signal(SIGUSR2, reinterpret_cast<SignalCallback*>(sig_fp));
 #endif
-  // CoreAPSethTask(...) (T/FULL_PACKAGE.HC)
+  // CoreAPSethTask(...) (T/FULL_PACKAGE.HC) <- (non-Core0)
+  // IET_MAIN boot functions + kernel entry point <- Core0
+  //
   // ZERO_BP so the return addr&rbp is 0 and
   // stack traces don't climb up the C++ stack
-  FFI_CALL_TOS_0_ZERO_BP(self->fp);
+  for (auto fp : self->fps) {
+    FFI_CALL_TOS_0_ZERO_BP(fp);
+  }
+  // Note: CoreAPSethTask() will NEVER return
+  // so the below things are just to match the return type
 #ifdef _WIN32
   return 0;
 #else
@@ -138,7 +149,7 @@ void SetGs(void* g) {
 }
 
 auto CoreNum() -> usize {
-  return core_num;
+  return self->core_num;
 }
 
 // this may look like bad code but HolyC cannot switch
@@ -168,27 +179,16 @@ void InterruptCore(usize core) {
 #endif
 }
 
-void LaunchCore0(ThreadCallback* fp) {
-  cores.resize(proc_cnt);
-  auto& c    = cores[0];
-  c.core_num = 0;
-#ifdef _WIN32
-  c.thread = CreateThread(nullptr, 0, fp, nullptr, 0, nullptr);
-  c.mtx    = CreateMutex(nullptr, FALSE, nullptr);
-  c.event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-  SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
-  // im not going to use SEH or some crazy bulllshit to set the
-  // thread name on windows(https://archive.md/9jiD5)
-#else
-  pthread_create(&c.thread, nullptr, fp, nullptr);
-  pthread_setname_np(c.thread, "Seth(Core0)");
-#endif
-}
-
-void CreateCore(usize core, void* fp) {
+void CreateCore(usize core, std::vector<HolyFP>&& fps) {
+  static bool init = false;
+  if (!init) {
+    cores.resize(proc_cnt);
+    init = true;
+  }
   auto& c = cores[core];
   // CoreAPSethTask(...) passed from SpawnCore
-  c.fp       = fp;
+  // or IET_MAIN's from LoadHCRT
+  c.fps      = std::move(fps);
   c.core_num = core;
 #ifdef _WIN32
   c.thread = CreateThread(nullptr, 0, LaunchCore, &c, 0, nullptr);
@@ -213,31 +213,7 @@ void WaitForCore0() {
 #endif
 }
 
-void ShutdownCore(usize core) {
-  auto& t = cores[core].thread;
-#ifdef _WIN32
-  TerminateThread(t, 0);
-#else
-  // you actually cant terminate a thread from core 0
-  // with pthreads, you need some signal handler
-  // in that thread that terminates itself and
-  // i basically tell it to kill itself
-  pthread_kill(t, SIGUSR1);
-  pthread_join(t, nullptr);
-#endif
-}
-
-void ShutdownCores(int ec) {
-  for (usize i = 0; i < proc_cnt; ++i)
-    if (i != core_num)
-      ShutdownCore(i);
-  // on Windows this might not fully "close"
-  // the application so we must issue an
-  // ExitProcess() after this
-  exit(ec);
-}
-
-void AwakeFromSleeping(usize core) {
+void AwakeCore(usize core) {
   auto& c = cores[core];
 #ifdef _WIN32
   WaitForSingleObject(c.mtx, INFINITE);
@@ -299,7 +275,7 @@ auto GetTicksHP() -> u64 {
 #endif
 
 void SleepHP(u64 us) {
-  auto& c = cores[core_num];
+  auto& c = cores[self->core_num];
 #ifdef _WIN32
   auto const s = GetTicksHP();
   WaitForSingleObject(c.mtx, INFINITE);

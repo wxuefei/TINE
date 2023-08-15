@@ -1,3 +1,6 @@
+#include "mem.hxx"
+#include "main.hxx"
+
 #ifdef _WIN32
   #include <windows.h>
   #include <memoryapi.h>
@@ -15,9 +18,6 @@ extern DWORD dwAllocationGranularity;
 #endif
 
 #include <ctype.h>
-
-#include "main.hxx"
-#include "mem.hxx"
 
 #ifdef __linux__
 namespace {

@@ -1,3 +1,9 @@
+#include "tos_aot.hxx"
+#include "alloc.hxx"
+#include "dbg.hxx"
+#include "mem.hxx"
+#include "multic.hxx"
+
 #include <algorithm>
 #include <filesystem>
 #include <string>
@@ -11,11 +17,6 @@
 #include <string.h>
 
 #include <tos_ffi.h>
-
-#include "alloc.hxx"
-#include "dbg.hxx"
-#include "mem.hxx"
-#include "tos_aot.hxx"
 
 namespace fs = std::filesystem;
 
@@ -38,11 +39,11 @@ void LoadOneImport(u8** src_, u8* module_base) {
   // anyway(compiles down to a mov call)
   // so it respects strict aliasing
   // while not compromising on speed
-#define READ_NUM(x, T)          \
-  ({                            \
-    T ret;                      \
-    memcpy(&ret, x, sizeof(T)); \
-    ret;                        \
+#define READ_NUM(x, T)              \
+  ({                                \
+    T val_##T;                      \
+    memcpy(&val_##T, x, sizeof(T)); \
+    val_##T;                        \
   })
   while ((etype = *src++)) {
     ptr = module_base + READ_NUM(src, u32);
@@ -175,7 +176,9 @@ void LoadPass1(u8* src, u8* module_base) {
   }
 }
 
-void LoadPass2(u8* src, u8* module_base) {
+auto LoadPass2(u8* src, u8* module_base) -> std::vector<HolyFP> {
+  std::vector<HolyFP> ret;
+  //
   char* st_ptr;
   u32   i;
   u8    etype;
@@ -186,9 +189,7 @@ void LoadPass2(u8* src, u8* module_base) {
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_MAIN:
-      // we use ZERO_BP here for it to not climb
-      // up the C++ stack
-      FFI_CALL_TOS_0_ZERO_BP(module_base + i);
+      ret.emplace_back(module_base + i);
       break;
     case IET_ABS_ADDR:
       src += sizeof(u32) * i;
@@ -203,6 +204,7 @@ void LoadPass2(u8* src, u8* module_base) {
       break;
     }
   }
+  return ret;
 }
 
 #undef READ_NUM
@@ -221,7 +223,7 @@ extern "C" struct [[gnu::packed]] CBinFile {
 
 } // namespace
 
-void LoadHCRT(std::string const& name) {
+auto LoadHCRT(std::string const& name) -> std::vector<HolyFP> {
   auto f = fopen(name.c_str(), "rb");
   if (!f) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());
@@ -246,7 +248,7 @@ void LoadHCRT(std::string const& name) {
     _Exit(1);
   }
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
-  LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
+  return LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
 }
 
 namespace {

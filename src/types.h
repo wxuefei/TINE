@@ -22,6 +22,7 @@ typedef int8_t    i8;
 typedef double    f64;
 typedef float     f32;
 
+// https://archive.li/nKvoK#selection-9.3100-9.3463
 #include <signal.h>
 typedef void SignalCallback(int);
 

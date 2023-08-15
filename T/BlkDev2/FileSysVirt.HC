@@ -33,7 +33,7 @@ Bool VirtFileFind(CDrv *dv,U8 *cur_dir,U8 *name,
       VFsSetDrv(dv->drv_let);
       VFsSetPwd(cur_dir);
       at=name;
-      if(VFsExists(at)) {
+      if(VFsFExists(at)) {
         StrCpy(_res->name,name);
         res=TRUE;
         if(VFsIsDir(at))

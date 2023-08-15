@@ -11,11 +11,11 @@ namespace detail {
 template <class T> struct size_of {
   static constexpr usize sz = sizeof(T);
 };
-template <> struct size_of<void> {
-  static constexpr usize sz = 1;
-};
+template <> struct size_of<void> : size_of<u8> {};
 } // namespace detail
 
+// Allocates memory in the TempleOS data heap
+// in the default CTask of whatever RIP is on
 template <class T = void, bool fill = false>
 [[gnu::always_inline]] inline auto HolyAlloc(usize sz) -> T* {
   using namespace detail;
@@ -26,6 +26,7 @@ template <class T = void, bool fill = false>
     return static_cast<T*>(HolyMAlloc(size_of<T>::sz * sz));
 }
 
+// Allocates a chunk of virtual memory(not linked to the TempleOS heap)
 // use with caution as its executable by default
 template <class T = void, bool exec = true>
 [[gnu::always_inline]] inline auto VirtAlloc(usize sz) -> T* {

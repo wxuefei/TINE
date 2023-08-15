@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "types.h"
 
@@ -13,9 +14,14 @@ struct CSymbol {
       u8 *module_base, *module_header_entry; // CHashImport
     };
   };
-  inline CSymbol(u32 t, u8* p) noexcept : type{t}, val{p} {}
-  inline CSymbol(u32 t, u8* mb, u8* mhe) noexcept
-      : type{t}, module_base{mb}, module_header_entry{mhe} {}
+  inline CSymbol(u32 t, u8* p) noexcept //
+      : type{t}, val{p}                 //
+  {}
+  inline CSymbol(u32 t, u8* mb, u8* mhe) noexcept //
+      : type{t},                                  //
+        module_base{mb},                          //
+        module_header_entry{mhe}                  //
+  {}
   // default constructor for initialization
   // of empty pairs in TOSLoader
   inline CSymbol() noexcept = default;
@@ -23,8 +29,12 @@ struct CSymbol {
 
 extern std::unordered_map<std::string, CSymbol> TOSLoader;
 
+// Spews out a backtrace from a faulty context
 void BackTrace(uptr /*RBP*/, uptr /*RIP*/);
-void LoadHCRT(std::string const&);
+
+// Loads TempleOS kernel and returns the list of
+// function pointers needed to boot the kernel
+auto LoadHCRT(std::string const&) -> std::vector<void*>;
 
 // clang-format off
 // copied from TempleOS, DO NOT TOUCH

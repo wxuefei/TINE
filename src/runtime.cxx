@@ -1,3 +1,14 @@
+#include "runtime.hxx"
+#include "TOSPrint.hxx"
+#include "alloc.hxx"
+#include "main.hxx"
+#include "mem.hxx"
+#include "multic.hxx"
+#include "sdl_window.hxx"
+#include "sound.h"
+#include "tos_aot.hxx"
+#include "vfs.hxx"
+
 #ifdef _WIN32
   #include <winsock2.h>
   #include <windows.h>
@@ -11,6 +22,7 @@
 #include <chrono>
 #include <initializer_list>
 #include <string_view>
+#include <vector>
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,17 +31,6 @@
 #include <linenoise-ng/linenoise.h>
 
 #include <tos_ffi.h>
-
-#include "TOSPrint.hxx"
-#include "alloc.hxx"
-#include "main.hxx"
-#include "mem.hxx"
-#include "multic.hxx"
-#include "runtime.hxx"
-#include "sdl_window.hxx"
-#include "sound.h"
-#include "tos_aot.hxx"
-#include "vfs.hxx"
 
 void HolyFree(void* ptr) {
   static void* fptr = nullptr;
@@ -285,7 +286,7 @@ void STK_SetMSCallback(void** stk) {
 }
 
 void STK___AwakeCore(usize* stk) {
-  AwakeFromSleeping(stk[0]);
+  AwakeCore(stk[0]);
 }
 
 void STK___SleepHP(u64* stk) {
@@ -323,7 +324,7 @@ auto STK___GetStr(char** stk) -> char* {
 }
 
 auto STK_GetClipboardText(void*) -> char* {
-  std::string clip{ClipboardText()};
+  auto clip = ClipboardText();
   return HolyStrDup(clip.c_str());
 }
 
@@ -331,16 +332,14 @@ auto STK_FUnixTime(char** stk) -> u64 {
   return VFsFUnixTime(stk[0]);
 }
 
-auto STK___FExists(char** stk) -> u64 {
-  return VFsFExists(stk[0]);
-}
-
 auto STK_UnixNow(void*) -> u64 {
   return system_clock::to_time_t(system_clock::now());
 }
 
 void STK___SpawnCore(uptr* stk) {
-  CreateCore(stk[0], (void*)stk[1]);
+  CreateCore(stk[0], std::vector<HolyFP>{
+                         (void*)stk[1],
+                     });
 }
 
 auto STK_NewVirtualChunk(usize* stk) -> void* {
@@ -355,7 +354,7 @@ void STK_VFsSetPwd(char** stk) {
   VFsSetPwd(stk[0]);
 }
 
-auto STK_VFsExists(char** stk) -> u64 {
+auto STK_VFsFExists(char** stk) -> u64 {
   return VFsFExists(stk[0]);
 }
 
@@ -604,13 +603,13 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // let there be function Foo(I64 i, ...);
   // call Foo() like Foo(2, 4, 5, 6);
   // stack view:
-  //   argv[2] 6 // RBP + 48
-  //   argv[1] 5 // RBP + 40
-  //   argv[0] 4 // RBP + 32 <-points- argv (internal var in function)
-  //   argc    3 // RBP + 24 <-value- argc (internal var in function, num of varargs) 
-  //   i       2 // RBP + 16 this is where the argument stack starts
-  //   0x??????? // RBP + 8  return address
-  //   0x??????? // RBP + 0  previous RBP of caller function
+  //   argv[2]  6 // RBP + 48
+  //   argv[1]  5 // RBP + 40
+  //   argv[0]  4 // RBP + 32 <-points- argv (internal var in function)
+  //   argc     3 // RBP + 24 <-value- argc (internal var in function, num of varargs) 
+  //   i        2 // RBP + 16 this is where the argument stack starts
+  //   0x???????? // RBP + 8  return address
+  //   0x???????? // RBP + 0  previous RBP of caller function
   // clang-format on
 }
 
@@ -637,7 +636,6 @@ void BootstrapLoader() {
       S(FreeVirtualChunk, 2),
       S(ExitTINE, 1),
       S(__GetStr, 1),
-      S(__FExists, 1),
       S(FUnixTime, 1),
       S(SetClipboardText, 1),
       S(GetClipboardText, 0),
@@ -678,7 +676,7 @@ void BootstrapLoader() {
       S(DyadSetNoDelay, 2),
       S(VFsFTrunc, 2),
       S(VFsSetPwd, 1),
-      S(VFsExists, 1),
+      S(VFsFExists, 1),
       S(VFsIsDir, 1),
       S(VFsFSize, 1),
       S(VFsFRead, 2),

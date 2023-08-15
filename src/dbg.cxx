@@ -1,3 +1,6 @@
+#include "tos_aot.hxx"
+#include "types.h"
+
 #ifdef _WIN32
   #include <windows.h>
   #include <winnt.h>
@@ -9,9 +12,6 @@
 #include <initializer_list>
 
 #include <tos_ffi.h>
-
-#include "tos_aot.hxx"
-#include "types.h"
 
 #ifdef _WIN32
 
