@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <immintrin.h>
 #include <tos_ffi.h>
 
 auto GetTicks() -> u64 {
@@ -198,14 +197,7 @@ void CreateCore(usize core, std::vector<HolyFP>&& fps) {
   SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
 #else
   pthread_create(&c.thread, nullptr, LaunchCore, &c);
-  alignas(16) char buf[16];
-  // pxor xmm0,xmm0
-  // movaps XMMWORD PTR[buf],xmm0
-  #define ZEROED_XMM()     _mm_setzero_si128()
-  #define MOVAPS(mem, reg) _mm_store_ps((float*)(mem), (__m128)(reg))
-  MOVAPS(buf, ZEROED_XMM());
-  // other than this cool simd trick, pthread_setname_np() for Linux
-  // requires a maximum buf len of 16
+  char buf[16];
   snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", core);
   pthread_setname_np(c.thread, buf);
 #endif

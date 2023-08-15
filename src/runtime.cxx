@@ -586,12 +586,14 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
 #define MOVUPS_GET(mem)      _mm_loadu_ps((float const*)(mem))
 #define MOVUPS_PUT(mem, reg) _mm_storeu_ps((float*)(mem), (__m128)(reg))
     static_assert(sizeof(__m128) == 16);
-    for (usize j = 0; j < inst.m_sz / sizeof(__m128); ++j) {
-      auto off = j * sizeof(__m128);
-      MOVUPS_PUT(cur_pos + off, MOVUPS_GET(inst.m_lit + off));
+    // remainder: self-explanatory
+    // off: machine code literal size rounded down to 16
+    auto constexpr remainder = inst.m_sz % sizeof(__m128);
+    auto constexpr off       = inst.m_sz - remainder;
+    for (usize j = 0; j < off; j += sizeof(__m128)) {
+      MOVUPS_PUT(cur_pos + j, MOVUPS_GET(inst.m_lit + j));
     }
-    auto constexpr off = inst.m_sz - inst.m_sz % sizeof(__m128);
-    __builtin_memcpy(cur_pos + off, inst.m_lit + off, inst.m_sz - off);
+    __builtin_memcpy(cur_pos + off, inst.m_lit + off, remainder);
     //
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
