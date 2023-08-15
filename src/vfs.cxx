@@ -156,15 +156,15 @@ auto VFsFUnixTime(char const* name) -> u64 {
 }
 
 auto VFsFWrite(char const* name, char const* data, usize len) -> bool {
-  auto p = VFsFNameAbs(name);
-  if (name) {
-    auto fp = fopen(p.c_str(), "wb");
-    if (fp) {
-      fwrite(data, 1, len, fp);
-      fclose(fp);
-    }
-  }
-  return !!name;
+  if (!name)
+    return false;
+  auto p  = VFsFNameAbs(name);
+  auto fp = fopen(p.c_str(), "wb");
+  if (!fp)
+    return false;
+  fwrite(data, 1, len, fp);
+  fclose(fp);
+  return true;
 }
 
 auto VFsFRead(char const* name, u64* len_ptr) -> u8* {

@@ -211,9 +211,13 @@ auto STK___IsValidPtr(uptr* stk) -> u64 {
   MEMORY_BASIC_INFORMATION mbi{};
   if (VirtualQuery((void*)stk[0], &mbi, sizeof mbi)) {
     // https://archive.md/ehBq4
-    DWORD const mask = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
-                       PAGE_EXECUTE | PAGE_EXECUTE_READ |
-                       PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY;
+    DWORD mask = PAGE_READONLY          //
+               | PAGE_READWRITE         //
+               | PAGE_WRITECOPY         //
+               | PAGE_EXECUTE           //
+               | PAGE_EXECUTE_READ      //
+               | PAGE_EXECUTE_READWRITE //
+               | PAGE_EXECUTE_WRITECOPY;
     return !!(mbi.Protect & mask);
   }
   return false;
