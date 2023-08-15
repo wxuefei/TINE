@@ -71,6 +71,9 @@ struct CCore {
 // TempleOS has a hardcoded maximum core count of 128 but oh well,
 // let's be flexible in case we get machines with more of them
 std::vector<CCore> cores;
+// Initially I had a model of thread_local CCore* self but it seems
+// that the thread local model doesnt really like HolyC using it(fucks up
+// everything in thread local storage) so I just changed it back
 thread_local usize core_num;
 
 #ifndef _WIN32
@@ -79,9 +82,9 @@ auto LaunchCore(void* self_arg) -> void* {
 auto WINAPI LaunchCore(LPVOID self_arg) -> DWORD {
 #endif
   auto self = static_cast<CCore*>(self_arg);
+  core_num  = self->core_num;
   VFsThrdInit();
   SetupDebugger();
-  core_num = self->core_num;
 #ifndef _WIN32
   signal(SIGUSR1, [](int) {
     pthread_exit(nullptr);
@@ -243,11 +246,10 @@ void AwakeFromSleeping(usize core) {
   ReleaseMutex(c.mtx);
 #else
   u32 old = 1;
-  __atomic_compare_exchange_n(&c.is_sleeping, &old, 0u, false,
-                              __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+  __atomic_compare_exchange_n(&c.is_sleeping, &old, 0u, false, __ATOMIC_SEQ_CST,
+                              __ATOMIC_SEQ_CST);
   #ifdef __linux__
-  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr,
-          0);
+  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr, 0);
   #elif defined(__FreeBSD__)
   _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
   #endif
@@ -309,8 +311,7 @@ void SleepHP(u64 us) {
   ts.tv_nsec = us * 1000;
   __atomic_store_n(&c.is_sleeping, 1u, __ATOMIC_SEQ_CST);
   #ifdef __linux__
-  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr,
-          0);
+  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr, 0);
   #elif defined(__FreeBSD__)
   _umtx_op(&c.is_sleeping, UMTX_OP_WAIT_UINT, 1u,
            (void*)sizeof(struct timespec), &ts);
