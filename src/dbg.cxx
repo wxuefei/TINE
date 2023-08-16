@@ -74,6 +74,10 @@ void SetupDebugger() {
 namespace {
 
 void routine(int sig, siginfo_t*, void* ctx_ucontext) {
+  // block signals temporarily, will be unblocked later by DebuggerLand
+  sigset_t all;
+  sigfillset(&all);
+  sigprocmask(SIG_BLOCK, &all, nullptr);
   auto ctx = static_cast<ucontext_t*>(ctx_ucontext);
   #ifdef __linux__
     #define REG(x) static_cast<u64>(ctx->uc_mcontext.gregs[REG_##x])

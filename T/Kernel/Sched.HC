@@ -294,7 +294,7 @@ _extern _TASK_CONTEXT_RESTORE U0 TaskContextRestore(); //Restore a task context.
 _extern _YIELD U0 _Yield(); //Yield cpu to next task.
 
 Bool IsFrozen(CCPU *gs) {
-  if(!gs) gs=Gs;
+  if (!gs) gs=Gs;
   return (__GetTicks>=gs->last_yield+ToI64(0.05*1000));
 }
 

@@ -1,6 +1,7 @@
 #include "sdl_window.hxx"
 #include "logo.hxx"
 #include "main.hxx"
+#include "simd.h"
 
 #include <algorithm>
 #include <string>
@@ -43,8 +44,19 @@ void EventDrawWindowUpdate(u8* colors, u64 internal_width) {
   SDL_Surface* s = win.surf;
   SDL_LockSurface(s);
   auto src = colors, dst = (u8*)s->pixels;
-  for (usize y = 0; y < 480; ++y) {
-    memcpy(dst, src, 640);
+  // is this thing being compiled on an alien civilization's architecture?
+  static_assert(sizeof(__m128) == 16);
+  PREFETCHT0(src);
+  PREFETCHT0(dst);
+  for (int y = 0; y < 480; ++y) {
+    // FUCKING GCC KEEPS COMPILING MEMCPY INTO REP MOVS!!!!!
+    // check runtime.cxx for a more detailed explanation,
+    // still 640 bytes is a very small amount of data and
+    // I am sure that rep movsb's startup cycles will not be worth it
+#pragma GCC unroll (640/16)
+    for (int i = 0; i < 640; i += 16) {
+      MOVUPS_PUT(dst + i, MOVUPS_GET(src + i));
+    }
     src += internal_width;
     dst += s->pitch;
   }

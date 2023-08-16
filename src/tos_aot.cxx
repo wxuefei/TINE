@@ -39,11 +39,12 @@ void LoadOneImport(u8** src_, u8* module_base) {
   // anyway(compiles down to a mov call)
   // so it respects strict aliasing
   // while not compromising on speed
-#define READ_NUM(x, T)                        \
-  ({                                          \
-    T val_##T;                                \
-    __builtin_memcpy(&val_##T, x, sizeof(T)); \
-    val_##T;                                  \
+#define READ_NUM(x, T)                           \
+  ({                                             \
+    /* ridiculous var name to avoid shadowing */ \
+    T val_##T##x##_;                             \
+    memcpy(&val_##T##x##_, x, sizeof(T));        \
+    val_##T##x##_;                               \
   })
   while ((etype = *src++)) {
     ptr = module_base + READ_NUM(src, u32);
@@ -73,13 +74,13 @@ void LoadOneImport(u8** src_, u8* module_base) {
     }
 #define OFF(T) ((u8*)i - ptr - sizeof(T))
 // same stuff to respect strict aliasing
-#define REL(T)                              \
-  {                                         \
-    usize off = OFF(T);                     \
-    __builtin_memcpy(ptr, &off, sizeof(T)); \
+#define REL(T)                    \
+  {                               \
+    usize off = OFF(T);           \
+    memcpy(ptr, &off, sizeof(T)); \
   }
 #define IMM(T) \
-  { __builtin_memcpy(ptr, &i, sizeof(T)); }
+  { memcpy(ptr, &i, sizeof(T)); }
     switch (etype) {
     case IET_REL_I8:
       REL(i8);
@@ -165,9 +166,9 @@ void LoadPass1(u8* src, u8* module_base) {
         ptr = module_base + READ_NUM(src, u32);
         // compiles down to `add DWORD PTR[ptr],module_base`
         u32 off;
-        __builtin_memcpy(&off, ptr, sizeof(u32));
+        memcpy(&off, ptr, sizeof(u32));
         off += (uptr)module_base;
-        __builtin_memcpy(ptr, &off, sizeof(u32));
+        memcpy(ptr, &off, sizeof(u32));
       }
     } break;
       // the other ones wont be used
@@ -176,8 +177,8 @@ void LoadPass1(u8* src, u8* module_base) {
   }
 }
 
-auto LoadPass2(u8* src, u8* module_base) -> std::vector<HolyFP> {
-  std::vector<HolyFP> ret;
+auto LoadPass2(u8* src, u8* module_base) -> std::vector<void*> {
+  std::vector<void*> ret;
   //
   char* st_ptr;
   u32   i;
@@ -223,7 +224,7 @@ extern "C" struct [[gnu::packed]] CBinFile {
 
 } // namespace
 
-auto LoadHCRT(std::string const& name) -> std::vector<HolyFP> {
+auto LoadHCRT(std::string const& name) -> std::vector<void*> {
   auto f = fopen(name.c_str(), "rb");
   if (!f) {
     fprintf(stderr, "CANNOT FIND TEMPLEOS BINARY FILE %s\n", name.c_str());

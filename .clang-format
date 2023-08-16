@@ -27,6 +27,8 @@ AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakAfterReturnType: None
 BinPackArguments: true
 BinPackParameters: true
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Never
 Standard: c++17
 LambdaBodyIndentation: Signature
 IndentPPDirectives: BeforeHash

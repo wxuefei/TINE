@@ -26,10 +26,9 @@ void InterruptCore(usize core);
 // Wait til Core 0 dies
 void WaitForCore0();
 
-using HolyFP = void*;
-// Launch Core, fps: the function pointers
-// the thread will run on launch
-void CreateCore(usize core, std::vector<HolyFP>&& fps);
+// Launch Core on core n
+// fps: the HolyC function pointers the thread will run on launch
+void CreateCore(usize n, std::vector<void*>&& fps);
 
 // Wake up core number `core`
 void AwakeCore(usize core);

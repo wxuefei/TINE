@@ -5,6 +5,7 @@
 #include "mem.hxx"
 #include "multic.hxx"
 #include "sdl_window.hxx"
+#include "simd.h"
 #include "sound.h"
 #include "tos_aot.hxx"
 #include "vfs.hxx"
@@ -28,7 +29,6 @@
 #include <string.h>
 
 #include <dyad.h>
-#include <immintrin.h>
 #include <linenoise-ng/linenoise.h>
 #include <tos_ffi.h>
 
@@ -337,7 +337,7 @@ auto STK_UnixNow(void*) -> u64 {
 }
 
 void STK___SpawnCore(uptr* stk) {
-  CreateCore(stk[0], std::vector<HolyFP>{
+  CreateCore(stk[0], std::vector<void*>{
                          (void*)stk[1],
                      });
 }
@@ -572,36 +572,37 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
       0x16 + 0xa + 0x2;
 #endif
   usize constexpr arity_off = inst.m_sz - 2;
-
-  auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
-  __builtin_prefetch(blob, 1 /*w*/);
-  // this is important, the reason i pack all the machine instructions into
+  // the reason i pack all the machine instructions into
   // one string literal is because i want simd instructions to move it
   // quickly and modify only a small portion of it
-  __builtin_prefetch(inst.m_lit, 0 /*r*/);
+
+  auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
+  // is this thing being compiled on an alien civilization's architecture?
+  static_assert(sizeof(__m128) == 16);
+  PREFETCHT0(blob);
+  PREFETCHT0(inst.m_lit);
   for (usize i = 0; i < ffi_list.size(); ++i) {
     u8* cur_pos = blob + i * inst.m_sz;
-    // handwritten simd because the compiler kept
-    // fucking compiling memcpy to a rep movsb
-#define MOVUPS_GET(mem)      _mm_loadu_ps((float const*)(mem))
-#define MOVUPS_PUT(mem, reg) _mm_storeu_ps((float*)(mem), (__m128)(reg))
-    static_assert(sizeof(__m128) == 16);
     // remainder: self-explanatory
     // off: machine code literal size rounded down to 16
-    auto constexpr remainder = inst.m_sz % sizeof(__m128);
+    auto constexpr remainder = inst.m_sz % 16;
     auto constexpr off       = inst.m_sz - remainder;
-    for (usize j = 0; j < off; j += sizeof(__m128)) {
+    // handwritten simd because the compiler kept giving me a rep movsb
+    // which is slow for small data(<256b) and the startup cycle is huge
+    // (https://archive.li/g2UOW#selection-1989.245-2027.244)
+    // "When life gives you rep movs, hand-vectorize them." — eb-lan
+#pragma GCC unroll (off/16)
+    for (usize j = 0; j < off; j += 16) {
       MOVUPS_PUT(cur_pos + j, MOVUPS_GET(inst.m_lit + j));
     }
-    __builtin_memcpy(cur_pos + off, inst.m_lit + off, remainder);
-    //
+    memcpy(cur_pos + off, inst.m_lit + off, remainder);
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
     // mov QWORD PTR[cur_pos+fp_off],hf.m_fp
     memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(uptr));
     // for the 0x2211 placeholder
     // mov WORD PTR[cur_pos+arity_off],hf.m_arity*8
-    usize ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
+    auto ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
     memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
     TOSLoader.try_emplace(std::string{hf.m_name}, //
                           /*CSymbol*/ HTT_FUN, blob + i * inst.m_sz);

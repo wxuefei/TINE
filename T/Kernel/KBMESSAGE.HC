@@ -490,7 +490,7 @@ static U0 KBCb(I64 c,I64 s) {
   U8 *old_rip;
   F64 time_out;
   I64 old_idle_pt_hits;
-  while(LBts(&kb_mtx,0))
+  while (LBts(&kb_mtx,0))
     PAUSE;
   SetFs(adam_task);
   kbd.last_down_scan_code=s;
@@ -499,23 +499,31 @@ static U0 KBCb(I64 c,I64 s) {
   FifoI64Ins(kbd.scan_code_fifo,s);
   kbd.timestamp=__GetTicks;
   c=ScanCode2Char(s&0x7f);
-  if(keydev.fp_ctrl_alt_cbs&&!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&'a'<=c<='z') {
-    if(keydev.fp_ctrl_alt_cbs[c-'a'])
+  if (keydev.fp_ctrl_alt_cbs &&
+      !(s&SCF_KEY_UP)        &&
+      s&SCF_ALT              &&
+      s&SCF_CTRL             &&
+      'a'<=c<='z') {
+    if (keydev.fp_ctrl_alt_cbs[c-'a'])
       (*keydev.fp_ctrl_alt_cbs[c-'a'])(s);
   }
-  if(!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&(c=='c'||c=='x')&&TaskValidate(sys_focus_task)) {
-    if(c=='c') {
-       if(!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
-         LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C);
-         goto await_yeild;
-       }
-    } else if(c=='x') {
-      if(!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)) {
+  if (!(s&SCF_KEY_UP) &&
+     s&SCF_ALT        &&
+     s&SCF_CTRL       &&
+     (c=='c'||c=='x') &&
+     TaskValidate(sys_focus_task)) {
+    if (c=='c') {
+      if (!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
+        LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C);
+        goto await_yield;
+      }
+    } else if (c=='x') {
+      if (!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)) {
         LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X);
-        await_yeild:
+  await_yield:
         time_out=__GetTicks;
-        while(time_out-__GetTicks<ToI64(0.05*1000)) {
-          if(IsFrozen(cpu_structs[0])) {
+        while (time_out-__GetTicks<ToI64(0.05*1000)) {
+          if (IsFrozen(cpu_structs[0])) {
             InterruptCore(0);
             break;
           } else

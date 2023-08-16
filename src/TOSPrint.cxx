@@ -28,6 +28,7 @@ auto UnescapeString(char* str, char* where) -> char* {
     default:
       goto check_us_key;
     }
+    // word
     memcpy(where, to, 2);
     where += 2;
     ++str;
@@ -43,6 +44,7 @@ auto UnescapeString(char* str, char* where) -> char* {
       // deep inside the Standard that I'm missing, either way, this works
       char buf[5];
       snprintf(buf, sizeof buf, "\\%" PRIo8, static_cast<u8>(*str));
+      // dword
       memcpy(where, buf, 4);
       where += 4;
       ++str;
