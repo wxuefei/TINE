@@ -250,8 +250,12 @@ void STK_TOSPrint(iptr* stk) {
   TOSPrint((char*)stk[0], stk[1], stk + 2);
 }
 
-void STK_DrawWindowUpdate(uptr* stk) {
-  DrawWindowUpdate((u8*)stk[0], stk[1]);
+void STK_DrawWindowNew(void*) {
+  DrawWindowNew();
+}
+
+void STK_DrawWindowUpdate(u8** stk) {
+  DrawWindowUpdate(stk[0]);
 }
 
 auto STK___GetTicksHP(void*) -> u64 {
@@ -591,7 +595,7 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // which is slow for small data(<256b) and the startup cycle is huge
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
-#pragma GCC unroll (off/16)
+#pragma GCC unroll(off / 16)
     for (usize j = 0; j < off; j += 16) {
       MOVUPS_PUT(cur_pos + j, MOVUPS_GET(inst.m_lit + j));
     }
@@ -662,7 +666,8 @@ void BootstrapLoader() {
       S(SetMSCallback, 1),
       S(__GetTicks, 0),
       S(__BootstrapForeachSymbol, 1),
-      S(DrawWindowUpdate, 2),
+      S(DrawWindowUpdate, 1),
+      S(DrawWindowNew, 0),
       S(UnblockSignals, 0),
       /*
        * In TempleOS variadics, functions follow __cdecl, whereas normally

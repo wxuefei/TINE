@@ -8,12 +8,14 @@
 void SetClipboard(char const* text);
 // Gets TempleOS clipboard text
 auto ClipboardText() -> std::string;
-// New window
-void NewDrawWindow();
-// self-explanatory
-void DrawWindowUpdate(u8* colors, u64 internal_width);
+// New window, called from HolyC
+void DrawWindowNew();
+// self-explanatory, called from HolyC
+void DrawWindowUpdate(u8* px);
 // loops til you close the window or whatever
 void InputLoop(bool* off);
+// Inits audio, called from HolyC
+void PCSpkInit();
 
 extern "C" union bgr_48 {
   u64 i;

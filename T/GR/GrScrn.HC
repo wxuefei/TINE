@@ -363,8 +363,6 @@ U0 GrUpdateVGAGraphics()
 {//Update Graphic Card
 }
 U8 *_screen=NULL;
-/*if(!__IsCmdLine)
-  _screen=DrawWindowNew;//resolved in loader side*/
 U0 ScaleMouseCords(I64 *x,I64 *y) {
   I64 x2=*x,y2=*y;
   x2=(ToF64(x2)/640*640.);
@@ -398,7 +396,7 @@ U0 GrUpdateScrn()
     GrZoomInScrn;
     dc=gr.zoomed_dc;
   }
-  DrawWindowUpdate(dc->body,dc->width_internal);
+  DrawWindowUpdate(dc->body);
   //God willing they are the same size
   MemCpy(gr.scrn_image->body,gr.dc2->body,MSize(gr.scrn_image->body));
   LBtr(&scrn_lock,0);

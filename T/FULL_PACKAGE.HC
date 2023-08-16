@@ -100,6 +100,8 @@ if (__IsCmdLine) {
   DeathWait(&u);
   ExitTINE;
 } else {
+  DrawWindowNew;
+  PaletteSetStd;
   sys_winmgr_task=Spawn(&WinMgrTask);
   Refresh; //Wait for window manager.
   StartUpTasks;

@@ -181,10 +181,6 @@ auto main(int argc, char** argv) -> int {
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
   auto init_fps = LoadHCRT(bin_path);
-  if (!is_cmd_line) {
-    NewDrawWindow();
-    InitSound();
-  }
   CreateCore(0, std::move(init_fps));
   if (!is_cmd_line) {
 #ifdef _WIN32

@@ -1,7 +1,9 @@
 #include "sdl_window.hxx"
 #include "logo.hxx"
 #include "main.hxx"
+#include "multic.hxx"
 #include "simd.h"
+#include "sound.h"
 
 #include <algorithm>
 #include <string>
@@ -23,8 +25,9 @@ struct CDrawWindow {
   SDL_Palette*  palette;
   SDL_Surface*  surf;
   SDL_Renderer* rend;
-  Uint32        sz_x, sz_y;
-  Sint32        margin_x, margin_y;
+  i32           sz_x, sz_y;
+  i32           margin_x, margin_y;
+  bool          ready = false;
   // somehow segfaults idk lmao im just gonna leak memory for a
   // microsecond fuck you
   /*~CDrawWindow() noexcept {
@@ -40,60 +43,95 @@ struct CDrawWindow {
   }*/
 } win;
 
-void EventDrawWindowUpdate(u8* colors, u64 internal_width) {
-  SDL_Surface* s = win.surf;
-  SDL_LockSurface(s);
-  auto src = colors, dst = (u8*)s->pixels;
+void DrawWindowUpdateCB(u8* px) {
+  SDL_LockMutex(win.screen_mutex);
+  SDL_LockSurface(win.surf);
+  auto dst = static_cast<u8*>(win.surf->pixels);
   // is this thing being compiled on an alien civilization's architecture?
   static_assert(sizeof(__m128) == 16);
-  PREFETCHT0(src);
+  PREFETCHT0(px);
   PREFETCHT0(dst);
   for (int y = 0; y < 480; ++y) {
     // FUCKING GCC KEEPS COMPILING MEMCPY INTO REP MOVS!!!!!
     // check runtime.cxx for a more detailed explanation,
     // still 640 bytes is a very small amount of data and
     // I am sure that rep movsb's startup cycles will not be worth it
-#pragma GCC unroll (640/16)
+#pragma GCC unroll(640 / 16)
     for (int i = 0; i < 640; i += 16) {
-      MOVUPS_PUT(dst + i, MOVUPS_GET(src + i));
+      MOVUPS_PUT(dst + i, MOVUPS_GET(px + i));
     }
-    src += internal_width;
-    dst += s->pitch;
+    px += 640;
+    dst += win.surf->pitch;
   }
-  SDL_UnlockSurface(s);
-  int      ww, wh, w2, h2;
-  i64      margin = 0, margin2 = 0;
-  SDL_Rect rct;
-  SDL_GetWindowSize(win.window, &ww, &wh);
-  if (wh < ww) {
-    h2     = wh;
-    w2     = 640. / 480 * h2;
-    margin = (ww - w2) / 2;
-    if (w2 > ww) {
-      margin = 0;
+  SDL_UnlockSurface(win.surf);
+  SDL_RenderClear(win.rend);
+  int w, h, w2, h2, margin_x = 0, margin_y = 0;
+  SDL_GetWindowSize(win.window, &w, &h);
+  if (w > h) {
+    h2       = w * 480. / 640;
+    w2       = w;
+    margin_y = (h - h2) / 2;
+    if (h2 > h) {
+      margin_y = 0;
       goto top_margin;
     }
   } else {
   top_margin:
-    w2      = ww;
-    h2      = 480 / 640. * w2;
-    margin2 = (wh - h2) / 2;
+    w2       = h * 640. / 480;
+    h2       = h;
+    margin_x = (w - w2) / 2;
   }
-  win.margin_x   = margin;
-  win.margin_y   = margin2;
-  win.sz_x       = w2;
-  win.sz_y       = h2;
-  rct.y          = margin2;
-  rct.x          = margin;
-  rct.w          = w2;
-  rct.h          = h2;
-  SDL_Texture* t = SDL_CreateTextureFromSurface(win.rend, s);
-  SDL_RenderClear(win.rend);
-  SDL_RenderCopy(win.rend, t, nullptr, &rct);
+  SDL_Rect templeos_screen{
+      .x = win.margin_x = margin_x,
+      .y = win.margin_y = margin_y,
+      .w = win.sz_x = w2,
+      .h = win.sz_y = h2,
+  };
+  auto texture = SDL_CreateTextureFromSurface(win.rend, win.surf);
+  SDL_RenderCopy(win.rend, texture, nullptr, &templeos_screen);
   SDL_RenderPresent(win.rend);
-  SDL_DestroyTexture(t);
+  SDL_DestroyTexture(texture);
   SDL_CondBroadcast(win.screen_done_cond);
+  SDL_UnlockMutex(win.screen_mutex);
 }
+
+void DrawWindowNewCB() {
+  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
+                          SDL_HINT_OVERRIDE);
+  SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
+                          SDL_HINT_OVERRIDE);
+  win.screen_mutex     = SDL_CreateMutex();
+  win.screen_done_cond = SDL_CreateCond();
+  win.window =
+      SDL_CreateWindow("TINE Is Not an Emulator", SDL_WINDOWPOS_CENTERED,
+                       SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_RESIZABLE);
+  SDL_Surface* icon = SDL_CreateRGBSurfaceWithFormat(
+      0, TINELogo.width, TINELogo.height,
+      8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
+  SDL_LockSurface(icon);
+  auto constexpr bytes =
+      TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
+  memcpy(icon->pixels, TINELogo.pixel_data, bytes);
+  SDL_UnlockSurface(icon);
+  SDL_SetWindowIcon(win.window, icon);
+  SDL_FreeSurface(icon);
+  win.surf    = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
+  win.palette = SDL_AllocPalette(256);
+  SDL_SetSurfacePalette(win.surf, win.palette);
+  SDL_SetWindowMinimumSize(win.window, 640, 480);
+  win.rend     = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
+  win.margin_y = win.margin_x = 0;
+  win.sz_x                    = 640;
+  win.sz_y                    = 480;
+  win.ready                   = true;
+  // let templeos manage the cursor
+  SDL_ShowCursor(SDL_DISABLE);
+}
+
+enum : Sint32 {
+  WINDOW_UPDATE,
+  WINDOW_NEW,
+};
 
 enum : u8 {
   CH_CTRLA       = 0x01,
@@ -509,14 +547,14 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
   ent:
     if (x < win.margin_x)
       x2 = 0;
-    else if (x > win.margin_x + static_cast<Sint32>(win.sz_x))
+    else if (x > win.margin_x + win.sz_x)
       x2 = 640 - 1;
     else
       x2 = (x - win.margin_x) * 640. / win.sz_x;
 
     if (y < win.margin_y)
       y2 = 0;
-    else if (y > win.margin_y + static_cast<Sint32>(win.sz_y))
+    else if (y > win.margin_y + win.sz_y)
       y2 = 480 - 1;
     else
       y2 = (y - win.margin_y) * 480. / win.sz_y;
@@ -528,6 +566,11 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 } // namespace
 
 void InputLoop(bool* off_ptr) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+    fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
+            SDL_GetError());
+    _Exit(1);
+  }
   SDL_Event e;
   bool&     off = *off_ptr;
   while (!off) {
@@ -538,7 +581,14 @@ void InputLoop(bool* off_ptr) {
       off = true;
       break;
     case SDL_USEREVENT:
-      EventDrawWindowUpdate((u8*)e.user.data1, (uptr)e.user.data2);
+      switch (e.user.code) {
+      case WINDOW_UPDATE:
+        DrawWindowUpdateCB(static_cast<u8*>(e.user.data1));
+        break;
+      case WINDOW_NEW:
+        DrawWindowNewCB();
+        InitSound();
+      }
     }
   }
 }
@@ -568,68 +618,32 @@ auto ClipboardText() -> std::string {
   return s;
 }
 
-void NewDrawWindow() {
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
-    fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
-            SDL_GetError());
-    _Exit(1);
-  }
-  // i removed this line to improve startup speeds in x11 but if you absolutely
-  // need your compositor to be running then uncomment this line
-  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
-                          SDL_HINT_OVERRIDE);
-  SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
-                          SDL_HINT_OVERRIDE);
-  win.screen_mutex     = SDL_CreateMutex();
-  win.screen_done_cond = SDL_CreateCond();
-  win.window =
-      SDL_CreateWindow("TINE Is Not an Emulator", SDL_WINDOWPOS_CENTERED,
-                       SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_RESIZABLE);
-  SDL_Surface* icon = SDL_CreateRGBSurfaceWithFormat(
-      0, TINELogo.width, TINELogo.height,
-      8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
-  SDL_LockSurface(icon);
-  auto constexpr bytes =
-      TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
-  memcpy(icon->pixels, TINELogo.pixel_data, bytes);
-  SDL_UnlockSurface(icon);
-  SDL_SetWindowIcon(win.window, icon);
-  SDL_FreeSurface(icon);
-  win.surf    = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
-  win.palette = SDL_AllocPalette(256);
-  SDL_SetSurfacePalette(win.surf, win.palette);
-  SDL_SetWindowMinimumSize(win.window, 640, 480);
-  win.rend     = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
-  win.margin_y = win.margin_x = 0;
-  win.sz_x                    = 640;
-  win.sz_y                    = 480;
-  // let templeos manage the cursor
-  SDL_ShowCursor(SDL_DISABLE);
-}
-
-void DrawWindowUpdate(u8* colors, u64 internal_width) {
+void DrawWindowUpdate(u8* px) {
   // https://archive.md/yD5QL
-  SDL_Event     event;
-  SDL_UserEvent userevent;
-
-  /* our callback pushes an SDL_USEREVENT event into the
-  queue, and causes our callback to be
-  called again at the same interval: */
-
-  userevent.type  = SDL_USEREVENT;
-  userevent.code  = 0;
-  userevent.data1 = colors;
-  userevent.data2 = (void*)internal_width;
-
-  event.type = SDL_USEREVENT;
-  event.user = userevent;
-
-  SDL_LockMutex(win.screen_mutex);
+  SDL_Event event;
+  auto&     u = event.user = {};
+  //
+  u.type  = SDL_USEREVENT;
+  u.code  = WINDOW_UPDATE;
+  u.data1 = px;
+  // push to event queue so InputLoop receives it and updates screen
   SDL_PushEvent(&event);
   // If there are lots of events,it may get lost
   // but it wont happen :^)
+  SDL_LockMutex(win.screen_mutex);
   SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex, 33);
   SDL_UnlockMutex(win.screen_mutex);
+}
+
+void DrawWindowNew() {
+  SDL_Event event;
+  auto&     u = event.user = {};
+  //
+  u.type = SDL_USEREVENT;
+  u.code = WINDOW_NEW;
+  SDL_PushEvent(&event);
+  while (!win.ready)
+    SDL_Delay(1);
 }
 
 void SetKBCallback(void* fptr, void* data) {
