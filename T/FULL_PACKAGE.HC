@@ -102,8 +102,8 @@ if (__IsCmdLine) {
   ExitTINE;
 } else {
   DrawWindowNew;
-  PaletteSetStd;
   sys_winmgr_task=Spawn(&WinMgrTask);
+  PaletteSetStd;
   Refresh; //Wait for window manager.
   StartUpTasks;
   PCSpkInit;

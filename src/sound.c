@@ -25,7 +25,7 @@ static void AudioCB(void* ud, Uint8* out, int len) {
 }
 
 void InitSound(void) {
-  if (SDL_Init(SDL_INIT_AUDIO)) {
+  if (__builtin_expect(SDL_Init(SDL_INIT_AUDIO), 0)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);

@@ -101,7 +101,7 @@ void DrawWindowUpdateCB(u8* px) {
 }
 
 void DrawWindowNewCB() {
-  if (SDL_Init(SDL_INIT_VIDEO)) {
+  if (__builtin_expect(SDL_Init(SDL_INIT_VIDEO), 0)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
@@ -576,12 +576,13 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 } // namespace
 
 void EventLoop(bool* off) {
-  if (SDL_Init(SDL_INIT_EVENTS)) {
+  if (__builtin_expect(SDL_Init(SDL_INIT_EVENTS), 0)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
   }
-  if ((win.event_num = SDL_RegisterEvents(1)) == static_cast<Uint32>(-1)) {
+  win.event_num = SDL_RegisterEvents(1);
+  if (__builtin_expect(win.event_num == static_cast<Uint32>(-1), 0)) {
     fprintf(stderr, "THIS SHOULD NEVER HAPPEN, SDL SAYS: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
