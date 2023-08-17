@@ -203,6 +203,11 @@ public Bool DocEd(CDoc *doc,I64 dof_flags=0)
 #help_index "DolDoc/Cmd Line (Typically);Cmd Line (Typically)"
 public Bool Ed(U8 *link_st,I64 edf_dof_flags=0)
 {//Invoke document editor.
+  if (IsRaw) {
+    "PLEASEUSEANEXTERNALEDITORTOEDITFILESIN"
+    "COMMANDLINEMODE\n";
+    return FALSE;
+  }
   U8 *filename,*needle_str;
   I64 i,num;
   Bool cont,res=FALSE;

@@ -58,7 +58,11 @@ DocTop(DocPut);
 
 Bool EdLite(U8 *filename,I64 num=1,I64 edf_dof_flags=0)
 {//Light weight text editor for debugging.
-
+  if (IsRaw) {
+    "PLEASEUSEANEXTERNALEDITORTOEDITFILESIN"
+    "COMMANDLINEMODE\n";
+    return FALSE;
+  }
   U8 *src,*src2,*src3,*dst,*buf,*bin_data=NULL;
   I64 i,cnt=0,ch,sc,size,bin_size=0,line_start_col=0,cur_col=0,
 	old_raw_flags=text.raw_flags;
