@@ -101,6 +101,7 @@ auto main(int argc, char** argv) -> int {
   #undef S
   });
 #else
+  SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
   SYSTEM_INFO si;
   GetSystemInfo(&si);
   dwAllocationGranularity = si.dwAllocationGranularity;
@@ -181,11 +182,6 @@ auto main(int argc, char** argv) -> int {
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
   CreateCore(0, LoadHCRT(bin_path));
-#ifdef _WIN32
-  if (!is_cmd_line) {
-    SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
-  }
-#endif
   EventLoop(&prog_exit);
   return exit_code;
 }
