@@ -48,7 +48,6 @@ struct CDrawWindow {
 } win;
 
 void DrawWindowUpdateCB(u8* px) {
-  SDL_LockMutex(win.screen_mutex);
   SDL_LockSurface(win.surf);
   auto dst = static_cast<u8*>(win.surf->pixels);
   // is this thing being compiled on an alien civilization's architecture?
@@ -99,7 +98,6 @@ void DrawWindowUpdateCB(u8* px) {
   SDL_RenderPresent(win.rend);
   SDL_DestroyTexture(texture);
   SDL_CondBroadcast(win.screen_done_cond);
-  SDL_UnlockMutex(win.screen_mutex);
 }
 
 void DrawWindowNewCB() {
@@ -121,9 +119,8 @@ void DrawWindowNewCB() {
       0, TINELogo.width, TINELogo.height,
       8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
   SDL_LockSurface(icon);
-  auto constexpr bytes =
-      TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel;
-  memcpy(icon->pixels, TINELogo.pixel_data, bytes);
+  memcpy(icon->pixels, TINELogo.pixel_data,
+         TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel);
   SDL_UnlockSurface(icon);
   SDL_SetWindowIcon(win.window, icon);
   SDL_FreeSurface(icon);
@@ -578,7 +575,7 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 
 } // namespace
 
-void EventLoop(bool* off_ptr) {
+void EventLoop(bool* off) {
   if (SDL_Init(SDL_INIT_EVENTS)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
@@ -590,13 +587,12 @@ void EventLoop(bool* off_ptr) {
     _Exit(1);
   }
   SDL_Event e;
-  bool&     off = *off_ptr;
-  while (!off) {
+  while (!*off) {
     if (!SDL_WaitEvent(&e))
       continue;
     switch (e.type) {
     case SDL_QUIT:
-      off = true;
+      *off = true;
       break;
     case SDL_USEREVENT:
       switch (e.user.code) {
@@ -652,7 +648,7 @@ void DrawWindowUpdate(u8* px) {
   // If there are lots of events,it may get lost
   // but it wont happen :^)
   SDL_LockMutex(win.screen_mutex);
-  SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex, 33);
+  SDL_CondWait(win.screen_done_cond, win.screen_mutex);
   SDL_UnlockMutex(win.screen_mutex);
 }
 
