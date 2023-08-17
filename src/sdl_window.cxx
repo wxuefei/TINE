@@ -1,7 +1,6 @@
 #include "sdl_window.hxx"
 #include "logo.hxx"
 #include "main.hxx"
-#include "multic.hxx"
 #include "simd.h"
 #include "sound.h"
 
@@ -28,6 +27,11 @@ struct CDrawWindow {
   i32           sz_x, sz_y;
   i32           margin_x, margin_y;
   bool          ready = false;
+  u32           event_num; // some random magic bullshit number
+                           // obtained from SDL_RegisterEvents(),
+                           // dont ask me wtf this is because I can
+                           // just set it to SDL_USEREVENT and it'll still work
+                           // but I want to be orthodox I guess
   // somehow segfaults idk lmao im just gonna leak memory for a
   // microsecond fuck you
   /*~CDrawWindow() noexcept {
@@ -49,19 +53,22 @@ void DrawWindowUpdateCB(u8* px) {
   auto dst = static_cast<u8*>(win.surf->pixels);
   // is this thing being compiled on an alien civilization's architecture?
   static_assert(sizeof(__m128) == 16);
-  PREFETCHT0(px);
-  PREFETCHT0(dst);
-  for (int y = 0; y < 480; ++y) {
+  for (int y = 0; y < 480; ++y, px += 640, dst += win.surf->pitch) {
     // FUCKING GCC KEEPS COMPILING MEMCPY INTO REP MOVS!!!!!
     // check runtime.cxx for a more detailed explanation,
     // still 640 bytes is a very small amount of data and
     // I am sure that rep movsb's startup cycles will not be worth it
-#pragma GCC unroll(640 / 16)
-    for (int i = 0; i < 640; i += 16) {
-      MOVUPS_PUT(dst + i, MOVUPS_GET(px + i));
+    //
+    // clang understands my intent clearly with these intrinsics but GCC
+    // seems to be pretty stupid here and generated messy assembly which sucks
+#pragma GCC unroll 10
+    for (int i = 0; i < 640; i += 64) {
+      PREFETCHNTA(px + i); // fetch cache line
+#pragma GCC unroll 4
+      for (int j = 0; j < 0x40; j += 0x10) {
+        MOVDQU_STORE(dst + i + j, MOVDQU_LOAD(px + i + j));
+      }
     }
-    px += 640;
-    dst += win.surf->pitch;
   }
   SDL_UnlockSurface(win.surf);
   SDL_RenderClear(win.rend);
@@ -96,6 +103,11 @@ void DrawWindowUpdateCB(u8* px) {
 }
 
 void DrawWindowNewCB() {
+  if (SDL_Init(SDL_INIT_VIDEO)) {
+    fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
+            SDL_GetError());
+    _Exit(1);
+  }
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
@@ -131,6 +143,7 @@ void DrawWindowNewCB() {
 enum : Sint32 {
   WINDOW_UPDATE,
   WINDOW_NEW,
+  AUDIO_INIT,
 };
 
 enum : u8 {
@@ -508,7 +521,7 @@ static bool  ms_init    = false;
 auto SDLCALL KBCallback(void*, SDL_Event* e) -> int {
   u64 s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
-    FFI_CALL_TOS_2(kb_cb, 0 /*unused value*/, s);
+    FFI_CALL_TOS_2(kb_cb, 0 /*unused legacy value, too lazy to fix*/, s);
   return 0;
 }
 
@@ -565,9 +578,14 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 
 } // namespace
 
-void InputLoop(bool* off_ptr) {
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+void EventLoop(bool* off_ptr) {
+  if (SDL_Init(SDL_INIT_EVENTS)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
+            SDL_GetError());
+    _Exit(1);
+  }
+  if ((win.event_num = SDL_RegisterEvents(1)) == static_cast<Uint32>(-1)) {
+    fprintf(stderr, "THIS SHOULD NEVER HAPPEN, SDL SAYS: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
   }
@@ -587,6 +605,8 @@ void InputLoop(bool* off_ptr) {
         break;
       case WINDOW_NEW:
         DrawWindowNewCB();
+        break;
+      case AUDIO_INIT:
         InitSound();
       }
     }
@@ -620,13 +640,14 @@ auto ClipboardText() -> std::string {
 
 void DrawWindowUpdate(u8* px) {
   // https://archive.md/yD5QL
-  SDL_Event event;
-  auto&     u = event.user = {};
-  //
-  u.type  = SDL_USEREVENT;
+  SDL_Event event{
+      .user = {},
+  };
+  auto& u = event.user;
+  u.type  = win.event_num;
   u.code  = WINDOW_UPDATE;
   u.data1 = px;
-  // push to event queue so InputLoop receives it and updates screen
+  // push to event queue so EventLoop receives it and updates screen
   SDL_PushEvent(&event);
   // If there are lots of events,it may get lost
   // but it wont happen :^)
@@ -635,15 +656,31 @@ void DrawWindowUpdate(u8* px) {
   SDL_UnlockMutex(win.screen_mutex);
 }
 
+// We call this from HolyC, it launches an event to EventLoop() so that it
+// launches the SDL window for us(SDL is very picky about which thread launches
+// the window)
 void DrawWindowNew() {
-  SDL_Event event;
-  auto&     u = event.user = {};
-  //
-  u.type = SDL_USEREVENT;
-  u.code = WINDOW_NEW;
+  SDL_Event event{
+      .user = {},
+  };
+  auto& u = event.user;
+  u.type  = win.event_num;
+  u.code  = WINDOW_NEW;
   SDL_PushEvent(&event);
+  // Spin until it's safe to write to the framebuffer
+  // won't be long so it's fine to spin here
   while (!win.ready)
     SDL_Delay(1);
+}
+
+void PCSpkInit() {
+  SDL_Event event{
+      .user = {},
+  };
+  auto& u = event.user;
+  u.type  = win.event_num;
+  u.code  = AUDIO_INIT;
+  SDL_PushEvent(&event);
 }
 
 void SetKBCallback(void* fptr, void* data) {
@@ -666,8 +703,9 @@ void SetMSCallback(void* fptr) {
 void GrPaletteColorSet(u64 i, bgr_48 u) {
   // 0xffff is 100% so 0x7fff/0xffff would be about .50
   // this gets multiplied by 0xff to get 0x7f
-  Uint8 b = u.b / (f64)0xffff * 0xff, g = u.g / (f64)0xffff * 0xff,
-        r = u.r / (f64)0xffff * 0xff;
+  u8 b = u.b / (f64)0xffff * 0xff;
+  u8 g = u.g / (f64)0xffff * 0xff;
+  u8 r = u.r / (f64)0xffff * 0xff;
   // yes i know this is a C++20 feature but compilers already support it
   // so shut the fuck up
   SDL_Color sdl_c{

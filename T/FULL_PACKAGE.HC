@@ -96,6 +96,7 @@ try {
   ExePrint("%s;\n",__CmdLineBootText);
 } catch PutExcept;
 if (__IsCmdLine) {
+  PCSpkInit;
   CTask *u=User;
   DeathWait(&u);
   ExitTINE;
@@ -105,6 +106,7 @@ if (__IsCmdLine) {
   sys_winmgr_task=Spawn(&WinMgrTask);
   Refresh; //Wait for window manager.
   StartUpTasks;
+  PCSpkInit;
   SrvTaskCont;
 }
 #include "PUBLIC.HC";;

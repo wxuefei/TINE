@@ -23,9 +23,6 @@ auto CoreNum() -> usize;
 // Set rip to an interrupt routine
 void InterruptCore(usize core);
 
-// Wait til Core 0 dies
-void WaitForCore0();
-
 // Launch Core on core n
 // fps: the HolyC function pointers the thread will run on launch
 void CreateCore(usize n, std::vector<void*>&& fps);

@@ -180,16 +180,13 @@ auto main(int argc, char** argv) -> int {
   }
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
-  auto init_fps = LoadHCRT(bin_path);
-  CreateCore(0, std::move(init_fps));
-  if (!is_cmd_line) {
+  CreateCore(0, LoadHCRT(bin_path));
 #ifdef _WIN32
+  if (!is_cmd_line) {
     SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
-#endif
-    InputLoop(&prog_exit);
-  } else {
-    WaitForCore0();
   }
+#endif
+  EventLoop(&prog_exit);
   return exit_code;
 }
 

@@ -258,6 +258,10 @@ void STK_DrawWindowUpdate(u8** stk) {
   DrawWindowUpdate(stk[0]);
 }
 
+void STK_PCSpkInit(void*) {
+  PCSpkInit();
+}
+
 auto STK___GetTicksHP(void*) -> u64 {
 #ifndef _WIN32
   struct timespec ts;
@@ -579,12 +583,10 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // the reason i pack all the machine instructions into
   // one string literal is because i want simd instructions to move it
   // quickly and modify only a small portion of it
-
   auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
   // is this thing being compiled on an alien civilization's architecture?
   static_assert(sizeof(__m128) == 16);
-  PREFETCHT0(blob);
-  PREFETCHT0(inst.m_lit);
+  PREFETCHT0(inst.m_lit); // load literal into L1
   for (usize i = 0; i < ffi_list.size(); ++i) {
     u8* cur_pos = blob + i * inst.m_sz;
     // remainder: self-explanatory
@@ -596,8 +598,8 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
 #pragma GCC unroll(off / 16)
-    for (usize j = 0; j < off; j += 16) {
-      MOVUPS_PUT(cur_pos + j, MOVUPS_GET(inst.m_lit + j));
+    for (usize j = 0; j < off; j += 0x10) {
+      MOVDQU_STORE(cur_pos + j, MOVDQU_LOAD(inst.m_lit + j));
     }
     memcpy(cur_pos + off, inst.m_lit + off, remainder);
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
@@ -668,6 +670,7 @@ void BootstrapLoader() {
       S(__BootstrapForeachSymbol, 1),
       S(DrawWindowUpdate, 1),
       S(DrawWindowNew, 0),
+      S(PCSpkInit, 0),
       S(UnblockSignals, 0),
       /*
        * In TempleOS variadics, functions follow __cdecl, whereas normally

@@ -1,6 +1,7 @@
 #include "sound.h"
 
 #include <math.h>
+#include <stdio.h>
 
 #include <SDL2/SDL.h>
 
@@ -24,6 +25,11 @@ static void AudioCB(void* ud, Uint8* out, int len) {
 }
 
 void InitSound(void) {
+  if (SDL_Init(SDL_INIT_AUDIO)) {
+    fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
+            SDL_GetError());
+    _Exit(1);
+  }
   output = SDL_OpenAudioDevice(
       NULL, 0,
       &(SDL_AudioSpec){

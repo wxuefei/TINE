@@ -117,18 +117,6 @@ auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
 #endif
 }
 
-// very very incomplete C++20 atomic_ref<T> implementation because i dont like
-// typing out builtin routine names
-template <class T> class AtomicRef {
-  T& m_val;
-public:
-  inline AtomicRef(T& val) noexcept : m_val{val} {}
-  inline T operator=(T rhs) {
-    __atomic_store_n(&m_val, rhs, __ATOMIC_SEQ_CST);
-    return rhs;
-  }
-};
-
 /*
  * (DolDoc code)
  * $ID,-2$$TR-C,"How do you use the FS and GS segment registers."$
@@ -225,14 +213,6 @@ void CreateCore(usize n, std::vector<void*>&& fps) {
 #endif
 }
 
-void WaitForCore0() {
-#ifdef _WIN32
-  WaitForSingleObject(cores[0].thread, INFINITE);
-#else
-  pthread_join(cores[0].thread, nullptr);
-#endif
-}
-
 void AwakeCore(usize core) {
   auto& c = cores[core];
 #ifdef _WIN32
@@ -243,11 +223,13 @@ void AwakeCore(usize core) {
 #else
   if (c.is_sleeping) {
   #ifdef __linux__
-    syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, 1u, nullptr, nullptr, 0);
+    syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, UINT32_C(1), nullptr,
+            nullptr, 0);
   #elif defined(__FreeBSD__)
-    _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, 1u, nullptr, nullptr);
+    _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, UINT32_C(1), nullptr, nullptr);
   #endif
   }
+  __atomic_store_n(&c.is_sleeping, UINT32_C(0), __ATOMIC_SEQ_CST);
 #endif
 }
 
@@ -306,15 +288,14 @@ void SleepHP(u64 us) {
   struct timespec ts {};
   ts.tv_nsec = (us % 1000000) * 1000;
   ts.tv_sec = us / 1000000;
-  AtomicRef sleep_status{c.is_sleeping};
-  sleep_status = 1;
+  __atomic_store_n(&c.is_sleeping, UINT32_C(1), __ATOMIC_SEQ_CST);
   #ifdef __linux__
   syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr, 0);
   #elif defined(__FreeBSD__)
   _umtx_op(&c.is_sleeping, UMTX_OP_WAIT_UINT, 1u,
            (void*)sizeof(struct timespec), &ts);
   #endif
-  sleep_status = 0;
+  __atomic_store_n(&c.is_sleeping, UINT32_C(0), __ATOMIC_SEQ_CST);
 #endif
 }
 

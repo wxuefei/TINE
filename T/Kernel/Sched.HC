@@ -295,6 +295,9 @@ _extern _YIELD U0 _Yield(); //Yield cpu to next task.
 
 Bool IsFrozen(CCPU *gs) {
   if (!gs) gs=Gs;
+  // 50+ milliseconds since last yield?
+  // 50 milliseconds seemed like a reasonable number to
+  // determine if a core is stuck in a non-yielding infinite loop
   return (__GetTicks>=gs->last_yield+ToI64(0.05*1000));
 }
 
