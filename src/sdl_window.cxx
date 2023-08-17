@@ -87,14 +87,14 @@ void DrawWindowUpdateCB(u8* px) {
     h2       = h;
     margin_x = (w - w2) / 2;
   }
-  SDL_Rect templeos_screen{
+  SDL_Rect viewport{
       .x = win.margin_x = margin_x,
       .y = win.margin_y = margin_y,
       .w = win.sz_x = w2,
       .h = win.sz_y = h2,
   };
   auto texture = SDL_CreateTextureFromSurface(win.rend, win.surf);
-  SDL_RenderCopy(win.rend, texture, nullptr, &templeos_screen);
+  SDL_RenderCopy(win.rend, texture, nullptr, &viewport);
   SDL_RenderPresent(win.rend);
   SDL_DestroyTexture(texture);
   SDL_CondBroadcast(win.screen_done_cond);
@@ -645,10 +645,9 @@ void DrawWindowUpdate(u8* px) {
   u.data1 = px;
   // push to event queue so EventLoop receives it and updates screen
   SDL_PushEvent(&event);
-  // If there are lots of events,it may get lost
-  // but it wont happen :^)
   SDL_LockMutex(win.screen_mutex);
-  SDL_CondWait(win.screen_done_cond, win.screen_mutex);
+  SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex,
+                      1000 / 60 /* 60fps */);
   SDL_UnlockMutex(win.screen_mutex);
 }
 
