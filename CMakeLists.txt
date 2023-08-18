@@ -144,10 +144,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
   include (CheckCXXSourceCompiles)
   check_cxx_source_compiles(
     "#include <stdint.h>
+     #include <inttypes.h>
      int main() {
        uint32_t i = 1, j = 1;
        __atomic_compare_exchange_n(
-         &i, &j, 0u, false,
+         &i, &j, UINT32_C(0), false,
          __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST
       );
       return !(i == 0 && j == 1);

@@ -573,35 +573,34 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
         "\xC9"
         "\xC2" "\x11\x22"; // 0x2211 is a placeholder
   // clang-format on
-  usize constexpr fp_off =
+  auto constexpr fp_off =
 #ifndef _WIN32
       0x16 + 0x4 + 0x2;
 #else
       0x16 + 0xa + 0x2;
 #endif
-  usize constexpr arity_off = inst.m_sz - 2;
+  auto constexpr arity_off = inst.m_sz - 2;
+  // is this thing being compiled on an alien civilization's architecture?
+  static_assert(sizeof(__m128) == 16);
+  // round up to sizeof(__m128) so we can use nontemporal writes
+  auto constexpr chunk_sz = (inst.m_sz + 16 - 1) & ~(16 - 1);
+  alignas(16) u8 chunk[chunk_sz];
+  memcpy(chunk, inst.m_lit, inst.m_sz);
+  PREFETCHT0(chunk); // load it into all caches possible
   // the reason i pack all the machine instructions into
   // one string literal is because i want simd instructions to move it
   // quickly and modify only a small portion of it
-  auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
-  // is this thing being compiled on an alien civilization's architecture?
-  static_assert(sizeof(__m128) == 16);
-  PREFETCHT0(inst.m_lit); // load literal into L1
+  auto blob = VirtAlloc<u8>(chunk_sz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
-    u8* cur_pos = blob + i * inst.m_sz;
-    // remainder: self-explanatory
-    // off: machine code literal size rounded down to 16
-    auto constexpr remainder = inst.m_sz % 16;
-    auto constexpr off       = inst.m_sz - remainder;
+    u8* cur_pos = blob + i * chunk_sz;
     // handwritten simd because the compiler kept giving me a rep movsb
     // which is slow for small data(<256b) and the startup cycle is huge
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
-#pragma GCC unroll(off / 16)
-    for (usize j = 0; j < off; j += 0x10) {
-      MOVDQU_STORE(cur_pos + j, MOVDQU_LOAD(inst.m_lit + j));
+#pragma GCC unroll(chunk_sz / 16)
+    for (usize j = 0; j < chunk_sz; j += 0x10) {
+      MOVNTDQ_STORE(cur_pos + j, MOVDQA_LOAD(chunk + j));
     }
-    memcpy(cur_pos + off, inst.m_lit + off, remainder);
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
     // mov QWORD PTR[cur_pos+fp_off],hf.m_fp
@@ -611,7 +610,7 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     auto ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
     memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
     TOSLoader.try_emplace(std::string{hf.m_name}, //
-                          /*CSymbol*/ HTT_FUN, blob + i * inst.m_sz);
+                          /*CSymbol*/ HTT_FUN, cur_pos);
   }
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))

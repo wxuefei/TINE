@@ -27,11 +27,6 @@ struct CDrawWindow {
   i32           sz_x, sz_y;
   i32           margin_x, margin_y;
   bool          ready = false;
-  u32           event_num; // some random magic bullshit number
-                           // obtained from SDL_RegisterEvents(),
-                           // dont ask me wtf this is because I can
-                           // just set it to SDL_USEREVENT and it'll still work
-                           // but I want to be orthodox I guess
   // somehow segfaults idk lmao im just gonna leak memory for a
   // microsecond fuck you
   /*~CDrawWindow() noexcept {
@@ -52,6 +47,7 @@ void DrawWindowUpdateCB(u8* px) {
   auto dst = static_cast<u8*>(win.surf->pixels);
   // is this thing being compiled on an alien civilization's architecture?
   static_assert(sizeof(__m128) == 16);
+  // 307 kilobytes of data!
   for (int y = 0; y < 480; ++y, px += 640, dst += win.surf->pitch) {
     // FUCKING GCC KEEPS COMPILING MEMCPY INTO REP MOVS!!!!!
     // check runtime.cxx for a more detailed explanation,
@@ -60,12 +56,15 @@ void DrawWindowUpdateCB(u8* px) {
     //
     // clang understands my intent clearly with these intrinsics but GCC
     // seems to be pretty stupid here and generated messy assembly which sucks
-#pragma GCC unroll 10
+#pragma GCC unroll 1 // don't unroll, burn one cache line at a time because
+                     // GCC seems to stuff all the prefetches at the top
     for (int i = 0; i < 640; i += 64) {
-      PREFETCHNTA(px + i); // fetch cache line
+      PREFETCHNTA(px + i);
 #pragma GCC unroll 4
       for (int j = 0; j < 0x40; j += 0x10) {
-        MOVDQU_STORE(dst + i + j, MOVDQU_LOAD(px + i + j));
+        // SDL_Surface::pixels seems to be allocated on a
+        // 16 byte boundary for some reason
+        MOVNTDQ_STORE(dst + i + j, MOVDQU_LOAD(px + i + j));
       }
     }
   }
@@ -106,6 +105,7 @@ void DrawWindowNewCB() {
             SDL_GetError());
     _Exit(1);
   }
+  // wtf
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
@@ -115,9 +115,9 @@ void DrawWindowNewCB() {
   win.window =
       SDL_CreateWindow("TINE Is Not an Emulator", SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_RESIZABLE);
-  SDL_Surface* icon = SDL_CreateRGBSurfaceWithFormat(
-      0, TINELogo.width, TINELogo.height,
-      8 /*bits in a byte*/ * TINELogo.bytes_per_pixel, SDL_PIXELFORMAT_RGBA32);
+  auto icon = SDL_CreateRGBSurfaceWithFormat(0, TINELogo.width, TINELogo.height,
+                                             8 * TINELogo.bytes_per_pixel,
+                                             SDL_PIXELFORMAT_RGBA32);
   SDL_LockSurface(icon);
   memcpy(icon->pixels, TINELogo.pixel_data,
          TINELogo.width * TINELogo.height * TINELogo.bytes_per_pixel);
@@ -137,7 +137,7 @@ void DrawWindowNewCB() {
   SDL_ShowCursor(SDL_DISABLE);
 }
 
-enum : Sint32 {
+enum UserCode : Sint32 {
   WINDOW_UPDATE,
   WINDOW_NEW,
   AUDIO_INIT,
@@ -260,7 +260,7 @@ enum : u8 {
 };
 
 // this is templeos' keymap
-u8 constexpr keys[] = {
+u8 constexpr keymap[] = {
     0,   CH_ESC, '1',  '2', '3',  '4', '5', '6', '7', '8', '9', '0', '-',
     '=', '\b',   '\t', 'q', 'w',  'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
     '[', ']',    '\n', 0,   'a',  's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',
@@ -271,15 +271,16 @@ u8 constexpr keys[] = {
 };
 
 auto constexpr K2SC(u8 ch) -> u64 {
-  for (usize i = 0; i < sizeof keys / sizeof keys[0]; ++i)
-    if (keys[i] == ch)
+  for (usize i = 0; i < sizeof keymap / sizeof keymap[0]; ++i)
+    if (keymap[i] == ch)
       return i;
   __builtin_unreachable();
 }
 
 auto ScanKey(u64* sc, SDL_Event* ev) -> int {
   u64 mod = 0;
-  if (ev->type == SDL_KEYDOWN) {
+  switch (ev->type) {
+  case SDL_KEYDOWN:
   ent:
     *sc = ev->key.keysym.scancode;
     if (ev->key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT))
@@ -503,17 +504,16 @@ auto ScanKey(u64* sc, SDL_Event* ev) -> int {
       return 1;
     default:;
     }
-  } else if (ev->type == SDL_KEYUP) {
+  case SDL_KEYUP:
     mod |= SCF_KEY_UP;
     goto ent;
   }
   return -1;
 }
 
-static void* kb_cb      = nullptr;
-static void* kb_cb_data = nullptr;
-static bool  kb_init    = false;
-static bool  ms_init    = false;
+static void* kb_cb   = nullptr;
+static bool  kb_init = false;
+static bool  ms_init = false;
 
 auto SDLCALL KBCallback(void*, SDL_Event* e) -> int {
   u64 s;
@@ -581,31 +581,35 @@ void EventLoop(bool* off) {
             SDL_GetError());
     _Exit(1);
   }
-  win.event_num = SDL_RegisterEvents(1);
-  if (__builtin_expect(win.event_num == static_cast<Uint32>(-1), 0)) {
+  if (__builtin_expect(SDL_RegisterEvents(1) != SDL_USEREVENT, 0)) {
     fprintf(stderr, "THIS SHOULD NEVER HAPPEN, SDL SAYS: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
   }
+  void* jmps[] = {
+      &&WindowUpdate,
+      &&WindowNew,
+      &&AudioInit,
+  };
   SDL_Event e;
-  while (!*off) {
-    if (!SDL_WaitEvent(&e))
-      continue;
+  while (!*off && SDL_WaitEvent(&e)) {
     switch (e.type) {
     case SDL_QUIT:
       *off = true;
       break;
     case SDL_USEREVENT:
-      switch (e.user.code) {
-      case WINDOW_UPDATE:
-        DrawWindowUpdateCB(static_cast<u8*>(e.user.data1));
-        break;
-      case WINDOW_NEW:
-        DrawWindowNewCB();
-        break;
-      case AUDIO_INIT:
-        InitSound();
-      }
+      // I use computed gotos here because avoiding conditionals
+      // is a good thing especially when you're updating the screen
+      goto* jmps[e.user.code];
+    WindowUpdate:
+      DrawWindowUpdateCB((u8*)e.user.data1);
+      break;
+    WindowNew:
+      DrawWindowNewCB();
+      break;
+    AudioInit:
+      InitSound();
+      break;
     }
   }
 }
@@ -641,15 +645,15 @@ void DrawWindowUpdate(u8* px) {
       .user = {},
   };
   auto& u = event.user;
-  u.type  = win.event_num;
-  u.code  = WINDOW_UPDATE;
+  u.type  = SDL_USEREVENT;
+  u.code  = UserCode::WINDOW_UPDATE;
   u.data1 = px;
   // push to event queue so EventLoop receives it and updates screen
   SDL_PushEvent(&event);
   SDL_LockMutex(win.screen_mutex);
   SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex,
                       1000 / 60 /* 60fps */);
-  SDL_UnlockMutex(win.screen_mutex);
+  // CondWaitTimeout unlocks it for us
 }
 
 // We call this from HolyC, it launches an event to EventLoop() so that it
@@ -660,8 +664,8 @@ void DrawWindowNew() {
       .user = {},
   };
   auto& u = event.user;
-  u.type  = win.event_num;
-  u.code  = WINDOW_NEW;
+  u.type  = SDL_USEREVENT;
+  u.code  = UserCode::WINDOW_NEW;
   SDL_PushEvent(&event);
   // Spin until it's safe to write to the framebuffer
   // won't be long so it's fine to spin here
@@ -674,14 +678,13 @@ void PCSpkInit() {
       .user = {},
   };
   auto& u = event.user;
-  u.type  = win.event_num;
-  u.code  = AUDIO_INIT;
+  u.type  = SDL_USEREVENT;
+  u.code  = UserCode::AUDIO_INIT;
   SDL_PushEvent(&event);
 }
 
 void SetKBCallback(void* fptr, void* data) {
-  kb_cb      = fptr;
-  kb_cb_data = data;
+  kb_cb = fptr;
   if (kb_init)
     return;
   kb_init = true;
