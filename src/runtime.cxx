@@ -286,7 +286,7 @@ auto STK___GetTicks(void*) -> u64 {
 }
 
 void STK_SetKBCallback(void** stk) {
-  SetKBCallback(stk[0], stk[1]);
+  SetKBCallback(stk[0]);
 }
 
 void STK_SetMSCallback(void** stk) {
@@ -586,7 +586,9 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   auto constexpr chunk_sz = (inst.m_sz + 16 - 1) & ~(16 - 1);
   alignas(16) u8 chunk[chunk_sz];
   memcpy(chunk, inst.m_lit, inst.m_sz);
-  PREFETCHT0(chunk); // load it into all caches possible
+  for (usize i = 0; i < chunk_sz; i += 64) {
+    PREFETCHT0(chunk + i); // load it into all caches possible
+  }
   // the reason i pack all the machine instructions into
   // one string literal is because i want simd instructions to move it
   // quickly and modify only a small portion of it
@@ -663,7 +665,7 @@ void BootstrapLoader() {
       S(__AwakeCore, 1),
       S(SetFs, 1),
       S(SetGs, 1),
-      S(SetKBCallback, 2),
+      S(SetKBCallback, 1),
       S(SetMSCallback, 1),
       S(__GetTicks, 0),
       S(__BootstrapForeachSymbol, 1),

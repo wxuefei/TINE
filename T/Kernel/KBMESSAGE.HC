@@ -486,7 +486,7 @@ static I64 kb_mtx=0;
 static U0 _Exit() {
 	Exit;
 }
-static U0 KBCb(I64 c,I64 s) {
+static U0 KBCb(I64 s) {
   U8 *old_rip;
   F64 time_out;
   I64 old_idle_pt_hits;
@@ -498,7 +498,7 @@ static U0 KBCb(I64 c,I64 s) {
   BEqu(&kbd.down_bitmap,s&0x7f,!(s&SCF_KEY_UP));
   FifoI64Ins(kbd.scan_code_fifo,s);
   kbd.timestamp=__GetTicks;
-  c=ScanCode2Char(s&0x7f);
+  I64 c=ScanCode2Char(s&0x7f);
   if (keydev.fp_ctrl_alt_cbs &&
       !(s&SCF_KEY_UP)        &&
       s&SCF_ALT              &&
@@ -535,7 +535,7 @@ static U0 KBCb(I64 c,I64 s) {
   }
   LBtr(&kb_mtx,0);
 }
-SetKBCallback(&KBCb,sys_focus_task);
+SetKBCallback(&KBCb);
 
 I64 KbdMsEvtTime()
 {//Timestamp of last key or mouse event.

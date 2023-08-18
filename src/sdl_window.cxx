@@ -60,12 +60,16 @@ void DrawWindowUpdateCB(u8* px) {
                      // GCC seems to stuff all the prefetches at the top
     for (int i = 0; i < 640; i += 64) {
       PREFETCHNTA(px + i);
-#pragma GCC unroll 4
-      for (int j = 0; j < 0x40; j += 0x10) {
-        // SDL_Surface::pixels seems to be allocated on a
-        // 16 byte boundary for some reason
-        MOVNTDQ_STORE(dst + i + j, MOVDQU_LOAD(px + i + j));
-      }
+      // SDL_Surface::pixels seems to be allocated on a
+      // 16 byte boundary for some reason
+      auto xmm0 = MOVDQU_LOAD(px + i);
+      auto xmm1 = MOVDQU_LOAD(px + i + 0x10);
+      auto xmm2 = MOVDQU_LOAD(px + i + 0x20);
+      auto xmm3 = MOVDQU_LOAD(px + i + 0x30);
+      MOVNTDQ_STORE(dst + i, xmm0);
+      MOVNTDQ_STORE(dst + i + 0x10, xmm1);
+      MOVNTDQ_STORE(dst + i + 0x20, xmm2);
+      MOVNTDQ_STORE(dst + i + 0x30, xmm3);
     }
   }
   SDL_UnlockSurface(win.surf);
@@ -513,18 +517,18 @@ auto ScanKey(u64* sc, SDL_Event* ev) -> int {
 
 static void* kb_cb   = nullptr;
 static bool  kb_init = false;
-static bool  ms_init = false;
 
 auto SDLCALL KBCallback(void*, SDL_Event* e) -> int {
   u64 s;
   if (kb_cb && (-1 != ScanKey(&s, e)))
-    FFI_CALL_TOS_2(kb_cb, 0 /*unused legacy value, too lazy to fix*/, s);
+    FFI_CALL_TOS_1(kb_cb, s);
   return 0;
 }
 
-// x,y,z,(l<<1)|r
-static void* ms_cb = nullptr;
+static void* ms_cb   = nullptr;
+static bool  ms_init = false;
 
+// x,y,z,(l<<1)|r
 auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
   static Sint32 x, y;
   static int    state;
@@ -602,7 +606,7 @@ void EventLoop(bool* off) {
       // is a good thing especially when you're updating the screen
       goto* jmps[e.user.code];
     WindowUpdate:
-      DrawWindowUpdateCB((u8*)e.user.data1);
+      DrawWindowUpdateCB(static_cast<u8*>(e.user.data1));
       break;
     WindowNew:
       DrawWindowNewCB();
@@ -683,12 +687,12 @@ void PCSpkInit() {
   SDL_PushEvent(&event);
 }
 
-void SetKBCallback(void* fptr, void* data) {
+void SetKBCallback(void* fptr) {
   kb_cb = fptr;
   if (kb_init)
     return;
   kb_init = true;
-  SDL_AddEventWatch(KBCallback, data);
+  SDL_AddEventWatch(KBCallback, nullptr);
 }
 
 void SetMSCallback(void* fptr) {

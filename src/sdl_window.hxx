@@ -23,12 +23,12 @@ extern "C" union bgr_48 {
     u16 b, g, r, pad;
   };
 };
-// sets SDL palette from  TempleOS
+// sets SDL palette from TempleOS
 void GrPaletteColorSet(u64, bgr_48);
 
-// self-explanatory
-void SetKBCallback(void* fp, void* data);
-// self-explanatory
+// self-explanatory, called from HOlyC
+void SetKBCallback(void* fp);
+// self-explanatory, called from HolyC
 void SetMSCallback(void* fp);
 
 // vim: set expandtab ts=2 sw=2 :
