@@ -62,6 +62,10 @@ void DrawWindowUpdateCB(u8* px) {
       PREFETCHNTA(px + i);
       // SDL_Surface::pixels seems to be allocated on a
       // 16 byte boundary for some reason
+      // clang-format off
+      // https://github.com/libsdl-org/SDL/blob/d60ebb06d1c6a5e97901acbea1ce1ae30cd4a375/src/video/SDL_surface.c#L175
+      // clang-format on
+      // yeah it is
       auto xmm0 = MOVDQU_LOAD(px + i);
       auto xmm1 = MOVDQU_LOAD(px + i + 0x10);
       auto xmm2 = MOVDQU_LOAD(px + i + 0x20);
