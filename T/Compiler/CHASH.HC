@@ -106,7 +106,6 @@ I64 HashVal(CHash *tmph)
         return 0;
     }
 }
-
 CHashTable *HashTableNew(I64 size,CTask *t=NULL)
 {   //New hash table, power-of-two in size.
     CHashTable *table;
@@ -282,7 +281,7 @@ I64 FramePtrDel(U8 *name,CTask *t=NULL)
 }
 /**
  * Has format 
- * if(HTT_FUN)
+ * IF(HTT_FUN)
  *     FUNC_NAME(U8[])
  *     FUNC_FILE(U8[])
  *     FUNC_HELP_IDX(U8[])
@@ -297,15 +296,20 @@ I64 FramePtrDel(U8 *name,CTask *t=NULL)
  *          U32 star_cnt
  *          U32 total_dim //I64 array[3][4] would have total_dim of 12
  *
- * if(HTT_GLBL_VAR)
+ * IF(HTT_GLBL_VAR)
  *     VAR_NAME(U8[])
  *     VAR_FILE(U8[])
  *     VAR_HELP_IDX(U8[])
  *     I64 ln
  * 
- * if(HTT_HELP_FILE)
+ * IF(HTT_HELP_FILE)
  *     POINTS_TO_FILE(U8[])
  *     HELP_IDX(U8[])
+ *
+ * IF(HTT_EXPORT_SYS_SYM)
+ *     NAME(U8[])
+ *     FILE(U8[])
+ *     LINE(I32)
  * ...
  */
 /**
@@ -316,7 +320,7 @@ I64 FramePtrDel(U8 *name,CTask *t=NULL)
  *  Sys
  */
 I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
-  I64 i,ln,size,min,max;
+  I64 i,ln,size=0,min,max;
   CHashSrcSym *tmph;
   CHashFun *pub_tmph;
   CHashClass *tmpc;
@@ -326,10 +330,22 @@ I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
   U8 *src_link,buffer[1024],*bptr=&buffer;
   for (i=0;i<=h->mask;i++) {
     for(tmph=h->body[i];tmph;tmph=tmph->next)
-      if (tmph->src_link && !(tmph->type & (HTF_IMPORT | HTF_PRIVATE)) && (dbg_info=tmph->dbg_info)) {
+      if(tmph->type&HTT_EXPORT_SYS_SYM&&tmph->src_link) {
+        if(to) (to+size)(I64*)[0]=HTT_EXPORT_SYS_SYM;
+        size+=sizeof(I64);
+        if(to) StrCpy(to+size,tmph->str);
+        size+=StrLen(tmph->str)+1;
+        bptr=buffer;
+        StrScan(tmph->src_link,"FL:%s,%d",&bptr,&ln);
+        if(to) StrCpy(to+size,buffer);
+        size+=StrLen(buffer)+1;
+        if(to) (to+size)(U32*)[0]=ln;
+        size+=4;
+      } else if (tmph->src_link && !(tmph->type & (HTF_IMPORT|HTF_PRIVATE)) && (dbg_info=tmph->dbg_info)) {
         if((tmph->type&HTT_FUN)&&!(tmph(CHashFun*)->flags&(1<<Cf_EXTERN))) {
 	  if(to) (to+size)(I64*)[0]=tmph->type&(HTT_FUN|HTF_PUBLIC);
 	  size+=sizeof(I64);
+	  bptr=buffer;
 	  StrScan(tmph->src_link,"FL:%s,%d",&bptr,&ln);
 	  if(to) StrCpy(to+size,tmph->str);
 	  size+=StrLen(tmph->str)+1;
@@ -339,7 +355,7 @@ I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
 	  //because this is the last file,I will use the most recent version of the symbol's help idx
 	  pub_tmph=HashFind(tmph->str,h,HTF_PUBLIC);
 	  if(pub_tmph) {
-	    if(pub_tmph->idx&&pub_tmph->str&HTF_PUBLIC) {
+	    if(pub_tmph->idx&&pub_tmph->type&HTF_PUBLIC) {
 	      if(to) StrCpy(to+size,pub_tmph->idx);
 	      size+=StrLen(pub_tmph->idx)+1;
 	      goto wrote_help_idx;
@@ -405,6 +421,7 @@ wrote_help_idx:
       } else if(tmph->type&HTF_PUBLIC&&tmph->type&HTT_GLBL_VAR&&!Bt(&tmph(CHashClass*)->flags,Cf_EXTERN)) {
         if(to) (to+size)(I64*)[0]=HTT_GLBL_VAR;
         size+=sizeof(I64);
+        bptr=buffer;
         StrScan(tmph->src_link,"FL:%s,%d",&bptr,&ln);
         if(to) StrCpy(to+size,tmph->str);
         size+=StrLen(tmph->str)+1;
@@ -435,11 +452,11 @@ wrote_help_idx2:
   return size;
 }
 U0 DbgInfoWrite(CHashTable *h,U8 *name) {
-	I64 len=__DbgInfoWrite(h,NULL);
-	U8 *buf=MAlloc(len);
-	__DbgInfoWrite(h,buf);
-	FileWrite(name,buf,len);
-	Free(buf);
+  I64 len=__DbgInfoWrite(h,NULL);
+  U8 *buf=MAlloc(len);
+  __DbgInfoWrite(h,buf);
+  FileWrite(name,buf,len);
+  Free(buf);
 }
 U0 DbgInfoRead(U8 *name) {
   I64 len,min,max,ln,type;
@@ -448,10 +465,23 @@ U0 DbgInfoRead(U8 *name) {
   CDbgInfo *dbg_info;
   CHashClass *tmpc;
   U8 *body=FileRead(name,&len),*ptr=body,*fn,*idx;
-  while(ptr<body+len) {
+  while (ptr<body+len) {
     type=ptr(I64*)[0];
     ptr+=8;
-    if(type&HTT_GLBL_VAR) {
+    if(type&HTT_EXPORT_SYS_SYM) {
+      tmph=HashFind(ptr,Fs->hash_table,HTT_EXPORT_SYS_SYM);
+      if(!tmph) {
+        tmph=CAlloc(sizeof(CHashExport));
+        tmph->str=StrNew(ptr);
+        tmph->type=HTT_UNIMP_FUN;
+      }
+      ptr+=StrLen(ptr)+1;
+      fn=ptr;
+      ptr+=StrLen(ptr)+1;
+      Free(tmph->src_link);
+      min=*ptr(I32*)++;
+      tmph->src_link=MStrPrint("FL:%s,%d",fn,min);
+    } else if(type&HTT_GLBL_VAR) {
       tmph=HashFind(ptr,Fs->hash_table,HTT_GLBL_VAR);
       if(!tmph) {
         tmph=CAlloc(sizeof(CHashFun));
@@ -519,24 +549,24 @@ U0 DbgInfoRead(U8 *name) {
         tmpc=HashFind(ptr,Fs->hash_table,HTT_CLASS|HTT_INTERNAL_TYPE);
         if(tmph) tmpm->member_class=tmpc;
         ptr+=StrLen(ptr)+1;
-        //If we couldn't find a class,continue
+//If we couldn't find a class,continue
         if(!tmpc) {
-          if(tmpm) Free(tmpm->str);
-          Free(tmpm);
-          if(tmpm2) tmpm2->next=NULL;
-          tmpm=tmpm2;
-          ptr+=16;
-          goto next;
+	  if(tmpm) Free(tmpm->str);
+	  Free(tmpm);
+	  if(tmpm2) tmpm2->next=NULL;
+	  tmpm=tmpm2;
+	  ptr+=16;
+	  goto next;
         } 
-	if(tmph) tmpm->reg=ptr(U32*)[0];
-	ptr+=4;
-       	if(tmph) tmpm->offset=ptr(I32*)[0];
+        if(tmph) tmpm->reg=ptr(U32*)[0];
+        ptr+=4;
+        if(tmph) tmpm->offset=ptr(I32*)[0];
         ptr+=4;
         if(tmpm) tmpm->member_class+=ptr(U32*)[0]; //In TempleOS,the next class is a "pointer star"
         ptr+=4;
         if(tmpm) tmpm->dim.total_cnt=tmpm->dim.cnt=ptr(U32*)[0];
         ptr+=4;
-        next:;
+next:;
       }
       if(tmph) {
         tmpm=tmph(CHashFun*)->member_lst_and_root;
@@ -544,7 +574,7 @@ U0 DbgInfoRead(U8 *name) {
         if(tmpm)
 	  tmpm->next=tmpm2;
         else
-	  tmph(CHashFun*)->member_lst_and_root=tmpm2;
+	  tmph(CHashFun*)->member_lst_and_root=tmpm2;
       }
     } else if(type&HTT_HELP_FILE) {
       tmph=CAlloc(sizeof(CHashSrcSym));
@@ -558,4 +588,4 @@ U0 DbgInfoRead(U8 *name) {
   }
   Free(body);
 }
-
+

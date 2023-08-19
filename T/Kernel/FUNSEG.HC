@@ -14,18 +14,35 @@ U0 HashFunSegFind(CHashTable *h,U8 *addr,
   CHashExport *tmpex;
   U64 i,j,best=*_best;
   CHash *res=*_res;
-  CDbgInfo *info;
   for (i=0;i<=h->mask;i++) {
     tmpex=h->body[i];
-	while(tmpex) {
-	    if((tmpex->type&HTT_FUN||tmpex->type&HTT_UNIMP_FUN)&&tmpex(CHashSrcSym*)->dbg_info) {
-			info=tmpex(CHashSrcSym*)->dbg_info;
-			if(tmpex(CHashFun*)->exe_addr<=addr<=info->body[info->max_line-info->min_line+1]) {
-				has_lower=HasLower(tmpex->str);
-			  best=addr-tmpex(CHashFun*)->exe_addr;
-			  res=tmpex;
-			  }
-		}
+    while (tmpex) {
+      j=0;
+      if (tmpex->type&HTT_FUN) {
+        if (!Bt(&tmpex(CHashFun *)->flags,Cf_EXTERN) &&
+	      !Bt(&tmpex(CHashFun *)->flags,Ff_INTERNAL))
+	  j=tmpex(CHashFun *)->exe_addr;
+      } else if (tmpex->type&HTT_EXPORT_SYS_SYM)
+        j=tmpex->val;
+      if (j) {
+        j=addr(I64)-j;
+        if (0<=j<=best) {
+	  if (tmpex->type&HTT_EXPORT_SYS_SYM) {
+	    if (j<best || j==best && !has_lower) {
+	      has_lower=HasLower(tmpex->str);
+	      best=j;
+	      res=tmpex;
+	    }
+	  } else if (tmpex->type&HTT_FUN) {
+	    if (j<best || j==best &&
+		  (res && res->type&HTT_EXPORT_SYS_SYM||!has_lower)) {
+	      has_lower=HasLower(tmpex->str);
+	      best=j;
+	      res=tmpex;
+	    }
+	  }
+        }
+      }
       tmpex=tmpex->next;
     }
   }
@@ -33,6 +50,7 @@ U0 HashFunSegFind(CHashTable *h,U8 *addr,
   *_best=best;
   *_res =res;
 }
+
 CHash *FunSegFind(U8 *addr,I64 *_offset)
 {//See \dLK,"Hash",A="HI:Hash"\d.
   CHash *res=NULL;
@@ -41,11 +59,11 @@ CHash *FunSegFind(U8 *addr,I64 *_offset)
   CHashTable *h;
   CCPU *c;
   U64 i,best=0xFFFF;
-	h=Fs->hash_table;
-	while (h) {
-	  HashFunSegFind(h,addr,&has_lower,&best,&res);
-	  h=h->next;
-	}
+  h=Fs->hash_table;
+  while (h) {
+    HashFunSegFind(h,addr,&has_lower,&best,&res);
+    h=h->next;
+  }
   if(_offset) *_offset=best;
   return res;
 }
@@ -56,7 +74,7 @@ U0 FunSegCacheAdd(CHash *tmps,U8 *addr)
   CDbgInfo *dbg_info;
   CFunSegCache *tmpfsc;
   if (tmps && tmps->type&HTT_FUN &&
-	(dbg_info=tmps(CHashFun *)->dbg_info)) {
+        (dbg_info=tmps(CHashFun *)->dbg_info)) {
     lock i=dbg.fun_seg_cache_index++;
     tmpfsc=&dbg.fun_seg_cache[i&(FUN_SEG_CACHE_SIZE-1)];
     tmpfsc->base=dbg_info->body[0];
@@ -77,12 +95,12 @@ U8 *FunSegCacheFind(U8 *addr,I64 *_offset)
   I64 i;
   F64 timeout;
   CFunSegCache *tmpfsc=dbg.fun_seg_cache;
-    for (i=0;i<FUN_SEG_CACHE_SIZE;i++,tmpfsc++)
-      if (tmpfsc->base<=addr<tmpfsc->limit) {
-        *_offset=addr-tmpfsc->base;
-        return tmpfsc->str;
-      }
-    return NULL;
+  for (i=0;i<FUN_SEG_CACHE_SIZE;i++,tmpfsc++)
+    if (tmpfsc->base<=addr<tmpfsc->limit) {
+      *_offset=addr-tmpfsc->base;
+      return tmpfsc->str;
+    }
+  return NULL;
 }
 
 U0 StrPrintFunSeg(U8 *buf,I64 addr,I64 field_len,I64 flags)
@@ -271,12 +289,12 @@ Bool Man(U8 *st,I64 edf_dof_flags=0)
   Bool res=FALSE;
   U8 **st2;
   CHashSrcSym *tmph;
-  if(IsRaw&&(tmph=HashFind(st,Fs->hash_table,-1))) {
-	"%s\n",tmph->src_link;
-	return;
+  if (IsRaw && (tmph=HashFind(st,Fs->hash_table,-1))) {
+    "%s\n",tmph->src_link;
+    return;
   }
-  if(IsRaw)
-	return;
+  if (IsRaw)
+    return;
   st2=MStrPrint("MN:%s",st);
   res=Ed(st2,edf_dof_flags);
   Free(st2);

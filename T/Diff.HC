@@ -27,7 +27,6 @@ I64 DiffEntriesCompare(CDocEntry *doc_e1,CDocEntry *doc_e2)
 }
 
 
-
 U0 DiffSel(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,
 	I64 j2_lo,I64 j2_hi,I64 cnt1,I64 cnt2,
 	CDocEntry **doc_unsorted1,CDocEntry **doc_unsorted2)
@@ -139,7 +138,7 @@ Bool DiffSub(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,I64 j2_lo,I64 j2_hi,
 	CDocEntry **doc_unsorted1,CDocEntry **doc_unsorted2)
 {
   I64 i,i1=0,i2=0,i2b,j1,j2,n,
-	best_j1,best_j2,best_score=0,score;
+        best_j1,best_j2,best_score=0,score;
   Bool res=FALSE;
 
   if (j1_lo>=j1_hi || j2_lo>=j2_hi) {
@@ -160,12 +159,12 @@ Bool DiffSub(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,I64 j2_lo,I64 j2_hi,
     else {
       i=StrCmp(doc_sorted1[i1]->tag,doc_sorted2[i2]->tag);
       if (i>0)
-	i2++;
+        i2++;
       else if (i<0)
-	i1++;
+        i1++;
       else {
-	i2b=i2;
-	while (!StrCmp(doc_sorted1[i1]->tag,doc_sorted2[i2]->tag)) {
+        i2b=i2;
+        while (!StrCmp(doc_sorted1[i1]->tag,doc_sorted2[i2]->tag)) {
 	  if (j2_lo<=doc_sorted2[i2]->user_data<j2_hi) {//user_data is the new y
 	    score=0;
 	    j1=doc_sorted1[i1]->user_data; //user_data is the new y
@@ -176,9 +175,9 @@ Bool DiffSub(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,I64 j2_lo,I64 j2_hi,
 	    while (score<n) {
 	      if (!StrCmp(doc_unsorted1[j1+score]->tag,
 		    doc_unsorted2[j2+score]->tag))
-		score++;
+	        score++;
 	      else
-		break;
+	        break;
 	    }
 	    if (score>best_score) {
 	      best_score=score;
@@ -189,9 +188,9 @@ Bool DiffSub(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,I64 j2_lo,I64 j2_hi,
 	  i2++;
 	  if (i2>=cnt2)
 	    break;
-	}
-	i2=i2b;
-	i1++;
+        }
+        i2=i2b;
+        i1++;
       }
     }
   }
@@ -232,7 +231,7 @@ public Bool Diff(U8 *dst_file,U8 *src_file,I64 *_df_flags=NULL)
 {//Report differences between two files and merge differences
 //from src_file to dst_file.  Don't use _df_flags arg. (Used by $LK,"Merge",A="MN:Merge"$().)
   CDoc *doc1=DocRead(dst_file,DOCF_PLAIN_TEXT_TABS|DOCF_NO_CURSOR),
-	*doc2=DocRead(src_file,DOCF_PLAIN_TEXT_TABS|DOCF_NO_CURSOR);
+        *doc2=DocRead(src_file,DOCF_PLAIN_TEXT_TABS|DOCF_NO_CURSOR);
   CDocEntry *doc_e,**doc_sorted1,**doc_sorted2,**doc_unsorted1,**doc_unsorted2;
   I64 i,cnt1=0,cnt2=0,df_flags;
   Bool res=FALSE;
@@ -246,7 +245,7 @@ public Bool Diff(U8 *dst_file,U8 *src_file,I64 *_df_flags=NULL)
   doc_e=doc1->head.next;
   while (doc_e!=doc1) {
     if (doc_e->type_u8==DOCT_TEXT)
-      doc_e->user_data=cnt1++; //user_data is the new y
+      doc_e->user_data=cnt1++; //user_data is the new y
     doc_e=doc_e->next;
   }
 
@@ -286,7 +285,7 @@ public Bool Diff(U8 *dst_file,U8 *src_file,I64 *_df_flags=NULL)
   QSortI64(doc_sorted2,cnt2,&DiffEntriesCompare);
 
   res=DiffSub(doc1,&df_flags,0,cnt1,0,cnt2,cnt1,cnt2,
-	doc_sorted1,doc_sorted2,doc_unsorted1,doc_unsorted2);
+        doc_sorted1,doc_sorted2,doc_unsorted1,doc_unsorted2);
   if (df_flags&DF_MODIFIED && !(df_flags&DF_DONT_MODIFIED))
     DocWrite(doc1);
 

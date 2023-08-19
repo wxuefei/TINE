@@ -1,4 +1,4 @@
-//Kernel ASM symbols.
+//Kernel ASM symbols.
 public _extern _BEQU Bool BEqu(
 	U8 *bit_field,I64 bit,Bool val);//Set bit equ to val.
 public _extern _BIT_FIELD_EXT_U32 U32 BFieldExtU32(
@@ -8,7 +8,7 @@ public _extern _BIT_FIELD_OR_U32 U0 BFieldOrU32(
 public _extern _LBEQU Bool LBEqu(
 	U8 *bit_field,I64 bit,Bool val); //Locked Set bit equ to val.
 
-public _extern _CALL I64 Call(U8 *machine_code); //Call addr with no args.
+public _extern _CALL I64 Call(U8 *machine_code); //Call addr with no args.
 public _extern _CALLEXTSTR I64 CallExtStr(
 	/*argpop*/ U8 *name,...); //Search sym table for fun and pass it args.
 //Can have any fixed number of arguments.

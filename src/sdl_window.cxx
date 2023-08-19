@@ -70,7 +70,6 @@ void DrawWindowUpdateCB(u8* px) {
       MOVNTDQ_STORE(dst + i + 0x30, xmm3);
     }
   }
-  SFENCE();
   SDL_UnlockSurface(win.surf);
   SDL_RenderClear(win.rend);
   int w, h, w2, h2, margin_x = 0, margin_y = 0;

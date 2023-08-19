@@ -982,7 +982,7 @@ public class CHashTable
 #define HTF_PUBLIC		0x01000000
 #define HTF_EXPORT		0x02000000
 #define HTF_IMPORT		0x04000000
-#define HTF_IMM			0x08000000
+#define HTF_IMM			0x08000000
 #define HTF_GOTO_LABEL		0x10000000
 #define HTF_RESOLVE		0x20000000
 #define HTF_UNRESOLVED		0x40000000
@@ -5800,7 +5800,7 @@ extern I64 GodPick(U8 *msg=NULL);
 extern U0 GodBitsIns(I64 num_bits,I64 n);
 extern U0 GodHexIns(U8 *st);
 extern I64 GodBits(I64 num_bits,U8 *msg=NULL);
-extern I64 GodInit(U8 *files_find_mask="/God/Vocab.DD*",U8 *fu_flags=NULL);
+extern I64 GodInit(U8 *files_find_mask="/God/Vocab.DD*",U8 *fu_flags=NULL);
 extern U8 *GodWordStr(I64 bits=17);
 extern U0 GodWord(I64 bits=17);
 extern U0 GodBiblePassage(I64 num_lines=20);
