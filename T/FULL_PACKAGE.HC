@@ -69,7 +69,9 @@ U0 StartUpTasks()
     ExePrint("WallPaperInit;;");
     ExePrint("#include \"AMOUSE.HC\";;");
   } catch PutExcept;
-  ACInit("KERNEL*.HH*");
+  Silent;
+  ACInit("*.HC;*.HH");
+  Silent(OFF);
   AutoComplete(ON);
 }
 
@@ -77,12 +79,13 @@ cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
 SetFs(adam_task);
 //DEBUGGING INFORMATION WILL BE APPENDED TO THESE SYMBOLS
 LoadImps;
+if (!IsRaw) 
+  DrawWindowNew;
 //Load symbols into adam_task
 if (FileFind("HCRT.DBG.Z"))
   DbgInfoRead("HCRT.DBG.Z");
 //Our entering thread doesnt have a cur_thrd,so spawn one
 Gs->seth_task=Spawn(&CoreAPSethTask,NULL,"Seth");
-
 U0 __InitCPUs() {
   I64 idx;
   for (idx=Gs->num+1;idx<mp_cnt;++idx) {
@@ -101,12 +104,11 @@ if (__IsCmdLine) {
   DeathWait(&u);
   ExitTINE;
 } else {
-  DrawWindowNew;
   sys_winmgr_task=Spawn(&WinMgrTask);
   PaletteSetStd;
   Refresh; //Wait for window manager.
-  StartUpTasks;
   PCSpkInit;
+  StartUpTasks;
   SrvTaskCont;
 }
 #include "PUBLIC.HC";;
