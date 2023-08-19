@@ -53,13 +53,7 @@ void DrawWindowUpdateCB(u8* px) {
     // check runtime.cxx for a more detailed explanation,
     // still 640 bytes is a very small amount of data and
     // I am sure that rep movsb's startup cycles will not be worth it
-    //
-    // clang understands my intent clearly with these intrinsics but GCC
-    // seems to be pretty stupid here and generated messy assembly which sucks
-#pragma GCC unroll 1 // don't unroll, burn one cache line at a time because
-                     // GCC seems to stuff all the prefetches at the top
     for (int i = 0; i < 640; i += 64) {
-      PREFETCHNTA(px + i);
       // SDL_Surface::pixels seems to be allocated on a
       // 16 byte boundary for some reason
       // clang-format off
@@ -70,14 +64,13 @@ void DrawWindowUpdateCB(u8* px) {
       auto xmm1 = MOVDQU_LOAD(px + i + 0x10);
       auto xmm2 = MOVDQU_LOAD(px + i + 0x20);
       auto xmm3 = MOVDQU_LOAD(px + i + 0x30);
-      MOVDQA_STORE(dst + i, xmm0);
-      MOVDQA_STORE(dst + i + 0x10, xmm1);
-      MOVDQA_STORE(dst + i + 0x20, xmm2);
-      MOVDQA_STORE(dst + i + 0x30, xmm3);
-      // i dont use movntdq here because
-      // dst is being constantly read by SDL
+      MOVNTDQ_STORE(dst + i, xmm0);
+      MOVNTDQ_STORE(dst + i + 0x10, xmm1);
+      MOVNTDQ_STORE(dst + i + 0x20, xmm2);
+      MOVNTDQ_STORE(dst + i + 0x30, xmm3);
     }
   }
+  SFENCE();
   SDL_UnlockSurface(win.surf);
   SDL_RenderClear(win.rend);
   int w, h, w2, h2, margin_x = 0, margin_y = 0;
