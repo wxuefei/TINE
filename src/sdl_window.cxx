@@ -70,10 +70,12 @@ void DrawWindowUpdateCB(u8* px) {
       auto xmm1 = MOVDQU_LOAD(px + i + 0x10);
       auto xmm2 = MOVDQU_LOAD(px + i + 0x20);
       auto xmm3 = MOVDQU_LOAD(px + i + 0x30);
-      MOVNTDQ_STORE(dst + i, xmm0);
-      MOVNTDQ_STORE(dst + i + 0x10, xmm1);
-      MOVNTDQ_STORE(dst + i + 0x20, xmm2);
-      MOVNTDQ_STORE(dst + i + 0x30, xmm3);
+      MOVDQA_STORE(dst + i, xmm0);
+      MOVDQA_STORE(dst + i + 0x10, xmm1);
+      MOVDQA_STORE(dst + i + 0x20, xmm2);
+      MOVDQA_STORE(dst + i + 0x30, xmm3);
+      // i dont use movntdqa here because
+      // dst is being constantly written
     }
   }
   SDL_UnlockSurface(win.surf);

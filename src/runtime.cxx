@@ -594,14 +594,15 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     auto constexpr off       = inst.m_sz - remainder;
 #pragma GCC unroll(off / 16)
     for (usize i = 0; i < off; i += 16) {
-      MOVNTDQ_STORE(chunk + i, MOVDQU_LOAD(inst.m_lit + i));
+      // movdqa because it will be used right away
+      MOVDQA_STORE(chunk + i, MOVDQU_LOAD(inst.m_lit + i));
     }
     memcpy(chunk + off, inst.m_lit + off, remainder);
   }
-#pragma GCC unroll(chunk_sz / 64)
-  for (usize i = 0; i < chunk_sz; i += 64) {
-    PREFETCHT0(chunk + i); // load it into all caches possible
-  }
+  // i used to manually prefetch chunk but I'm letting the hardware
+  // prefetcher do its job for this, the NTA prefetch in
+  // sdl_window.cxx is different because it's clear that it cleanly
+  // fetches a cache line that I can burn through
   auto blob = VirtAlloc<u8>(chunk_sz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
     u8* cur_pos = blob + i * chunk_sz;
@@ -609,18 +610,18 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // which is slow for small data(<256b) and the startup cycle is huge
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
+    //
+    // all non-temporal writes because they won't be used immediately
 #pragma GCC unroll(chunk_sz / 16)
     for (usize j = 0; j < chunk_sz; j += 16) {
       MOVNTDQ_STORE(cur_pos + j, MOVDQA_LOAD(chunk + j));
     }
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
-    // mov QWORD PTR[cur_pos+fp_off],hf.m_fp
-    memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(uptr));
+    MOVNTI_64(cur_pos + fp_off, hf.m_fp);
     // for the 0x2211 placeholder
-    // mov WORD PTR[cur_pos+arity_off],hf.m_arity*8
-    auto ret_bytes = hf.m_arity * sizeof(u64); // all args are u64 in HolyC
-    memcpy(cur_pos + arity_off, &ret_bytes, sizeof(u16) /* ret imm16 */);
+    // all args are 64bit in HolyC
+    MOVNTI_32(cur_pos + arity_off, hf.m_arity * sizeof(u64) /*ret imm16 */);
     TOSLoader.try_emplace(std::string{hf.m_name}, //
                           /*CSymbol*/ HTT_FUN, cur_pos);
   }
