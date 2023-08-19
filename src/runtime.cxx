@@ -586,42 +586,29 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   auto constexpr arity_off = inst.m_sz - 2;
   // is this thing being compiled on an alien civilization's architecture?
   static_assert(sizeof(__m128) == 16);
-  // round up to sizeof(__m128) so we can use nontemporal writes
-  auto constexpr chunk_sz = (inst.m_sz + 16 - 1) & ~(16 - 1);
-  alignas(16) u8 chunk[chunk_sz];
-  {
-    auto constexpr remainder = inst.m_sz % 16;
-    auto constexpr off       = inst.m_sz - remainder;
-#pragma GCC unroll(off / 16)
-    for (usize i = 0; i < off; i += 16) {
-      // movdqa because it will be used right away
-      MOVDQA_STORE(chunk + i, MOVDQU_LOAD(inst.m_lit + i));
-    }
-    memcpy(chunk + off, inst.m_lit + off, remainder);
-  }
-  // i used to manually prefetch chunk but I'm letting the hardware
-  // prefetcher do its job for this, the NTA prefetch in
-  // sdl_window.cxx is different because it's clear that it cleanly
-  // fetches a cache line that I can burn through
-  auto blob = VirtAlloc<u8>(chunk_sz * ffi_list.size());
+  auto blob = VirtAlloc<u8>(inst.m_sz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
-    u8* cur_pos = blob + i * chunk_sz;
+    u8* cur_pos = blob + i * inst.m_sz;
     // handwritten simd because the compiler kept giving me a rep movsb
     // which is slow for small data(<256b) and the startup cycle is huge
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
     //
     // all non-temporal writes because they won't be used immediately
-#pragma GCC unroll(chunk_sz / 16)
-    for (usize j = 0; j < chunk_sz; j += 16) {
-      MOVNTDQ_STORE(cur_pos + j, MOVDQA_LOAD(chunk + j));
+    auto constexpr remainder = inst.m_sz % 16;
+    auto constexpr off       = inst.m_sz - remainder;
+#pragma GCC unroll(off / 16)
+    for (usize j = 0; j < off; j += 16) {
+      MOVDQU_STORE(cur_pos + j, MOVDQU_LOAD(inst.m_lit + j));
     }
+    memcpy(cur_pos + off, inst.m_lit + off, remainder);
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao
     // for the 0x8877... placeholder
-    MOVNTI_64(cur_pos + fp_off, hf.m_fp);
+    memcpy(cur_pos + fp_off, &hf.m_fp, sizeof(u64));
     // for the 0x2211 placeholder
     // all args are 64bit in HolyC
-    MOVNTI_32(cur_pos + arity_off, hf.m_arity * sizeof(u64) /*ret imm16 */);
+    u16 imm16 = hf.m_arity * sizeof(u64);
+    memcpy(cur_pos + arity_off, &imm16, sizeof(u16));
     TOSLoader.try_emplace(std::string{hf.m_name}, //
                           /*CSymbol*/ HTT_FUN, cur_pos);
   }

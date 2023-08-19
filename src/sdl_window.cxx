@@ -74,7 +74,7 @@ void DrawWindowUpdateCB(u8* px) {
       MOVDQA_STORE(dst + i + 0x10, xmm1);
       MOVDQA_STORE(dst + i + 0x20, xmm2);
       MOVDQA_STORE(dst + i + 0x30, xmm3);
-      // i dont use movntdqa here because
+      // i dont use movntdq here because
       // dst is being constantly read by SDL
     }
   }
