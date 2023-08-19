@@ -240,8 +240,7 @@ public class CD3 //Three dimensional F64 pt
 extern class CCPU;
 extern class CDyadStream;
 #ifdef IMPORT_BUILTINS
-import U64 _ThrowDemo(U64);
-import U0 _GrPaletteColorSet(I64i,I64i);
+import U0 _GrPaletteColorSet(I64i,I64i);
 import U0 __SleepHP(U64);
 import U0 __AwakeCore(U64);
 import U0 SetVolume(F64);
@@ -315,7 +314,6 @@ import U0i UnblockSignals();
 import U64i __GetTicksHP(); 
 #else
 extern U0 _GrPaletteColorSet(I64i,I64i);
-extern U64 _ThrowDemo(U64);
 extern U0 __SleepHP(U64);
 extern U0 __AwakeCore(U64);
 extern U64i __GetTicksHP(); 
@@ -434,7 +432,7 @@ extern class CJobCtrl;
 #define STR_LEN 144
 
 //(Int to F64 conversion is signed)
-//Turn off 80-bit float constants with \dLK,"OPTf_NO_BUILTIN_CONST",A="MN:OPTf_NO_BUILTIN_CONST"\d.
+//Turn off 80-bit float constants with $LK,"OPTf_NO_BUILTIN_CONST",A="MN:OPTf_NO_BUILTIN_CONST"$.
 #define U64_F64_MAX (0x43F0000000000000(F64))
 #define F64_MAX (0x7FEFFFFFFFFFFFFF(F64))
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
@@ -982,7 +980,7 @@ public class CHashTable
 #define HTF_PUBLIC		0x01000000
 #define HTF_EXPORT		0x02000000
 #define HTF_IMPORT		0x04000000
-#define HTF_IMM			0x08000000
+#define HTF_IMM			0x08000000
 #define HTF_GOTO_LABEL		0x10000000
 #define HTF_RESOLVE		0x20000000
 #define HTF_UNRESOLVED		0x40000000

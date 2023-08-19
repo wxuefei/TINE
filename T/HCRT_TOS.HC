@@ -41,6 +41,7 @@ CTask *Fs() {
   return GetFs;
 }
 TaskInit(Fs,0);
+
 #include "Kernel/KGLBLS.HC"
 #include "DOLDOC/DocExt.HC"
 #include "Kernel/KUTILS.HC"

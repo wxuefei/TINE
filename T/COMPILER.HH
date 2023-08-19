@@ -1,3 +1,4 @@
+#help_index "Compiler/Internal"
 //Intermediate compiler codes
 #define IS_0_ARG	0
 #define IS_1_ARG	1
@@ -401,3 +402,4 @@ class COptReg
 #define CMPF_ONE_ASM_INS	2
 #define CMPF_LEX_FIRST		4
 #define CMPF_PRS_SEMICOLON	8
+#help_index ""

@@ -593,8 +593,6 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // which is slow for small data(<256b) and the startup cycle is huge
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
-    //
-    // all non-temporal writes because they won't be used immediately
     auto constexpr remainder = inst.m_sz % 16;
     auto constexpr off       = inst.m_sz - remainder;
 #pragma GCC unroll(off / 16)
