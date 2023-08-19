@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <SDL2/SDL.h>
 
@@ -40,8 +41,7 @@ void InitSound(void) {
           .callback = AudioCB,
           .userdata = "you look just like my bathroom mirror",
       },
-      &have,
-      SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
+      &have, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE);
   SDL_PauseAudioDevice(output, 0);
 }
 

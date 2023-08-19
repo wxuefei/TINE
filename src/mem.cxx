@@ -94,7 +94,7 @@ auto NewVirtualChunk(usize sz, bool low32) -> void* {
     // we initialize alloc with the granularity because NULL
     // will fail with VirtualQuery so we need to start
     // from a reasonable small value
-    uptr alloc = dwAllocationGranularity, addr;
+    uptr alloc = dwAllocationGranularity;
     while (alloc <= UINT64_C(0xFFffFFff)) {
       if (!VirtualQuery((void*)alloc, &mbi, sizeof mbi))
         return nullptr;
@@ -122,8 +122,8 @@ auto NewVirtualChunk(usize sz, bool low32) -> void* {
       // It'll be the same if it's already aligned
       //
       // clang-format on
-      addr = ((uptr)mbi.BaseAddress + dwAllocationGranularity - 1) &
-             ~(dwAllocationGranularity - 1);
+      uptr addr = ((uptr)mbi.BaseAddress + dwAllocationGranularity - 1) &
+                  ~(dwAllocationGranularity - 1);
       if (mbi.State & MEM_FREE && sz <= alloc - addr)
         return VirtualAlloc((void*)addr, sz, MEM_COMMIT | MEM_RESERVE,
                             PAGE_EXECUTE_READWRITE);

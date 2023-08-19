@@ -124,9 +124,6 @@ target_compile_options(${PROJECT_NAME}
     -mno-shstk
 )
 
-add_subdirectory(vendor)
-add_subdirectory(asm)
-
 # libm
 target_link_libraries(${PROJECT_NAME} PRIVATE m)
 
@@ -137,6 +134,9 @@ if (NOT SDL2_FOUND)
 endif ()
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+
+add_subdirectory(vendor)
+add_subdirectory(asm)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
     CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")

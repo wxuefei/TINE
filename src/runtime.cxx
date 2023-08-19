@@ -480,6 +480,10 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // read the SysV/Win64 ABIs and Doc/GuideLines.DD if interested
   // below is a criminal-grade string literal abuse scene to avoid extra
   // allocations like a vector of std::string's(my previous approach)
+  /* the reason i pack all the machine instructions into
+   *one string literal is because i want simd instructions to move it
+   * quickly and modify only a small portion of it
+   */
   ByteLiteral constexpr inst =
   /*
    * 0x0:  55                      push   rbp
@@ -585,13 +589,19 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
   // round up to sizeof(__m128) so we can use nontemporal writes
   auto constexpr chunk_sz = (inst.m_sz + 16 - 1) & ~(16 - 1);
   alignas(16) u8 chunk[chunk_sz];
-  memcpy(chunk, inst.m_lit, inst.m_sz);
+  {
+    auto constexpr remainder = inst.m_sz % 16;
+    auto constexpr off       = inst.m_sz - remainder;
+#pragma GCC unroll(off / 16)
+    for (usize i = 0; i < off; i += 16) {
+      MOVNTDQ_STORE(chunk + i, MOVDQU_LOAD(inst.m_lit + i));
+    }
+    memcpy(chunk + off, inst.m_lit + off, remainder);
+  }
+#pragma GCC unroll(chunk_sz / 64)
   for (usize i = 0; i < chunk_sz; i += 64) {
     PREFETCHT0(chunk + i); // load it into all caches possible
   }
-  // the reason i pack all the machine instructions into
-  // one string literal is because i want simd instructions to move it
-  // quickly and modify only a small portion of it
   auto blob = VirtAlloc<u8>(chunk_sz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
     u8* cur_pos = blob + i * chunk_sz;
@@ -600,7 +610,7 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // (https://archive.li/g2UOW#selection-1989.245-2027.244)
     // "When life gives you rep movs, hand-vectorize them." — eb-lan
 #pragma GCC unroll(chunk_sz / 16)
-    for (usize j = 0; j < chunk_sz; j += 0x10) {
+    for (usize j = 0; j < chunk_sz; j += 16) {
       MOVNTDQ_STORE(cur_pos + j, MOVDQA_LOAD(chunk + j));
     }
     auto const& hf = ffi_list.begin()[i]; // looks weird af lmao

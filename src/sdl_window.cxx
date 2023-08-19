@@ -145,7 +145,7 @@ void DrawWindowNewCB() {
   SDL_ShowCursor(SDL_DISABLE);
 }
 
-enum UserCode : Sint32 {
+enum : Sint32 {
   WINDOW_UPDATE,
   WINDOW_NEW,
   AUDIO_INIT,
@@ -523,21 +523,20 @@ static void* kb_cb   = nullptr;
 static bool  kb_init = false;
 
 auto SDLCALL KBCallback(void*, SDL_Event* e) -> int {
-  u64 s;
-  if (kb_cb && (-1 != ScanKey(&s, e)))
-    FFI_CALL_TOS_1(kb_cb, s);
+  u64 sc;
+  if (kb_cb && (-1 != ScanKey(&sc, e)))
+    FFI_CALL_TOS_1(kb_cb, sc);
   return 0;
 }
 
 static void* ms_cb   = nullptr;
 static bool  ms_init = false;
 
-// x,y,z,(l<<1)|r
 auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
-  static Sint32 x, y;
-  static int    state;
-  static int    z;
-  int           x2, y2;
+  static i32 x, y;
+  static int state;
+  static int z;
+  int        x2, y2;
   // return value is actually ignored
   if (!ms_cb)
     return 0;
@@ -566,14 +565,14 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
     if (x < win.margin_x)
       x2 = 0;
     else if (x > win.margin_x + win.sz_x)
-      x2 = 640 - 1;
+      x2 = 640 - 1; // -1 because zero-indexed
     else
       x2 = (x - win.margin_x) * 640. / win.sz_x;
 
     if (y < win.margin_y)
       y2 = 0;
     else if (y > win.margin_y + win.sz_y)
-      y2 = 480 - 1;
+      y2 = 480 - 1; // -1 because zero-indexed
     else
       y2 = (y - win.margin_y) * 480. / win.sz_y;
     FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
@@ -654,14 +653,14 @@ void DrawWindowUpdate(u8* px) {
   };
   auto& u = event.user;
   u.type  = SDL_USEREVENT;
-  u.code  = UserCode::WINDOW_UPDATE;
+  u.code  = WINDOW_UPDATE;
   u.data1 = px;
   // push to event queue so EventLoop receives it and updates screen
   SDL_PushEvent(&event);
   SDL_LockMutex(win.screen_mutex);
   SDL_CondWaitTimeout(win.screen_done_cond, win.screen_mutex,
                       1000 / 60 /* 60fps */);
-  // CondWaitTimeout unlocks it for us
+  // CondWaitTimeout unlocks the mutex for us
 }
 
 // We call this from HolyC, it launches an event to EventLoop() so that it
@@ -673,7 +672,7 @@ void DrawWindowNew() {
   };
   auto& u = event.user;
   u.type  = SDL_USEREVENT;
-  u.code  = UserCode::WINDOW_NEW;
+  u.code  = WINDOW_NEW;
   SDL_PushEvent(&event);
   // Spin until it's safe to write to the framebuffer
   // won't be long so it's fine to spin here
@@ -687,7 +686,7 @@ void PCSpkInit() {
   };
   auto& u = event.user;
   u.type  = SDL_USEREVENT;
-  u.code  = UserCode::AUDIO_INIT;
+  u.code  = AUDIO_INIT;
   SDL_PushEvent(&event);
 }
 

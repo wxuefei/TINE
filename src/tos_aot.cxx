@@ -4,14 +4,12 @@
 #include "mem.hxx"
 #include "multic.hxx"
 
-#include <algorithm>
 #include <filesystem>
 #include <string>
 #include <system_error>
 #include <utility>
 #include <vector>
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,11 +27,10 @@ namespace {
 // and does not look very C++-y
 void LoadOneImport(u8** src_, u8* module_base) {
   u8* __restrict src = *src_;
-  u8*   ptr          = nullptr;
-  char* st_ptr;
-  uptr  i     = 0;
-  bool  first = true;
-  u8    etype;
+  u8*  ptr           = nullptr;
+  uptr i             = 0;
+  bool first         = true;
+  u8   etype;
   // i know this is a GNU extension, problem?
   // this won't actually call memcpy
   // anyway(compiles down to a mov call)
@@ -49,7 +46,7 @@ void LoadOneImport(u8** src_, u8* module_base) {
   while ((etype = *src++)) {
     ptr = module_base + READ_NUM(src, u32);
     src += sizeof(u32);
-    st_ptr = (char*)src;
+    auto st_ptr = (char*)src;
     src += strlen(st_ptr) + 1;
     // First occurance of a string means
     // "repeat this until another name is found"
@@ -126,14 +123,12 @@ void SysSymImportsResolve(char* st_ptr) {
 }
 
 void LoadPass1(u8* src, u8* module_base) {
-  u8*   ptr;
-  char* st_ptr;
-  uptr  i;
-  u8    etype;
+  u8* ptr;
+  u8  etype;
   while ((etype = *src++)) {
-    i = READ_NUM(src, u32);
+    uptr i = READ_NUM(src, u32);
     src += sizeof(u32);
-    st_ptr = (char*)src;
+    auto st_ptr = (char*)src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_REL32_EXPORT:
@@ -161,7 +156,7 @@ void LoadPass1(u8* src, u8* module_base) {
       LoadOneImport(&src, module_base);
       break;
     // 32bit addrs
-    case IET_ABS_ADDR: {
+    case IET_ABS_ADDR:
       for (usize j = 0; j < i /*count*/; j++, src += sizeof(u32)) {
         ptr = module_base + READ_NUM(src, u32);
         // compiles down to `add DWORD PTR[ptr],module_base`
@@ -170,7 +165,7 @@ void LoadPass1(u8* src, u8* module_base) {
         off += (uptr)module_base;
         memcpy(ptr, &off, sizeof(u32));
       }
-    } break;
+      break;
       // the other ones wont be used
       // so im not implementing them
     }
@@ -180,13 +175,11 @@ void LoadPass1(u8* src, u8* module_base) {
 auto LoadPass2(u8* src, u8* module_base) -> std::vector<void*> {
   std::vector<void*> ret;
   //
-  char* st_ptr;
-  u32   i;
-  u8    etype;
+  u8 etype;
   while ((etype = *src++)) {
-    i = READ_NUM(src, u32);
+    u32 i = READ_NUM(src, u32);
     src += sizeof(u32);
-    st_ptr = (char*)src;
+    auto st_ptr = (char*)src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
     case IET_MAIN:
@@ -250,79 +243,6 @@ auto LoadHCRT(std::string const& name) -> std::vector<void*> {
   }
   LoadPass1(bfh_addr + bfh->patch_table_offset, bfh->data);
   return LoadPass2(bfh_addr + bfh->patch_table_offset, bfh->data);
-}
-
-namespace {
-std::vector<std::string> sorted_syms;
-bool                     sorted_syms_init = false;
-std::string const        unknown_fun{"UNKNOWN"};
-
-void InitSortedSyms() {
-  sorted_syms.reserve(TOSLoader.size());
-  for (auto const& [name, _] : TOSLoader)
-    sorted_syms.emplace_back(name);
-  std::sort(sorted_syms.begin(), sorted_syms.end(),
-            [](auto const& a, auto const& b) -> bool {
-              return TOSLoader[a].val < TOSLoader[b].val;
-            });
-  sorted_syms_init = true;
-}
-} // namespace
-
-void BackTrace(uptr ctx_rbp, uptr ctx_rip) {
-  if (!sorted_syms_init)
-    InitSortedSyms();
-  fputc('\n', stderr);
-  auto  rbp = reinterpret_cast<void*>(ctx_rbp);
-  auto  ptr = reinterpret_cast<void*>(ctx_rip);
-  void* oldp;
-  //
-  std::string const* last;
-  while (rbp) {
-    oldp = nullptr;
-    last = &unknown_fun;
-    // linear search that iterates over symbols sorted in ascending address
-    // order to find out where we were
-    for (auto const& s : sorted_syms) {
-      void* curp = TOSLoader[s].val;
-      if (curp == ptr) {
-        fprintf(stderr, "%s [%#" PRIx64 "]\n", s.c_str(), (uptr)ptr);
-      } else if (curp > ptr) {
-        // i know im supposed to use %p but it's weird beecause on windows it's
-        // fucky wucky(prints numbers with 0s)
-        fprintf(stderr, "%s [%#" PRIx64 "+%#" PRIx64 "] %#" PRIx64 "\n",
-                last->c_str(), (uptr)ptr, (u8*)ptr - (u8*)oldp, (uptr)curp);
-        goto next;
-      }
-      oldp = curp;
-      last = &s;
-    }
-  next:
-    ptr = static_cast<void**>(rbp)[1]; // [RBP+0x8] is the return address
-    rbp = static_cast<void**>(rbp)[0]; // [RBP] is the previous base pointer
-  }
-  fputc('\n', stderr);
-}
-
-// who the fuck cares about memory leaks
-// its gonna be executed once or twice in
-// the entire debug session not to mention
-// WhichFun() wont even be called in normal
-// circumstances
-#define STR_DUP(s) strcpy(new (std::nothrow) char[s->size() + 1], s->c_str())
-
-// great when you use lldb and get a fault
-// (lldb) p (char*)WhichFun($pc)
-[[gnu::used, gnu::visibility("default")]] auto WhichFun(void* ptr) -> char* {
-  if (!sorted_syms_init)
-    InitSortedSyms();
-  std::string const* last = &unknown_fun;
-  for (auto const& s : sorted_syms) {
-    if (TOSLoader[s].val >= ptr)
-      return STR_DUP(last);
-    last = &s;
-  }
-  return STR_DUP(last);
 }
 
 // vim: set expandtab ts=2 sw=2 :

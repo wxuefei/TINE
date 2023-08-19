@@ -29,9 +29,6 @@ struct CSymbol {
 
 extern std::unordered_map<std::string, CSymbol> TOSLoader;
 
-// Spews out a backtrace from a faulty context
-void BackTrace(uptr /*RBP*/, uptr /*RIP*/);
-
 // Loads TempleOS kernel and returns the list of
 // function pointers needed to boot the kernel
 auto LoadHCRT(std::string const&) -> std::vector<void*>;
