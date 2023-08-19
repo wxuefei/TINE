@@ -1,3 +1,69 @@
+U0 PutKey(I64 ch=0,I64 sc=0)
+{//See $LK,"Keyboard Devices",A="HI:Keyboard Devices/System"$.
+  CKeyDevEntry *tmpk;
+  if (ch||sc) {
+    tmpk=keydev.put_key_head.next;
+    if (!Bt(&(Fs->display_flags),DISPLAYf_SILENT)) {
+      if (kbd.scan_code & SCF_SCROLL && sys_focus_task==Fs)
+	while (kbd.scan_code & SCF_SCROLL)
+	  Yield; //Wait on SCROLL LOCK Key
+      while (tmpk!=&keydev.put_key_head) {
+	if ((!(sc&SCF_KEY_DESC) || tmpk->flags & KDF_HAS_DESCS) &&
+	      (*tmpk->put_key)(ch,sc))
+	  break;
+	tmpk=tmpk->next;
+      }
+    }
+  }
+}
+
+U0 PutChars(U64 ch)
+{//Output chars. Up to 8 chars in a single U64.
+//Don't use this.    $LK,"See Print() shortcut.",A="FF:::/Doc/HolyC.DD,DemoHolyC"$
+  if (IsSilent) return;
+  if (IsRaw) {
+    TOSPrint("%c",ch);
+  } while (ch) {
+    PutKey(ch&255,0);
+    ch>>=8;
+  }
+}
+
+//See KeyDev.HC in TempleOS
+U0 PutS(U8 *st)
+{//Use $LK,"Print",A="MN:Print"$(). See $LK,"Keyboard Devices",A="HI:Keyboard Devices/System"$.
+//Don't use this.  $LK,"See Print() shortcut.",A="FF:::/Doc/HolyC.DD,DemoHolyC"$
+  if (IsSilent) return;
+  if(__IsCmdLine) {
+    TOSPrint("%s",st);
+    return;
+  }
+  I64 ch;
+  U8 *ptr;
+  Bool cont=TRUE;
+  if (!st) return;
+  CKeyDevEntry *tmpk=keydev.put_key_head.next;
+  if (!Bt(&(Fs->display_flags),DISPLAYf_SILENT)) {
+    if (kbd.scan_code & SCF_SCROLL && sys_focus_task==Fs)
+      while (kbd.scan_code & SCF_SCROLL)
+        Yield;
+    while (cont && tmpk!=&keydev.put_key_head) {
+      if (tmpk->put_s) {
+        if ((*tmpk->put_s)(st))
+	  break;
+      } else {
+        ptr=st;
+        while (ch=*ptr++)
+	  if ((*tmpk->put_key)(ch,0))
+	    cont=FALSE;
+      }
+      tmpk=tmpk->next;
+    }
+  }
+}
+
+
+
 U0 KeyDescSet(U8 *fmt,...)
 {//Call this from key hndlr to report desc in $LK,"KeyMap",A="MN:KeyMap"$().
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
@@ -64,7 +130,7 @@ U0 CtrlAltC(I64)
       old_rip=sys_focus_task->rip;
       sys_focus_task->rsp-=8;
       sys_focus_task->rsp(U8**)[0]=old_rip;
-      sys_focus_task->rip=_BREAK;
+      sys_focus_task->rip=&Break;
     } else
       LBts(&sys_focus_task->task_flags,TASKf_PENDING_BREAK);
   }

@@ -51,8 +51,8 @@ U0 PutExcept(Bool catch_it=TRUE)
 	Fs->except_callers[5],Fs->except_callers[6],Fs->except_callers[7];
   Fs->catch_except=catch_it;
 }
-//I used an empty try/catch to force noregs
-//#exe {Option(OPTf_NO_REG_VAR,ON);;};;
+
+#exe {Option(OPTf_NO_REG_VAR,ON);;};;
 
 class CTryStk
 {
@@ -73,8 +73,6 @@ U0 SysTry(U8 *catch_start,U8 *untry_start)
   tmpt->rflags=GetRFlags;
   SaveExceptRegs(tmpt);
   QueIns(tmpt,Fs->last_except);
-  return;
-  try ; catch ;
 }
 
 U0 SysUntry()
@@ -82,9 +80,8 @@ U0 SysUntry()
   CExcept *tmpt=Fs->last_except;
   QueRem(tmpt);
   Free(tmpt);
-  return;
-  try ; catch ;
 }
+
 U0 throw(I64 ch=0,Bool no_log=FALSE)
 {//ch can be up to 8 chars like \dLK,"PutChars",A="MN:PutChars"\d().
 //In the catcher, fetch ch from Fs->except_ch.
@@ -105,18 +102,22 @@ U0 throw(I64 ch=0,Bool no_log=FALSE)
     QueRem(tmpt);
     Free(tmpt);
   }
-  /*was_raw=Raw(ON); TODO RESTORE
+  // We've exhausted the exception linked list,
+  // and there are remaining ones. Raise a fault.
+  PutExcept(FALSE);
+  "UNHANDLED EXCEPTION\n";
+  INT3;
+  /*was_raw=Raw(ON); // TempleOS stuff
   PutExcept(FALSE);
   Panic("Unhandled Exception");
   Raw(was_raw);
   */
   Exit; 
-  return;
-  try ; catch ;
 }
-//I used an empty try/catch to force noregs
-//#exe {Option(OPTf_NO_REG_VAR,OFF);;};;
-U0 __Break()
+
+#exe {Option(OPTf_NO_REG_VAR,OFF);};
+
+U0 Break()
 {//Send <CTRL-ALT-c>.
   if (Bt(&(Fs->task_flags),TASKf_BREAK_TO_SHIFT_ESC))
     Msg(MSG_KEY_DOWN,CH_SHIFT_ESC,0x20100000201);
@@ -128,16 +129,8 @@ U0 __Break()
     FlushMsgs;
     throw('Break');
   }
-  try ; catch ;
 }
-asm {
-	_BREAK::
-	PUSH_C_REGS
-	CALL &__Break
-	POP_C_REGS
-	RET
-};
-_extern _BREAK U0 Break();
+
 Bool BreakLock(CTask *task=NULL)
 {//Disables <CTRL-ALT-c>.
   if (!task) task=Fs;
@@ -154,7 +147,7 @@ Bool BreakUnlock(CTask *task=NULL)
     if (task==Fs)
       Break;
     else
-      task->rip=_BREAK;
+      task->rip=&Break;
   }
   return res;
 }

@@ -206,7 +206,7 @@ U8 *MPrintq(U8 *ptr,I64 flags)
 }
 
 U8 *sys_pos_pows_lets=" KMGTPEZY",
-   *sys_neg_pows_lets=" mænpfazy",
+   *sys_neg_pows_lets=" mænpfazy",
    *sys_pos_pows_lst="kilo\0mega\0giga\0tera\0peta\0exa\0zetta\0yotta\0",
    *sys_neg_pows_lst="milli\0micro\0nano\0pico\0femto\0atto\0zepto\0yocto\0";
 
@@ -884,12 +884,12 @@ x:
 }
 
 U8 *StrPrint(U8 *dst,U8 *fmt,...)
-{//See \dLK,"StrPrintJoin",A="MN:StrPrintJoin"\d().
+{//See $LK,"StrPrintJoin",A="MN:StrPrintJoin"$().
   return StrPrintJoin(dst,fmt,argc,argv);
 }
 
 U8 *CatPrint(U8 *_dst,U8 *fmt,...)
-{//StrCat().  See \dLK,"StrPrintJoin",A="MN:StrPrintJoin"\d().
+{//StrCat().  See $LK,"StrPrintJoin",A="MN:StrPrintJoin"$().
   U8 *dst=_dst;
   while (*dst)
     dst++;
@@ -898,21 +898,15 @@ U8 *CatPrint(U8 *_dst,U8 *fmt,...)
 }
 
 U0 Print(U8 *fmt,...)
-{//\dLK,"Print(\"\") Fmt Strings",A="FI:::/Doc/Print.DD"\d.  See \dLK,"StrPrintJoin",A="MN:StrPrintJoin"\d().
-//Don't use this.  \dLK,"See Print() shortcut.",A="FF:::/Doc/HolyC.DD,DemoHolyC"\d
+{//$LK,"Print(\"\") Fmt Strings",A="FI:::/Doc/Print.DD"$.  See $LK,"StrPrintJoin",A="MN:StrPrintJoin"$().
+//Don't use this.  $LK,"See Print() shortcut.",A="FF:::/Doc/HolyC.DD,DemoHolyC"$
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
-  I64 len=StrLen(buf),i;
-  for(i=0;i!=len;i++) {
-    if (Bt(&(Fs->task_flags),TASKf_INPUT_FILTER_TASK))
-      Msg(MSG_KEY_DOWN,buf[i],0,1<<JOBf_DONT_FILTER);
-  }
-  if(!Bt(&(Fs->display_flags),DISPLAYf_SILENT)&&!Bt(&(Fs->task_flags),TASKf_INPUT_FILTER_TASK))
-    (*fp_puts2)(buf);
+  PutS(buf);
   Free(buf);
 }
 
 U8 *MStrPrint(U8 *fmt,...)
-{//MAlloc StrPrint.  See \dLK,"StrPrintJoin",A="MN:StrPrintJoin"\d().
+{//MAlloc StrPrint.  See $LK,"StrPrintJoin",A="MN:StrPrintJoin"$().
   U8 *res,*buf=StrPrintJoin(NULL,fmt,argc,argv);
   res=StrNew(buf);
   Free(buf);

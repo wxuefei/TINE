@@ -264,7 +264,7 @@ BREAK_FOCUS_USER:
 	BTS	U64 CTask.task_flags[RSI],TASKf_PENDING_BREAK
 	JMP	I32 RESTORE_RSI_TASK
 
-@@10:	MOV	RAX,_BREAK
+@@10:	MOV	RAX,&Break
 	MOV	U64 CTask.rip[RSI],RAX
 	BT	U64 CTask.task_flags[RSI],TASKf_BREAK_TO_SHIFT_ESC
 	JC	I32 RESTORE_RSI_TASK
@@ -311,11 +311,13 @@ U0 Yield() {
   POP RSI
   POPFD
 }
-U0 ub2() {
+
+static U0 ub2() {
   UnblockSignals;
 }
+
 asm {
 __InterruptCoreRoutine::
-  CALL &ub2
-  CALL _BREAK;
+  CALL &ub2; // We can't call imported routines directly
+  CALL &Break;
 }

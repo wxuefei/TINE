@@ -182,7 +182,7 @@ CHashGeneric *HashGenericAdd(U8 *name,I64 type,
 }
 
 U0 HashSrcFileSet(CCmpCtrl *cc,CHashSrcSym *h,I64 line_num_offset=0)
-{   //Set \dLK,"CHashSrcSym",A="MN:CHashSrcSym"\d link and help_index by cur cc pos.
+{   //Set $LK,"CHashSrcSym",A="MN:CHashSrcSym"$ link and help_index by cur cc pos.
     CLexFile *tmpf=cc->lex_include_stk;
     I64 line_num=tmpf->line_num+line_num_offset;
     if (line_num<1) line_num=1;
@@ -318,7 +318,7 @@ I64 FramePtrDel(U8 *name,CTask *t=NULL)
 I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
   I64 i,ln,size,min,max;
   CHashSrcSym *tmph;
-  CHashFun *,*pub_tmph;
+  CHashFun *pub_tmph;
   CHashClass *tmpc;
   CMemberLst *fun_mem;
   CDbgInfo *dbg_info;

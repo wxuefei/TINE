@@ -229,10 +229,10 @@ asm {
 
         POPFD
 
-        PUSH_C_REGS
+	PUSH_C_REGS
         PUSH	RAX
         CALL	&HashDel
-        POP_C_REGS
+	POP_C_REGS
 
         POP	RDI
         POP	RSI

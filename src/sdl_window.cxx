@@ -75,7 +75,7 @@ void DrawWindowUpdateCB(u8* px) {
       MOVDQA_STORE(dst + i + 0x20, xmm2);
       MOVDQA_STORE(dst + i + 0x30, xmm3);
       // i dont use movntdqa here because
-      // dst is being constantly written
+      // dst is being constantly read by SDL
     }
   }
   SDL_UnlockSurface(win.surf);

@@ -3591,7 +3591,7 @@ public class CTask //The Fs segment reg points to current CTask.
   CWinScroll horz_scroll,vert_scroll;
 
   I64	user_data;
-};
+};
 class CTSS
 {
   U32	res1;
@@ -5164,6 +5164,7 @@ extern U0 PutExcept(Bool catch_it=TRUE);
 extern U0 SysTry(U8 *catch_start,U8 *untry_start);
 extern U0 SysUntry();
 extern U0 throw(I64 ch=0,Bool no_log=FALSE);
+extern U0 Break();
 extern Bool BreakLock(CTask *task=NULL);
 extern Bool BreakUnlock(CTask *task=NULL);
 extern U0 LoadOneImport(U8 **_src,U8 *module_base,I64 ld_flags);
@@ -5799,7 +5800,7 @@ extern I64 GodPick(U8 *msg=NULL);
 extern U0 GodBitsIns(I64 num_bits,I64 n);
 extern U0 GodHexIns(U8 *st);
 extern I64 GodBits(I64 num_bits,U8 *msg=NULL);
-extern I64 GodInit(U8 *files_find_mask="/God/Vocab.DD*",U8 *fu_flags=NULL);
+extern I64 GodInit(U8 *files_find_mask="/God/Vocab.DD*",U8 *fu_flags=NULL);
 extern U8 *GodWordStr(I64 bits=17);
 extern U0 GodWord(I64 bits=17);
 extern U0 GodBiblePassage(I64 num_lines=20);

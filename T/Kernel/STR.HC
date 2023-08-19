@@ -16,12 +16,7 @@ U0 PutHex(I64 num,I64 width)
   *StrPrintHex(buf,num,width)=0;
   "%s",buf;
 }
-U0 PutChars(U64 ch) {
-    "%c",ch;
-}
-U0 PutS(U8 *s) {
-	"%s",s;
-}
+
 asm {
 // IN:	RAX=NUM TO PRINT
 PUT_HEX_U64::
