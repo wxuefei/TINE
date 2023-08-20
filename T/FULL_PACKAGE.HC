@@ -79,8 +79,6 @@ cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
 SetFs(adam_task);
 //DEBUGGING INFORMATION WILL BE APPENDED TO THESE SYMBOLS
 LoadImps;
-if (!IsRaw) 
-  DrawWindowNew;
 //Load symbols into adam_task
 if (FileFind("HCRT.DBG.Z"))
   DbgInfoRead("HCRT.DBG.Z");
@@ -105,6 +103,7 @@ if (__IsCmdLine) {
   ExitTINE;
 } else {
   sys_winmgr_task=Spawn(&WinMgrTask);
+  DrawWindowNew;
   PaletteSetStd;
   Refresh; //Wait for window manager.
   PCSpkInit;
