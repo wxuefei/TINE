@@ -240,7 +240,7 @@ public class CD3 //Three dimensional F64 pt
 extern class CCPU;
 extern class CDyadStream;
 #ifdef IMPORT_BUILTINS
-import U0 _GrPaletteColorSet(I64i,I64i);
+import U0 _GrPaletteColorSet(I64i,I64i);
 import U0 __SleepHP(U64);
 import U0 __AwakeCore(U64);
 import U0 SetVolume(F64);
@@ -4004,16 +4004,6 @@ class CSndData
   I8	ona;
 };
 
-public class CScrnCastGlbls
-{
-  CSndData snd_head;
-  CDate	t0_now;
-  F64	t0_tS;
-  U8	*print_fmt;
-  CDC	*dc,*dc2_alias;
-  Bool	record,just_audio;
-  I8	ona;
-};
 #define FUN_SEG_CACHE_SIZE	256
 class CFunSegCache
 {
@@ -6086,7 +6076,6 @@ public extern I64 gr_x_offsets[8],
 	   gr_y_offsets[8],
 	  gr_x_offsets2[4],
 	  gr_y_offsets2[4];
-extern CScrnCastGlbls	scrncast;
 public extern CMsStateGlbls ms;
 public extern CGridGlbls ms_grid;
 public extern CMsHardStateGlbls ms_hard;
@@ -6094,7 +6083,6 @@ extern CMsHardStateGlbls ms_hard_last;
 extern CMsStateGlbls ms_last;
 extern U0 ProgressBarsRegTf(U8 *path=NULL);
 extern U0 ProgressBarsRst(U8 *path=NULL);
-extern Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="/Tmp/%X.GR");
 extern CDate Now();
 extern U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE);
 #define FBO1_NOT_CONST	0

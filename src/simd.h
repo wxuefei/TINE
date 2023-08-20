@@ -12,6 +12,9 @@ extern "C" {
 #define MOVDQU_STORE(mem, reg) _mm_storeu_si128((__m128i*)(mem), (__m128i)(reg))
 #define MOVNTDQ_STORE(mem, reg) \
   _mm_stream_si128((__m128i*)(mem), (__m128i)(reg))
+#define MOVNTI_32(mem, val) _mm_stream_si32((int*)(mem), (int)(val))
+#define MOVNTI_64(mem, val) _mm_stream_si64((long long*)(mem), (long long)(val))
+// long long? seriously?
 
 #ifdef __cplusplus
 }

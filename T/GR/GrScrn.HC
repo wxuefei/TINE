@@ -397,7 +397,5 @@ U0 GrUpdateScrn()
     dc=gr.zoomed_dc;
   }
   DrawWindowUpdate(dc->body);
-  //God willing they are the same size
-  MemCpy(gr.scrn_image->body,gr.dc2->body,MSize(gr.scrn_image->body));
   LBtr(&scrn_lock,0);
 }

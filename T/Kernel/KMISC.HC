@@ -47,7 +47,7 @@ I64 BCnt(I64 d)
     res+=set_bits_table[d.u8[i]];
   return res;
 }
-#help_index ""
+#help_index ""
 F64 Ona2Freq(I8 ona)
 {//Ona to freq. Ona=60 is 440.0Hz.
   if (!ona)
@@ -77,24 +77,7 @@ Bool IsSilent()
 {//Return StdOut turned-off?
   return Bt(&(Fs->display_flags),DISPLAYf_SILENT);
 }
-Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="B:/Tmp/%X.GR")
-{//WinMgr saves GR files to a dir.
-  Bool old_val;
-  scrncast.just_audio=just_audio;
-  if (val) {
-    if (!(old_val=LBtr(&scrncast.record,0))) {
-      Free(scrncast.print_fmt);
-      scrncast.print_fmt=AStrNew(print_fmt);
-      scrncast.t0_now=Now;
-      scrncast.snd_head.tS=scrncast.t0_tS=tS;
-      scrncast.snd_head.ona=scrncast.ona;
-      LBts(&scrncast.record,0);
-    }
-  } else
-    old_val=LBtr(&scrncast.record,0);
-  Snd;
-  return old_val;
-}
+
 U0 ProgressBarsRst(U8 *path=NULL)
 {//Reset all progress bars to zero.
   CallExtStr("ProgressBarsRegTf",path);

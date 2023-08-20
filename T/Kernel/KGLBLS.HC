@@ -18,7 +18,6 @@ U8 *rev_bits_table, //Table with U8 bits revd
 #help_index ""
 CGridGlbls	ms_grid; //See \dLK,"::/Demo/Graphics/Grid.HC"\d.
 CMsStateGlbls	ms,ms_last;
-CScrnCastGlbls	scrncast;
 CMsHardStateGlbls ms_hard;
 CMsHardStateGlbls ms_hard_last;
 CAutoCompleteDictGlbls acd;

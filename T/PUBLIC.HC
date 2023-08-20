@@ -594,7 +594,7 @@ extern U0 MsInit();
 extern U0 MsUpdate(I64 x,I64 y,I64 z,Bool l,Bool r);
 
 #help_index "MultiCore"
-#help_file "::/Doc/MultiCore"
+#help_file "::/Doc/MultiCore"
 public extern CTask *SpawnQue(U0 (*fp_addr)(U8 *data),U8 *data=NULL,
 	U8 *task_name=NULL,I64 target_cpu,
 	CTask *parent=NULL, //NULL means adam
@@ -614,11 +614,6 @@ public extern I64 ATARep(Bool pmt=TRUE,
 public extern U8 *IntEntryGet(I64 irq);
 public extern U8 *IntEntrySet(I64 irq,
 	U0 (*fp_new_hndlr)(),I64 type=IDTET_IRQ,I64 dpl=0);
-
-#help_index "ScrnCast;Cmd Line (Typically)"
-public extern Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,
-	U8 *print_fmt="B:/Tmp/%X.GR")
-public extern CScrnCastGlbls scrncast;
 
 #help_index "Snd"
 #help_file "::/Doc/Snd"
@@ -1208,13 +1203,7 @@ I64 attr); //Plot attrs with len.  30fps in Fs->draw_it() callback.
 public extern U0 TextPrint(CTask *task,I64 x,I64 y,I64 attr,U8 *fmt,...);
 public extern U0 TextBorder(CTask *task=NULL,I64 l,I64 r,I64 t,I64 b,I64 attr,Bool solid);
 public extern U0 TextRect(I64 l,I64 r,I64 t,I64 b,I64 d);
-#help_index "ScrnCast;Graphics/Device Contexts;Graphics/GR Files"
 
-public extern I64 GR2MV(U8 *print_fmt="VID%03d.MV",
-	U8 *files_find_mask,U8 *fu_flags=NULL);
-#help_index "ScrnCast;Snd/AU Files"
-public extern U0 SndShift(CSndData *head,F64 dt=0);
-public extern I64 AUWrite(U8 *filename,CSndData *head,CDate *t0_now,F64 t0_tS);
 #help_index "Graphics/Sprite;Sprites"
 public extern U0 Sprite2Code(CDoc *doc=NULL,U8 *elems);
 public extern U8 *Code2Sprite(CDoc *doc,I64 *_size=NULL);
