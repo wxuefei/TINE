@@ -622,7 +622,7 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // for the 0x2211 placeholder
     // all args are 64bit in HolyC
     // ret imm16
-    MOVNTI_32(cur_pos + arity_off, static_cast<u16>(0x90 /*nop*/ << 16) |
+    MOVNTI_32(cur_pos + arity_off, static_cast<u16>(0x90 /*nop*/) << 16 |
                                        static_cast<u16>(hf.m_arity * 8));
     TOSLoader.try_emplace(std::string{hf.m_name}, //
                           /*CSymbol*/ HTT_FUN, cur_pos);
