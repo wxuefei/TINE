@@ -506,6 +506,7 @@ auto ScanKey(u64* sc, SDL_Event* ev) -> int {
       return 1;
     default:;
     }
+    break;
   case SDL_KEYUP:
     mod |= SCF_KEY_UP;
     goto ent;
