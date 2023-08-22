@@ -4,9 +4,6 @@
 
 #include <vector>
 
-// elapsed milliseconds since an unspecified time
-auto GetTicks() -> u64;
-
 // Set calling thread's CTask
 void SetFs(void*);
 // Get calling thread's CTask
@@ -20,10 +17,11 @@ auto GetGs() -> void*;
 // Get calling thread's core number
 auto CoreNum() -> usize;
 
-// Set rip to an interrupt routine
+// Set RIP to an interrupt routine, called from HolyC on Ctrl+Alt+C
 void InterruptCore(usize core);
 
-// Launch Core on core n
+// Launch Core on core n, called from C++ for launching Core 0,
+// called from HolyC for the rest of the cores
 // fps: the HolyC function pointers the thread will run on launch
 void CreateCore(usize n, std::vector<void*>&& fps);
 

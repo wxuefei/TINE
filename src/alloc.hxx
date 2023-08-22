@@ -1,9 +1,16 @@
 #pragma once
 
-#include "mem.hxx"
-#include "runtime.hxx"
+#include "holyc_routines.hxx"
 #include "types.h"
 
+// New virtual memory region, low32 indicates whether
+// its executable or not
+auto NewVirtualChunk(usize sz, bool low32) -> void*;
+
+// Frees virtual memory region
+void FreeVirtualChunk(void* ptr, usize s);
+
+// vim: set expandtab ts=2 sw=2 :
 // sizeof(void) is _TECHNICALLY_ illegal in standard C++
 // so I'm going to do some template fuckery just to be safe
 // in case GCC deprecates the sizeof(void) == 1 behavior

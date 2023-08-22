@@ -42,8 +42,37 @@ if (NOT ARCH MATCHES "x86_64")
   message(FATAL_ERROR "CAN ONLY BUILD ON x86_64 ARCHITECTURE")
 endif ()
 
-file(GLOB CXX_EXECUTABLE_SRC src/*.cxx)
-file(GLOB C_EXECUTABLE_SRC src/*.c)
+set(CXX_EXECUTABLE_SRC
+    src/main.cxx
+    src/sdl_window.cxx
+    src/tos_aot.cxx
+    src/cpp2holyc.cxx
+    src/holyc_routines.cxx
+    src/tosprint.cxx
+    src/vfs.cxx
+    src/backtrace.cxx
+)
+
+set(C_EXECUTABLE_SRC
+    src/sound.c
+)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+    CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  list(APPEND CXX_EXECUTABLE_SRC
+    src/alloc_unix.cxx
+    src/dbg_unix.cxx
+    src/seth_unix.cxx
+  )
+elseif (WIN32)
+  list(APPEND CXX_EXECUTABLE_SRC
+    src/alloc_win32.cxx
+    src/dbg_win32.cxx
+    src/seth_win32.cxx
+  )
+else ()
+  message(FATAL_ERROR "Unsupported system")
+endif ()
 
 set_source_files_properties(${CXX_EXECUTABLE_SRC}
   PROPERTIES
@@ -164,9 +193,8 @@ elseif (WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE
     ws2_32 synchronization shlwapi shcore dbghelp winmm -static)
   # We don't need winpthreads
-else ()
-  message(FATAL_ERROR "Unsupported system")
 endif ()
+
 
 if (BUILD_HCRT)
   add_custom_target(HCRT

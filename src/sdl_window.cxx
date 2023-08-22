@@ -13,7 +13,7 @@
 
 #include <SDL2/SDL.h>
 
-#include <tos_ffi.h>
+#include <tos_callconv.h>
 
 namespace {
 
@@ -102,7 +102,7 @@ void DrawWindowUpdateCB(u8* px) {
 }
 
 void DrawWindowNewCB() {
-  if (__builtin_expect(SDL_Init(SDL_INIT_VIDEO), 0)) {
+  if (SDL_Init(SDL_INIT_VIDEO), 0) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
@@ -279,7 +279,7 @@ auto constexpr K2SC(u8 ch) -> u64 {
   __builtin_unreachable();
 }
 
-auto ScanKey(u64* sc, SDL_Event* ev) -> int {
+[[gnu::hot]] auto ScanKey(u64* sc, SDL_Event* ev) -> int {
   u64 mod = 0;
   switch (ev->type) {
   case SDL_KEYDOWN:
@@ -577,13 +577,13 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 
 } // namespace
 
-void EventLoop(bool* off) {
-  if (__builtin_expect(SDL_Init(SDL_INIT_EVENTS), 0)) {
+void EventLoop(bool& off) {
+  if (SDL_Init(SDL_INIT_EVENTS)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
   }
-  if (__builtin_expect(SDL_RegisterEvents(1) != SDL_USEREVENT, 0)) {
+  if (SDL_RegisterEvents(1) != SDL_USEREVENT) {
     fprintf(stderr, "THIS SHOULD NEVER HAPPEN, SDL SAYS: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
@@ -594,10 +594,10 @@ void EventLoop(bool* off) {
       &&AudioInit,
   };
   SDL_Event e;
-  while (!*off && SDL_WaitEvent(&e)) {
+  while (!off && SDL_WaitEvent(&e)) {
     switch (e.type) {
     case SDL_QUIT:
-      *off = true;
+      off = true;
       break;
     case SDL_USEREVENT:
       // I use computed gotos here because avoiding conditionals

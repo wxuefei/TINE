@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string_view>
-
 #include "types.h"
+
+#include <string_view>
 
 // use MAlloc() from C++
 auto HolyMAlloc(usize sz) -> void*;
@@ -14,7 +14,5 @@ void HolyFree(void* p);
 [[noreturn]] void HolyThrow(std::string_view sv = {});
 // use StrNew() from C++
 auto HolyStrDup(char const* s) -> char*;
-// bootstrap the initial C++ functions required for kernel boot
-void BootstrapLoader();
 
 // vim: set expandtab ts=2 sw=2 :

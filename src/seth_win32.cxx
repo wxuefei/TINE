@@ -1,26 +1,15 @@
-#include "multic.hxx"
 #include "dbg.hxx"
 #include "main.hxx"
+#include "seth.hxx"
 #include "tos_aot.hxx"
 #include "vfs.hxx"
 
-#ifdef _WIN32
-  #include <windows.h>
-  #include <processthreadsapi.h>
-  #include <synchapi.h>
-  #include <sysinfoapi.h>
-  #include <timeapi.h>
-#else
-  #ifdef __linux__
-    #include <linux/futex.h>
-    #include <sys/syscall.h>
-  #elif defined(__FreeBSD__)
-    #include <sys/types.h>
-    #include <sys/umtx.h>
-  #endif
-  #include <pthread.h>
-#endif
+#include <windows.h>
+#include <processthreadsapi.h>
+#include <synchapi.h>
+#include <timeapi.h>
 
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -28,48 +17,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <tos_ffi.h>
-
-auto GetTicks() -> u64 {
-#ifdef _WIN32
-  return GetTickCount();
-#else
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return static_cast<u64>(ts.tv_nsec) / UINT64_C(1000000) //
-       + static_cast<u64>(ts.tv_sec) * UINT64_C(1000);
-#endif
-}
+#include <tos_callconv.h>
 
 namespace {
 
 struct CCore {
-#ifdef _WIN32
   HANDLE thread, event, mtx;
   // When are we going to wake up at?
   // winmm callback checks for this constantly
   // check out GetTicksHP() for an explanation
   // 0 means it's not sleeping
   u64 awake_at;
-#else
-  pthread_t thread;
-  /*
-   * man 2 futex
-   * > The uaddr argument points to the futex word.  On all platforms,
-   * > futexes are four-byte integers that must be aligned on a four-
-   * > byte boundary.
-   * freebsd doesnt seem to mind about alignment so im just going to use
-   * u32 too(though i have to specify UMTX_OP_WAIT_UINT instead of
-   * UMTX_OP_WAIT)
-   */
-  // Is this thread sleeping?
-  alignas(4) u32 is_sleeping;
-  // not using std::atomic<T> here(instead using atomic builtins that operate on
-  // plain values) because i need them for system calls and casting
-  // std::atomic<T>* to T* is potentially UB and
-  // static_assert(std::is_layout_compatible_v<std::atomic<u32>, u32>)
-  // failed on my machine
-#endif
   // self-referenced core number
   usize core_num;
   // HolyC function pointers it needs to execute on launch
@@ -86,20 +44,10 @@ std::vector<CCore> cores;
 // Thread local self-referenced CCore structure
 thread_local CCore* self;
 
-#ifndef _WIN32
-auto ThreadRoutine(void* arg) -> void* {
-#else
 auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
-#endif
   self = static_cast<CCore*>(arg);
   VFsThrdInit();
   SetupDebugger();
-#ifndef _WIN32
-  static void* sig_fp = nullptr;
-  if (!sig_fp)
-    sig_fp = TOSLoader["__InterruptCoreRoutine"].val;
-  signal(SIGUSR1, reinterpret_cast<SignalCallback*>(sig_fp));
-#endif
   // CoreAPSethTask(...) (T/FULL_PACKAGE.HC) <- (non-Core0)
   // IET_MAIN boot functions + kernel entry point <- Core0
   //
@@ -110,25 +58,9 @@ auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
   }
   // Note: CoreAPSethTask() will NEVER return
   // so the below things are just to match the return type
-#ifdef _WIN32
   return 0;
-#else
-  return nullptr;
-#endif
 }
 
-/*
- * (DolDoc code)
- * $ID,-2$$TR-C,"How do you use the FS and GS segment registers."$
- * $ID,2$$FG,2$MOV RAX,FS:[RAX]$FG$ : FS can be set with a $FG,2$WRMSR$FG$,
- * but displacement is RIP relative, so it's tricky to use.  FS is used for
- * the current $LK,"CTask",A="MN:CTask"$, GS for $LK,"CCPU",A="MN:CCPU"$.
- *
- * Note on Fs and Gs: They might seem like very weird names for ThisTask and
- * ThisCPU repectively but it's because they are stored in the F Segment and G
- * Segment registers in native TempleOS. (https://archive.md/pf2td)
- */
-// I tried putting this in CCore but it became fucky wucky so yeah, it's here
 thread_local void* Fs = nullptr;
 thread_local void* Gs = nullptr;
 
@@ -160,8 +92,7 @@ auto CoreNum() -> usize {
 // when CTRL+ALT+C/X is pressed inside TempleOS while the core is
 // stuck in an infinite loop witout yielding
 void InterruptCore(usize core) {
-  auto& c = cores[core];
-#ifdef _WIN32
+  auto&   c = cores[core];
   CONTEXT ctx{};
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(c.thread);
@@ -178,62 +109,33 @@ void InterruptCore(usize core) {
   ctx.Rip = reinterpret_cast<uptr>(fp);
   SetThreadContext(c.thread, &ctx);
   ResumeThread(c.thread);
-#else
-  // block signals temporarily
-  // will be unblocked later by __InterruptCoreRoutine
-  sigset_t all;
-  sigfillset(&all);
-  sigprocmask(SIG_BLOCK, &all, nullptr);
-  // this will execute the signal handler for SIGUSR1 in the core because i cant
-  // remotely suspend threads like Win32 SuspendThread in unix
-  pthread_kill(c.thread, SIGUSR1);
-#endif
 }
 
 void CreateCore(usize n, std::vector<void*>&& fps) {
+  using std::thread;
   if (n == 0) // boot
-    cores.resize(proc_cnt);
+    cores.resize(thread::hardware_concurrency());
   auto& c = cores[n];
   // CoreAPSethTask(...) passed from SpawnCore or
   // IET_MAIN function pointers+kernel entry point from LoadHCRT
   c.fps      = std::move(fps);
   c.core_num = n;
-#ifdef _WIN32
-  c.thread = CreateThread(nullptr, 0, ThreadRoutine, &c, 0, nullptr);
-  c.mtx    = CreateMutex(nullptr, FALSE, nullptr);
-  c.event  = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+  c.thread   = CreateThread(nullptr, 0, ThreadRoutine, &c, 0, nullptr);
+  c.mtx      = CreateMutex(nullptr, FALSE, nullptr);
+  c.event    = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
-  // literally wtf, also gcc doesnt support it so whatever
+  // I wanted to set thread names but literally wtf,
+  // also gcc doesnt support it so whatever
   // https://archive.li/MIMDo
-#else
-  pthread_create(&c.thread, nullptr, ThreadRoutine, &c);
-  char buf[16];
-  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", n);
-  pthread_setname_np(c.thread, buf);
-#endif
 }
 
 void AwakeCore(usize core) {
   auto& c = cores[core];
-#ifdef _WIN32
   WaitForSingleObject(c.mtx, INFINITE);
   c.awake_at = 0;
   SetEvent(c.event);
   ReleaseMutex(c.mtx);
-#else
-  if (c.is_sleeping) {
-  #ifdef __linux__
-    syscall(SYS_futex, &c.is_sleeping, FUTEX_WAKE, UINT32_C(1), nullptr,
-            nullptr, 0);
-  #elif defined(__FreeBSD__)
-    _umtx_op(&c.is_sleeping, UMTX_OP_WAKE, UINT32_C(1), nullptr, nullptr);
-  #endif
-  }
-  __atomic_store_n(&c.is_sleeping, UINT32_C(0), __ATOMIC_SEQ_CST);
-#endif
 }
-
-#ifdef _WIN32
 
 namespace {
 
@@ -273,30 +175,14 @@ auto GetTicksHP() -> u64 {
 
 } // namespace
 
-#endif
-
 void SleepHP(u64 us) {
-  auto& c = cores[CoreNum()];
-#ifdef _WIN32
+  auto&      c = cores[CoreNum()];
   auto const t = GetTicksHP();
   WaitForSingleObject(c.mtx, INFINITE);
   // windows doesnt have accurate microsecond sleep :(
   c.awake_at = t + us / 1000;
   ReleaseMutex(c.mtx);
   WaitForSingleObject(c.event, INFINITE);
-#else
-  struct timespec ts {};
-  ts.tv_nsec = (us % 1000000) * 1000;
-  ts.tv_sec = us / 1000000;
-  __atomic_store_n(&c.is_sleeping, UINT32_C(1), __ATOMIC_SEQ_CST);
-  #ifdef __linux__
-  syscall(SYS_futex, &c.is_sleeping, FUTEX_WAIT, 1u, &ts, nullptr, 0);
-  #elif defined(__FreeBSD__)
-  _umtx_op(&c.is_sleeping, UMTX_OP_WAIT_UINT, 1u,
-           (void*)sizeof(struct timespec), &ts);
-  #endif
-  __atomic_store_n(&c.is_sleeping, UINT32_C(0), __ATOMIC_SEQ_CST);
-#endif
 }
 
 // vim: set expandtab ts=2 sw=2 :

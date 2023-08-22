@@ -45,18 +45,17 @@ an example of HolyC/TempleOS' `#exe{}` and freedom of directly fiddling with sys
 ### only supports >=Win10(complain to msys2 devs not me), msvc unsupported
 install msys2, launch the "MSYS2 MINGW64 Shell", and run the following
 ```
-pacman -Syu make mingw-w64-x86_64-{cmake,gcc,SDL2}
+pacman -Syu mingw-w64-x86_64-{cmake,gcc,ninja,SDL2}
 ```
 if pacman tells you to restart the terminal then do it and run the cmd again
 ## unix-like system users
-install SDL2, cmake, make and gcc
+install SDL2, cmake, ninja and gcc
 ## building the loader and runtime
-```
+```shell
 mkdir build;
 cd build;
-cmake ..; # *nix ***THIS LINE ISNT FOR WINDOWS***
-cmake .. -G 'MSYS Makefiles'; # ***WINDOWS***
-make -j$(nproc);
+cmake .. -GNinja;
+ninja;
 ```
 side note: statically linking SDL2 on windows seems like std{in,out} gets borked so make sure to run the built binary in the mingw terminal to avoid dll hell <br>
 FOR MAINTAINERS AND CONTRIBUTORS: USE THE `-DBUILD_HCRT=OFF` FLAG TO DISABLE AUTO-BUILD OF HCRT.BIN IF YOU'RE WORKING WITH THE LOADER

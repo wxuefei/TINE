@@ -1,5 +1,6 @@
 #include "vfs.hxx"
 #include "alloc.hxx"
+#include "holyc_routines.hxx"
 
 // clang-format off
 // Windows requires sys/stat to be included after sys/types
@@ -20,15 +21,13 @@
 #include <string.h>
 
 #ifdef _WIN32
-  #define delim '\\'
-  #define stat  _stati64
+  #define dirsep '\\'
+  #define stat   _stati64
 #else
-  #define delim '/'
+  #define dirsep '/'
 #endif
 
 namespace fs = std::filesystem;
-
-using std::ios;
 
 namespace {
 
@@ -52,19 +51,18 @@ auto VFsFNameAbs(char const* name) -> std::string {
   // thrd_drv is always uppercase
   auto const& drv_path = mount_points[thrd_drv - 'A'];
   std::string ret;
-  ret.reserve(drv_path.size()   //
-              + thrd_pwd.size() //
-              + name_len        //
-              + 3 /* probably 2 will work but to be sure */);
+  ret.reserve(drv_path.size() + 1 //
+              + thrd_pwd.size()   //
+              + name_len + 1);
   ret += drv_path;
-  ret += delim;
+  ret += dirsep;
   if (thrd_pwd.size() > 1) { // thrd_pwd is not "/"
     // c++20 supports ranges but oh well.
     ret += std::string_view{
         thrd_pwd.data() + 1, // ignore '/'
         thrd_pwd.size() - 1,
     };
-    ret += delim;
+    ret += dirsep;
   }
   ret += std::string_view{
       name,
@@ -198,11 +196,10 @@ auto VFsDir() -> char** {
   auto file = VFsFNameAbs("");
   if (!FIsDir(file))
     return nullptr;
-#define SD(s) HolyStrDup(s)
   // https://archive.md/1Ojr3#7
   std::vector<char*> items{
-      SD("."),
-      SD(".."),
+      HolyStrDup("."),
+      HolyStrDup(".."),
   };
   for (auto const& e : fs::directory_iterator{file}) {
     auto const& s = e.path().filename().string();
@@ -210,13 +207,12 @@ auto VFsDir() -> char** {
     // do not touch, fat32 legacy
     // will break opening ISOs if touched
     if (s.size() <= 38 - 1)
-      items.emplace_back(SD(s.c_str()));
+      items.emplace_back(HolyStrDup(s.c_str()));
   }
   auto ret          = HolyAlloc<char*>(items.size() + 1);
   ret[items.size()] = nullptr;
   memcpy(ret, items.data(), items.size() * sizeof(char*));
   return ret;
-#undef SD
 }
 
 auto VFsIsDir(char const* path) -> bool {

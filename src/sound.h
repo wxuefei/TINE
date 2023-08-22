@@ -6,13 +6,13 @@ extern "C" {
 
 #include "types.h"
 
-// self explanatory
+// self explanatory, invoked my HolyC activating an SDL event
 void InitSound(void);
-// sets frequency
+// sets frequency, called from HolyC
 void SndFreq(u64);
-// self explanatory
+// self explanatory, called from HolyC
 f64 GetVolume(void);
-// self explanatory
+// self explanatory, called from HolyC
 void SetVolume(f64);
 
 #ifdef __cplusplus

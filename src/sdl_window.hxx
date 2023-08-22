@@ -13,7 +13,7 @@ void DrawWindowNew();
 // self-explanatory, called from HolyC
 void DrawWindowUpdate(u8* px);
 // loops til you close the window or whatever
-void EventLoop(bool* off);
+void EventLoop(bool& off);
 // Inits audio, called from HolyC
 void PCSpkInit();
 

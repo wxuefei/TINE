@@ -1,5 +1,5 @@
 # ffi
-runtime.cxx
+cpp2holyc.cxx
 ```C++
 // inside the anonymous namespace
 // please use trailing return types

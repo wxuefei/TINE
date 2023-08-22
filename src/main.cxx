@@ -1,8 +1,8 @@
 #include "main.hxx"
+#include "cpp2holyc.hxx"
 #include "dbg.hxx"
-#include "multic.hxx"
-#include "runtime.hxx"
 #include "sdl_window.hxx"
+#include "seth.hxx"
 #include "sound.h"
 #include "tos_aot.hxx"
 #include "vfs.hxx"
@@ -12,7 +12,6 @@
   #include <winbase.h>
   #include <wincon.h>
   #include <winerror.h>
-  #include <processenv.h>
   #include <processthreadsapi.h>
   // for mingw
   // https://archive.md/HEZm2#selection-3667.0-3698.0
@@ -28,7 +27,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <system_error>
-#include <thread>
 #include <utility>
 
 #include <stdio.h>
@@ -36,11 +34,9 @@
 
 #include <argtable3.h>
 
-#include <tos_ffi.h>
+#include <tos_callconv.h>
 
 namespace fs = std::filesystem;
-
-using std::thread;
 
 namespace {
 
@@ -76,14 +72,6 @@ void ShutdownTINE(int ec) {
   _Exit(exit_code);
 }
 
-#ifndef _WIN32
-usize page_size; // used for allocation
-                 // and pointer checks
-#else
-DWORD dwAllocationGranularity;
-#endif
-usize proc_cnt;
-
 auto main(int argc, char** argv) -> int {
 #ifndef _WIN32
   // https://archive.md/5cufN#selection-2369.223-2369.272
@@ -93,7 +81,6 @@ auto main(int argc, char** argv) -> int {
   getrlimit(RLIMIT_NOFILE, &rl);
   rl.rlim_cur = rl.rlim_max;
   setrlimit(RLIMIT_NOFILE, &rl);
-  page_size = sysconf(_SC_PAGESIZE);
   signal(SIGINT, [](int) {
   #define S(x) x, strlen(x)
     write(2, S("User abort.\n"));
@@ -102,11 +89,7 @@ auto main(int argc, char** argv) -> int {
   });
 #else
   SetConsoleCtrlHandler(CtrlCHandlerRoutine, TRUE);
-  SYSTEM_INFO si;
-  GetSystemInfo(&si);
-  dwAllocationGranularity = si.dwAllocationGranularity;
 #endif
-  proc_cnt = thread::hardware_concurrency();
   // i wanted to use cli11 but i dont want exceptions in this codebase
   struct arg_lit *helpArg, *sixty_fps, *commandLineArg, *cb_sanitize, *ndebug,
       *noans;
@@ -182,7 +165,7 @@ auto main(int argc, char** argv) -> int {
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
   CreateCore(0, LoadHCRT(bin_path));
-  EventLoop(&prog_exit);
+  EventLoop(prog_exit);
   return exit_code;
 }
 

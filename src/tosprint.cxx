@@ -1,4 +1,4 @@
-#include "TOSPrint.hxx"
+#include "tosprint.hxx"
 
 #include <string>
 

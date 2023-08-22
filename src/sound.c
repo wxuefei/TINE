@@ -9,15 +9,14 @@
 static SDL_AudioDeviceID output;
 static u64               sample, freq;
 static SDL_AudioSpec     have;
-static f64               vol = .1;
+static f64               volume = .1;
 
 static void AudioCB(void* ud, Uint8* out, int len) {
   (void)ud;
   for (int i = 0; i < len / have.channels; ++i) {
     f64   t     = (f64)++sample / have.freq;
     f64   amp   = -1. + 2. * roundf(fmod(2. * t * freq, 1.));
-    Sint8 maxed = (amp > 0) ? 127 : -127;
-    maxed *= vol;
+    Sint8 maxed = ((amp > 0) ? 127 : -127) * volume;
     if (!freq)
       maxed = 0;
     for (Uint8 j = 0; j < have.channels; ++j)
@@ -26,7 +25,7 @@ static void AudioCB(void* ud, Uint8* out, int len) {
 }
 
 void InitSound(void) {
-  if (__builtin_expect(SDL_Init(SDL_INIT_AUDIO), 0)) {
+  if (SDL_Init(SDL_INIT_AUDIO)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
     _Exit(1);
@@ -50,11 +49,11 @@ void SndFreq(u64 f) {
 }
 
 void SetVolume(f64 v) {
-  vol = v;
+  volume = v;
 }
 
 f64 GetVolume(void) {
-  return vol;
+  return volume;
 }
 
 // vim: set expandtab ts=2 sw=2 :

@@ -1,13 +1,12 @@
-#include "runtime.hxx"
-#include "TOSPrint.hxx"
 #include "alloc.hxx"
+#include "holyc_routines.hxx"
 #include "main.hxx"
-#include "mem.hxx"
-#include "multic.hxx"
 #include "sdl_window.hxx"
+#include "seth.hxx"
 #include "simd.h"
 #include "sound.h"
 #include "tos_aot.hxx"
+#include "tosprint.hxx"
 #include "vfs.hxx"
 
 #ifdef _WIN32
@@ -15,14 +14,15 @@
   #include <windows.h>
   #include <winbase.h>
   #include <memoryapi.h>
+  #include <sysinfoapi.h>
 #else
   #include <sys/mman.h>
 #endif
 
-#include <algorithm>
 #include <chrono>
 #include <initializer_list>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #include <stdlib.h>
@@ -30,42 +30,7 @@
 
 #include <dyad.h>
 #include <linenoise-ng/linenoise.h>
-#include <tos_ffi.h>
-
-void HolyFree(void* ptr) {
-  static void* fptr = nullptr;
-  if (!fptr)
-    fptr = TOSLoader["_FREE"].val;
-  FFI_CALL_TOS_1(fptr, (uptr)ptr);
-}
-
-auto HolyMAlloc(usize sz) -> void* {
-  static void* fptr = nullptr;
-  if (!fptr)
-    fptr = TOSLoader["_MALLOC"].val;
-  return (void*)FFI_CALL_TOS_2(fptr, sz, 0 /*NULL*/);
-}
-
-auto HolyCAlloc(usize sz) -> void* {
-  return memset(HolyAlloc<u8>(sz), 0, sz);
-}
-
-auto HolyStrDup(char const* str) -> char* {
-  return strcpy(HolyAlloc<char>(strlen(str) + 1), str);
-}
-
-[[noreturn]] void HolyThrow(std::string_view sv) {
-  union {
-    char s[8]; // zero-init
-    u64  i = 0;
-  } u; // mov QWORD PTR[&u],0
-  static void* fp = nullptr;
-  if (!fp)
-    fp = TOSLoader["throw"].val;
-  memcpy(u.s, sv.data(), std::min<usize>(sv.size(), 8));
-  FFI_CALL_TOS_1(fp, u.i);
-  __builtin_unreachable();
-}
+#include <tos_callconv.h>
 
 namespace { // ffi shit goes here
 
@@ -83,7 +48,8 @@ auto constexpr StrHash(std::string_view sv) -> u64 { // fnv64-1a
 }
 
 auto STK_mp_cnt(void*) -> usize {
-  return proc_cnt;
+  using std::thread;
+  return thread::hardware_concurrency();
 }
 
 void STK_DyadInit(void*) {
@@ -223,6 +189,12 @@ auto STK___IsValidPtr(uptr* stk) -> u64 {
   }
   return false;
 #else
+  static bool  first_run = true;
+  static usize page_size;
+  if (first_run) {
+    page_size = sysconf(_SC_PAGESIZE);
+    first_run = false;
+  }
   /* round down to page boundary (equiv to stk[0] / page_size * page_size)
    *   0b100101010 (x)
    * & 0b111110000 <- ~(0b10000 - 1)
@@ -262,12 +234,13 @@ void STK_PCSpkInit(void*) {
   PCSpkInit();
 }
 
+// microseconds
 auto STK___GetTicksHP(void*) -> u64 {
 #ifndef _WIN32
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  u64 tick = ts.tv_nsec / 1000u;
-  tick += ts.tv_sec * 1000000u;
+  u64 tick = ts.tv_nsec / UINT64_C(1000);
+  tick += ts.tv_sec * UINT64_C(1000000);
   return tick;
 #else
   static u64 freq = 0;
@@ -281,8 +254,16 @@ auto STK___GetTicksHP(void*) -> u64 {
 #endif
 }
 
+// milliseconds
 auto STK___GetTicks(void*) -> u64 {
-  return GetTicks();
+#ifndef _WIN32
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return static_cast<u64>(ts.tv_nsec) / UINT64_C(1000000) //
+       + static_cast<u64>(ts.tv_sec) * UINT64_C(1000);
+#else
+  return GetTickCount();
+#endif
 }
 
 void STK_SetKBCallback(void** stk) {
@@ -597,13 +578,10 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     }
     memcpy(inst_buf + off, inst.m_lit + off, remainder);
   }
-  // +1 for extra space in case of alignment wackadoo
-  // requiring excess bytes
-  auto blob = VirtAlloc<u8>(bufsz * (ffi_list.size() + 1));
-  // just to be sure if VirtualAlloc() did something wacky
-  // this wont be deallocated anyways so it'll be fine
-  // I know it's ugly as sin, fuck you
-  blob = (u8*)(((uptr)blob + 16 - 1) & ~(16 - 1));
+  // NewVirtualChunk() on unix will return an address aligned to the page
+  // boundary, on Windows it'll be aligned to the allocation granularity
+  // (64kb) or the page size, so no need to worry about alignment
+  auto blob = VirtAlloc<u8>(bufsz * ffi_list.size());
   for (usize i = 0; i < ffi_list.size(); ++i) {
     u8* cur_pos = blob + i * bufsz;
     // handwritten simd because the compiler kept giving me a rep movsb
@@ -622,10 +600,9 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     // for the 0x2211 placeholder
     // all args are 64bit in HolyC
     // ret imm16
-    MOVNTI_32(cur_pos + arity_off, static_cast<u16>(0x90 /*nop*/) << 16 |
-                                       static_cast<u16>(hf.m_arity * 8));
-    TOSLoader.try_emplace(std::string{hf.m_name}, //
-                          /*CSymbol*/ HTT_FUN, cur_pos);
+    MOVNTI_32(cur_pos + arity_off, static_cast<u32>(0x90 /*nop*/ << 16) |
+                                       static_cast<u32>(hf.m_arity * 8));
+    TOSLoader.try_emplace(std::string{hf.m_name}, /*CSymbol*/ HTT_FUN, cur_pos);
   }
   // clang-format off
   // ret <arity*8>; (8 == sizeof(u64))

@@ -1,8 +1,7 @@
 #include "tos_aot.hxx"
 #include "alloc.hxx"
 #include "dbg.hxx"
-#include "mem.hxx"
-#include "multic.hxx"
+#include "seth.hxx"
 
 #include <filesystem>
 #include <string>
@@ -14,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <tos_ffi.h>
-
 namespace fs = std::filesystem;
 
 using std::ios;
@@ -24,7 +21,6 @@ std::unordered_map<std::string, CSymbol> TOSLoader;
 
 namespace {
 // This code is mostly copied from TempleOS
-// and does not look very C++-y
 void LoadOneImport(u8** src_, u8* module_base) {
   u8* __restrict src = *src_;
   u8*  ptr           = nullptr;
@@ -36,12 +32,11 @@ void LoadOneImport(u8** src_, u8* module_base) {
   // anyway(compiles down to a mov call)
   // so it respects strict aliasing
   // while not compromising on speed
-#define READ_NUM(x, T)                           \
-  ({                                             \
-    /* ridiculous var name to avoid shadowing */ \
-    T val_##T##x##_;                             \
-    memcpy(&val_##T##x##_, x, sizeof(T));        \
-    val_##T##x##_;                               \
+#define READ_NUM(x, T)           \
+  ({                             \
+    T val_;                      \
+    memcpy(&val_, x, sizeof(T)); \
+    val_;                        \
   })
   while ((etype = *src++)) {
     ptr = module_base + READ_NUM(src, u32);
@@ -50,23 +45,23 @@ void LoadOneImport(u8** src_, u8* module_base) {
     src += strlen(st_ptr) + 1;
     // First occurance of a string means
     // "repeat this until another name is found"
-    if (*st_ptr) {
-      if (!first) {
-        *src_ = (u8*)st_ptr - sizeof(u32) - 1;
-        return;
+    if (!*st_ptr)
+      goto iet;
+    if (!first) {
+      *src_ = (u8*)st_ptr - sizeof(u32) - 1;
+      return;
+    } else {
+      first   = false;
+      auto it = TOSLoader.find(st_ptr);
+      if (it == TOSLoader.end()) {
+        fprintf(stderr, "Unresolved reference %s\n", st_ptr);
+        TOSLoader.try_emplace(st_ptr, //
+                              /*CSymbol*/ HTT_IMPORT_SYS_SYM, module_base,
+                              (u8*)st_ptr - sizeof(u32) - 1);
       } else {
-        first   = false;
-        auto it = TOSLoader.find(st_ptr);
-        if (it == TOSLoader.end()) {
-          fprintf(stderr, "Unresolved reference %s\n", st_ptr);
-          TOSLoader.try_emplace(st_ptr, //
-                                /*CSymbol*/ HTT_IMPORT_SYS_SYM, module_base,
-                                (u8*)st_ptr - sizeof(u32) - 1);
-        } else {
-          auto const& [_, sym] = *it;
-          if (sym.type != HTT_IMPORT_SYS_SYM)
-            i = (uptr)sym.val;
-        }
+        auto const& [_, sym] = *it;
+        if (sym.type != HTT_IMPORT_SYS_SYM)
+          i = (uptr)sym.val;
       }
     }
 #define OFF(T) ((u8*)i - ptr - sizeof(T))
@@ -78,6 +73,7 @@ void LoadOneImport(u8** src_, u8* module_base) {
   }
 #define IMM(T) \
   { memcpy(ptr, &i, sizeof(T)); }
+  iet:
     switch (etype) {
     case IET_REL_I8:
       REL(i8);
@@ -104,9 +100,6 @@ void LoadOneImport(u8** src_, u8* module_base) {
       IMM(i64);
       break;
     }
-#undef OFF
-#undef REL
-#undef IMM
   }
   *src_ = src - 1;
 }
@@ -136,10 +129,9 @@ void LoadPass1(u8* src, u8* module_base) {
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
       if (etype != IET_IMM32_EXPORT && etype != IET_IMM64_EXPORT)
-        i += (uptr)module_base;     // i gets reset at the
-                                    // top of the loop so its fine
-      TOSLoader.try_emplace(st_ptr, //
-                            /*CSymbol*/ HTT_EXPORT_SYS_SYM, (u8*)i);
+        i += (uptr)module_base; // i gets reset at the
+                                // top of the loop so its fine
+      TOSLoader.try_emplace(st_ptr, /*CSymbol*/ HTT_EXPORT_SYS_SYM, (u8*)i);
       SysSymImportsResolve(st_ptr);
       break;
     case IET_REL_I0:
@@ -179,8 +171,7 @@ auto LoadPass2(u8* src, u8* module_base) -> std::vector<void*> {
   while ((etype = *src++)) {
     u32 i = READ_NUM(src, u32);
     src += sizeof(u32);
-    auto st_ptr = (char*)src;
-    src += strlen(st_ptr) + 1;
+    src += strlen((char*)src) + 1;
     switch (etype) {
     case IET_MAIN:
       ret.emplace_back(module_base + i);
@@ -200,8 +191,6 @@ auto LoadPass2(u8* src, u8* module_base) -> std::vector<void*> {
   }
   return ret;
 }
-
-#undef READ_NUM
 
 extern "C" struct [[gnu::packed]] CBinFile {
   u16 jmp;
