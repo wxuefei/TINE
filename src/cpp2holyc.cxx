@@ -17,6 +17,7 @@
   #include <sysinfoapi.h>
 #else
   #include <sys/mman.h>
+  #include <unistd.h>
 #endif
 
 #include <chrono>
