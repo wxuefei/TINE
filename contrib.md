@@ -1,7 +1,7 @@
 # ffi
 cpp2holyc.cxx
 ```C++
-// inside the anonymous namespace
+// inside the anonymous namespace after RegisterFunctionPtrs() and StrHash()
 // please use trailing return types
 auto STK_FunctionName(u64* stk) -> u64 {
   // ...
