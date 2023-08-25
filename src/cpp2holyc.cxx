@@ -206,30 +206,30 @@ void RegisterFunctionPtrs(std::initializer_list<HolyFunc> ffi_list) {
     MOVNTI_32(cur_pos + arity_off, hf.m_arity * 8 /* ret imm16 */);
     TOSLoader.try_emplace(std::string{hf.m_name}, /*CSymbol*/ HTT_FUN, cur_pos);
   }
-  // clang-format off
-  // ret <arity*8>; (8 == sizeof(u64))
-  // HolyC ABI is __stdcall, the callee cleans up its own stack
-  // unless its variadic so we pop the stack with ret
-  //
-  // A bit about HolyC ABI: all args are 8 bytes(64 bits)
-  // let there be function Foo(I64 i, ...);
-  // call Foo() like Foo(2, 4, 5, 6);
-  // stack view:
-  //   argv[2]  6 // RBP + 48
-  //   argv[1]  5 // RBP + 40
-  //   argv[0]  4 // RBP + 32 <-points- argv (internal var in function)
-  //   argc     3 // RBP + 24 <-value- argc (internal var in function, num of varargs) 
-  //   i        2 // RBP + 16 this is where the argument stack starts
-  //   0x???????? // RBP + 8  return address
-  //   0x???????? // RBP + 0  previous RBP of caller function
-  // clang-format on
 }
+// clang-format off
+// ret <arity*8>; (8 == sizeof(u64))
+// HolyC ABI is __stdcall, the callee cleans up its own stack
+// unless its variadic so we pop the stack with ret
+//
+// A bit about HolyC ABI: all args are 8 bytes(64 bits)
+// let there be function Foo(I64 i, ...);
+// call Foo() like Foo(2, 4, 5, 6);
+// stack view:
+//   argv[2]  6 // RBP + 48
+//   argv[1]  5 // RBP + 40
+//   argv[0]  4 // RBP + 32 <-points- argv (internal var in function)
+//   argc     3 // RBP + 24 <-value-- argc (internal var in function, num of varargs) 
+//   i        2 // RBP + 16 this is where the argument stack starts
+//   0x???????? // RBP + 8  return address
+//   0x???????? // RBP + 0  previous RBP of caller function
+// clang-format on
 
 auto constexpr StrHash(std::string_view sv) -> u64 { // fnv64-1a
   u64 h = 0xCBF29CE484222325;
-  for (char c : sv) {
+  for (auto c : sv) {
     h *= 0x100000001B3;
-    h ^= c;
+    h ^= static_cast<u8>(c);
   }
   return h;
 }
@@ -237,8 +237,18 @@ auto constexpr StrHash(std::string_view sv) -> u64 { // fnv64-1a
 
 // ffi functions go below here
 auto STK_mp_cnt(void*) -> usize {
-  using std::thread;
-  return thread::hardware_concurrency();
+#ifndef _WIN32
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#else
+  static bool  first_run = true;
+  static usize proc_cnt  = 0;
+  if (first_run) {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    proc_cnt = si.dwNumberOfProcessors;
+  }
+  return proc_cnt;
+#endif
 }
 
 void STK_DyadInit(void*) {
@@ -514,9 +524,9 @@ auto STK_UnixNow(void*) -> u64 {
 }
 
 void STK___SpawnCore(uptr* stk) {
-  CreateCore(stk[0], std::vector<void*>{
-                         (void*)stk[1],
-                     });
+  CreateCore(std::vector<void*>{
+      (void*)stk[0],
+  });
 }
 
 auto STK_NewVirtualChunk(usize* stk) -> void* {
@@ -642,7 +652,7 @@ void BootstrapLoader() {
       S(mp_cnt, 0),
       S(__IsCmdLine, 0),
       S(__IsValidPtr, 1),
-      S(__SpawnCore, 0),
+      S(__SpawnCore, 1),
       S(UnixNow, 0),
       S(InterruptCore, 1),
       S(NewVirtualChunk, 2),

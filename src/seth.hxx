@@ -20,10 +20,10 @@ auto CoreNum() -> usize;
 // Set RIP to an interrupt routine, called from HolyC on Ctrl+Alt+C
 void InterruptCore(usize core);
 
-// Launch Core on core n, called from C++ for launching Core 0,
+// Launch core, called from C++ for launching Core 0,
 // called from HolyC for the rest of the cores
 // fps: the HolyC function pointers the thread will run on launch
-void CreateCore(usize n, std::vector<void*>&& fps);
+void CreateCore(std::vector<void*>&& fps);
 
 // Wake up core number `core`
 void AwakeCore(usize core);

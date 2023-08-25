@@ -87,7 +87,7 @@ Gs->seth_task=Spawn(&CoreAPSethTask,NULL,"Seth");
 U0 __InitCPUs() {
   I64 idx;
   for (idx=Gs->num+1;idx<mp_cnt;++idx) {
-    __SpawnCore(idx,&CoreAPSethTask);
+    __SpawnCore(&CoreAPSethTask);
     while (!Bt(&seth_tasks_ready,idx))
       PAUSE;
   }

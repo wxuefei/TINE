@@ -155,7 +155,7 @@ auto main(int argc, char** argv) -> int {
   }
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
-  CreateCore(0, LoadHCRT(bin_path));
+  CreateCore(LoadHCRT(bin_path));
   EventLoop();
 }
 

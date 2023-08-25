@@ -12,8 +12,8 @@
   #include <sys/umtx.h>
 #endif
 #include <pthread.h>
+#include <unistd.h>
 
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -130,21 +130,21 @@ void InterruptCore(usize core) {
   pthread_kill(c.thread, SIGUSR1);
 }
 
-void CreateCore(usize n, std::vector<void*>&& fps) {
-  using std::thread;
-  if (n == 0) // boot
-    cores.resize(thread::hardware_concurrency());
-  auto& c = cores[n];
+void CreateCore(std::vector<void*>&& fps) {
+  static usize cnt = 0;
+  if (cnt == 0) // boot
+    cores.resize(sysconf(_SC_NPROCESSORS_ONLN));
+  auto& c = cores[cnt];
   // CoreAPSethTask(...) passed from SpawnCore or
   // IET_MAIN function pointers+kernel entry point from LoadHCRT
-  c.fps      = std::move(fps);
-  c.core_num = n;
+  c.fps = std::move(fps);
   pthread_create(&c.thread, nullptr, ThreadRoutine, &c);
   char buf[16];
-  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", n);
+  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", c.core_num = cnt);
   pthread_setname_np(c.thread, buf);
   // pthread_setname_np only works on glibc and FreeBSD
   // on OpenBSD it's pthread_set_name_np. damn, Theo.
+  ++cnt;
 }
 
 #define LOCK_STORE(dst, val) __atomic_store_n(&dst, val, __ATOMIC_SEQ_CST)

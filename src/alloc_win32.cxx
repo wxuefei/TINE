@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <memoryapi.h>
+#include <sysinfoapi.h>
 
 #include <limits>
 

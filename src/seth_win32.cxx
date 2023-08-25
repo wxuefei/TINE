@@ -78,7 +78,7 @@ auto CoreNum() -> usize {
 // contexts unless you call Yield() in a loop(eg, `while(TRUE);`)
 // so we have to set RIP manually(this routine is called
 // when CTRL+ALT+C/X is pressed inside TempleOS while the core is
-// stuck in an infinite loop witout yielding
+// stuck in an infinite loop witout yielding)
 void InterruptCore(usize core) {
   auto&   c = cores[core];
   CONTEXT ctx{};
@@ -96,17 +96,23 @@ void InterruptCore(usize core) {
   ResumeThread(c.thread);
 }
 
-void CreateCore(usize n, std::vector<void*>&& fps) {
-  using std::thread;
-  if (n == 0) // boot
-    cores.resize(thread::hardware_concurrency());
-  auto& c    = cores[n];
+void CreateCore(std::vector<void*>&& fps) {
+  static usize cnt = 0;
+  if (cnt == 0) {   // boot
+    cores.resize(({ // statement expression
+      SYSTEM_INFO si;
+      GetSystemInfo(&si);
+      si.dwNumberOfProcessors;
+    }));
+  }
+  auto& c    = cores[cnt];
   c.fps      = std::move(fps);
-  c.core_num = n;
+  c.core_num = cnt;
   c.thread   = CreateThread(nullptr, 0, ThreadRoutine, &c, 0, nullptr);
   c.mtx      = CreateMutex(nullptr, FALSE, nullptr);
   c.event    = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
+  ++cnt;
   // I wanted to set thread names but literally wtf,
   // also gcc doesnt support it so whatever
   // https://archive.li/MIMDo
