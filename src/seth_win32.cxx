@@ -16,6 +16,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <tos_callconv.h>
 
@@ -34,30 +35,17 @@ struct CCore {
   std::vector<void*> fps;
 };
 
-// TempleOS has a hardcoded maximum core count of 128 but oh well,
-// let's be flexible in case we get machines with more of them
-//
-// Also note: these cores will never be destructed in C++ because this is
-// basically an emulation of a real CPU core, CoreAPSethTask never terminates,
-// instead let the host OS clean it up and do whatever with it
-std::vector<CCore> cores;
-// Thread local self-referenced CCore structure
+// look at seth_unix.cxx for an explanation
+std::vector<CCore>  cores;
 thread_local CCore* self;
 
 auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
   self = static_cast<CCore*>(arg);
   VFsThrdInit();
   SetupDebugger();
-  // CoreAPSethTask(...) (T/FULL_PACKAGE.HC) <- (non-Core0)
-  // IET_MAIN boot functions + kernel entry point <- Core0
-  //
-  // ZERO_BP so the return addr&rbp is 0 and
-  // stack traces don't climb up the C++ stack
   for (auto fp : self->fps) {
     FFI_CALL_TOS_0_ZERO_BP(fp);
   }
-  // Note: CoreAPSethTask() will NEVER return
-  // so the below things are just to match the return type
   return 0;
 }
 
@@ -98,15 +86,12 @@ void InterruptCore(usize core) {
   SuspendThread(c.thread);
   GetThreadContext(c.thread, &ctx);
   // push rip
-  static_assert(sizeof(DWORD64) == 8);
-  ctx.Rsp -= 8;
-  ((DWORD64*)ctx.Rsp)[0] = ctx.Rip;
-  //
+  // movabs rip, <fp>
+  memcpy((void*)(ctx.Rsp -= 8), &ctx.Rip, 8); // save current program counter
   static void* fp = nullptr;
   if (!fp)
     fp = TOSLoader["__InterruptCoreRoutine"].val;
-  // movabs rip, <fp>
-  ctx.Rip = reinterpret_cast<uptr>(fp);
+  ctx.Rip = reinterpret_cast<uptr>(fp); // set new program counter
   SetThreadContext(c.thread, &ctx);
   ResumeThread(c.thread);
 }
@@ -115,9 +100,7 @@ void CreateCore(usize n, std::vector<void*>&& fps) {
   using std::thread;
   if (n == 0) // boot
     cores.resize(thread::hardware_concurrency());
-  auto& c = cores[n];
-  // CoreAPSethTask(...) passed from SpawnCore or
-  // IET_MAIN function pointers+kernel entry point from LoadHCRT
+  auto& c    = cores[n];
   c.fps      = std::move(fps);
   c.core_num = n;
   c.thread   = CreateThread(nullptr, 0, ThreadRoutine, &c, 0, nullptr);
@@ -129,10 +112,15 @@ void CreateCore(usize n, std::vector<void*>&& fps) {
   // https://archive.li/MIMDo
 }
 
+#define LOCK_STORE(dst, val) __atomic_store_n(&dst, val, __ATOMIC_SEQ_CST)
+
 void AwakeCore(usize core) {
   auto& c = cores[core];
+  // the timeSetEvent callback will constantly check
+  // if the total ticks have reached awake_at(when we want to wake up)
+  // so we simply call WaitForSingleObject()
   WaitForSingleObject(c.mtx, INFINITE);
-  c.awake_at = 0;
+  // awake_at will be automatically set to 0
   SetEvent(c.event);
   ReleaseMutex(c.mtx);
 }
@@ -142,33 +130,32 @@ namespace {
 UINT tick_inc;
 u64  ticks = 0;
 
+void UpdateTicksCB(UINT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR) {
+  ticks += tick_inc;
+  for (auto& c : cores) {
+    WaitForSingleObject(c.mtx, INFINITE);
+    // check if ticks reached awake_at
+    if (ticks >= c.awake_at && c.awake_at > 0) {
+      SetEvent(c.event);
+      LOCK_STORE(c.awake_at, 0);
+    }
+    ReleaseMutex(c.mtx);
+  }
+}
+
 // To just get ticks we can use QueryPerformanceFrequency
 // and QueryPerformanceCounter but we want to set an winmm
 // event that updates the tick count while also helping cores wake up
 //
 // i killed two birds with one stoner
 auto GetTicksHP() -> u64 {
-  static bool init = false;
-  if (!init) {
-    init = true;
+  static bool first_run = true;
+  if (first_run) {
     TIMECAPS tc;
     timeGetDevCaps(&tc, sizeof tc);
     tick_inc = tc.wPeriodMin;
-    timeSetEvent(
-        tick_inc, tick_inc,
-        [](auto, auto, auto, auto, auto) {
-          ticks += tick_inc;
-          for (auto& c : cores) {
-            WaitForSingleObject(c.mtx, INFINITE);
-            // check if ticks reached awake_at
-            if (ticks >= c.awake_at && c.awake_at > 0) {
-              SetEvent(c.event);
-              c.awake_at = 0;
-            }
-            ReleaseMutex(c.mtx);
-          }
-        },
-        0, TIME_PERIODIC);
+    timeSetEvent(tick_inc, tick_inc, UpdateTicksCB, 0, TIME_PERIODIC);
+    first_run = false;
   }
   return ticks;
 }
@@ -177,7 +164,7 @@ auto GetTicksHP() -> u64 {
 
 void SleepHP(u64 us) {
   auto&      c = cores[CoreNum()];
-  auto const t = GetTicksHP();
+  auto const t = GetTicksHP(); // milliseconds
   WaitForSingleObject(c.mtx, INFINITE);
   // windows doesnt have accurate microsecond sleep :(
   c.awake_at = t + us / 1000;

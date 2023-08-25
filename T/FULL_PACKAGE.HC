@@ -105,7 +105,7 @@ if (__IsCmdLine) {
   sys_winmgr_task=Spawn(&WinMgrTask);
   DrawWindowNew;
   PaletteSetStd;
-  Refresh; //Wait for window manager.
+  Refresh; // Wait for window manager
   PCSpkInit;
   StartUpTasks;
   SrvTaskCont;

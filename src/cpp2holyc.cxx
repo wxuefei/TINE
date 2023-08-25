@@ -34,7 +34,7 @@
 #include <linenoise-ng/linenoise.h>
 #include <tos_callconv.h>
 
-namespace { // ffi shit goes here
+namespace {
 
 namespace chrono = std::chrono;
 
@@ -235,6 +235,7 @@ auto constexpr StrHash(std::string_view sv) -> u64 { // fnv64-1a
 }
 } // namespace
 
+// ffi functions go below here
 auto STK_mp_cnt(void*) -> usize {
   using std::thread;
   return thread::hardware_concurrency();
@@ -618,7 +619,7 @@ auto STK_GetVolume(void*) -> u64 {
 }
 
 void STK_ExitTINE(int* stk) {
-  ShutdownTINE(stk[0]);
+  _Exit(stk[0]);
 }
 
 auto STK___IsCmdLine(void*) -> u64 {

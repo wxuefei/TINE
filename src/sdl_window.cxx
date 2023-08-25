@@ -279,7 +279,7 @@ auto constexpr K2SC(u8 ch) -> u64 {
   __builtin_unreachable();
 }
 
-[[gnu::hot]] auto ScanKey(u64* sc, SDL_Event* ev) -> int {
+auto ScanKey(u64* sc, SDL_Event* ev) -> int {
   u64 mod = 0;
   switch (ev->type) {
   case SDL_KEYDOWN:
@@ -577,7 +577,7 @@ auto SDLCALL MSCallback(void*, SDL_Event* e) -> int {
 
 } // namespace
 
-void EventLoop(bool& off) {
+void EventLoop() {
   if (SDL_Init(SDL_INIT_EVENTS)) {
     fprintf(stderr, "Failed to init SDL with the following message: \"%s\"\n",
             SDL_GetError());
@@ -594,11 +594,10 @@ void EventLoop(bool& off) {
       &&AudioInit,
   };
   SDL_Event e;
-  while (!off && SDL_WaitEvent(&e)) {
+  while (SDL_WaitEvent(&e)) {
     switch (e.type) {
     case SDL_QUIT:
-      off = true;
-      break;
+      return;
     case SDL_USEREVENT:
       // I use computed gotos here because avoiding conditionals
       // is a good thing especially when you're updating the screen

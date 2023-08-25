@@ -41,10 +41,7 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string boot_str;
-std::string bin_path{"HCRT.BIN"};
-
-int  exit_code = 0;
-bool prog_exit = false;
+std::string bin_path = "HCRT.BIN";
 
 #ifdef _WIN32
 [[noreturn]] auto WINAPI CtrlCHandlerRoutine(DWORD) -> BOOL {
@@ -64,12 +61,6 @@ bool is_cmd_line        = false;
 
 auto CmdLineBootText() -> char const* {
   return boot_str.c_str();
-}
-
-void ShutdownTINE(int ec) {
-  prog_exit = true;
-  exit_code = ec;
-  _Exit(exit_code);
 }
 
 auto main(int argc, char** argv) -> int {
@@ -165,8 +156,7 @@ auto main(int argc, char** argv) -> int {
   arg_freetable(argtable, sizeof argtable / sizeof argtable[0]);
   BootstrapLoader();
   CreateCore(0, LoadHCRT(bin_path));
-  EventLoop(prog_exit);
-  return exit_code;
+  EventLoop();
 }
 
 // vim: set expandtab ts=2 sw=2 :

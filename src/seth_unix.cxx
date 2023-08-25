@@ -78,7 +78,6 @@ auto ThreadRoutine(void* arg) -> void* {
     FFI_CALL_TOS_0_ZERO_BP(fp);
   }
   // Note: CoreAPSethTask() will NEVER return
-  // so the below things are just to match the return type
   return nullptr;
 }
 
