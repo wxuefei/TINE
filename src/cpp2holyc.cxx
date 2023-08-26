@@ -245,7 +245,8 @@ auto STK_mp_cnt(void*) -> usize {
   if (first_run) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
-    proc_cnt = si.dwNumberOfProcessors;
+    proc_cnt  = si.dwNumberOfProcessors;
+    first_run = false;
   }
   return proc_cnt;
 #endif
