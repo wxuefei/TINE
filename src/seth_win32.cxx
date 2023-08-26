@@ -9,13 +9,9 @@
 #include <synchapi.h>
 #include <timeapi.h>
 
-#include <thread>
-#include <utility>
+#include <new>
 #include <vector>
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <tos_callconv.h>
@@ -36,7 +32,8 @@ struct CCore {
 };
 
 // look at seth_unix.cxx for an explanation
-std::vector<CCore>  cores;
+CCore* cores;
+
 thread_local CCore* self;
 
 auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
@@ -48,6 +45,8 @@ auto WINAPI ThreadRoutine(LPVOID arg) -> DWORD {
   }
   return 0;
 }
+
+usize proc_cnt;
 
 thread_local void* Fs = nullptr;
 thread_local void* Gs = nullptr;
@@ -97,22 +96,21 @@ void InterruptCore(usize core) {
 }
 
 void CreateCore(std::vector<void*>&& fps) {
-  static usize cnt = 0;
-  if (cnt == 0) {   // boot
-    cores.resize(({ // statement expression
-      SYSTEM_INFO si;
-      GetSystemInfo(&si);
-      si.dwNumberOfProcessors;
-    }));
-  }
-  auto& c    = cores[cnt];
+  static usize core_num = 0;
+  if (core_num == 0)
+    cores = new (std::nothrow) CCore[proc_cnt = ({ // statement expression
+                                       SYSTEM_INFO si;
+                                       GetSystemInfo(&si);
+                                       si.dwNumberOfProcessors;
+                                     })];
+  auto& c    = cores[core_num];
   c.fps      = std::move(fps);
-  c.core_num = cnt;
+  c.core_num = core_num;
   c.thread   = CreateThread(nullptr, 0, ThreadRoutine, &c, 0, nullptr);
   c.mtx      = CreateMutex(nullptr, FALSE, nullptr);
   c.event    = CreateEvent(nullptr, FALSE, FALSE, nullptr);
   SetThreadPriority(c.thread, THREAD_PRIORITY_HIGHEST);
-  ++cnt;
+  ++core_num;
   // I wanted to set thread names but literally wtf,
   // also gcc doesnt support it so whatever
   // https://archive.li/MIMDo
@@ -138,7 +136,8 @@ u64  ticks = 0;
 
 void UpdateTicksCB(UINT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR) {
   ticks += tick_inc;
-  for (auto& c : cores) {
+  for (usize i = 0; i < proc_cnt; ++i) {
+    auto& c = cores[i];
     WaitForSingleObject(c.mtx, INFINITE);
     // check if ticks reached awake_at
     if (ticks >= c.awake_at && c.awake_at > 0) {

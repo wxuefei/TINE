@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <new>
 #include <utility>
 #include <vector>
 
@@ -25,6 +26,11 @@
 
 namespace {
 
+// note: these cores will never be destructed because this is
+// basically an emulation of a real CPU core, CoreAPSethTask never terminates,
+// instead let the host OS clean it up and do whatever with it
+//
+// also note: TempleOS has a hardcoded maximum core count of 128
 struct CCore {
   pthread_t thread;
   /*
@@ -51,13 +57,8 @@ struct CCore {
   std::vector<void*> fps;
 };
 
-// TempleOS has a hardcoded maximum core count of 128 but oh well,
-// let's be flexible in case we get machines with more of them
-//
-// Also note: these cores will never be destructed in C++ because this is
-// basically an emulation of a real CPU core, CoreAPSethTask never terminates,
-// instead let the host OS clean it up and do whatever with it
-std::vector<CCore> cores;
+// array of cores
+CCore* cores;
 // Thread local self-referenced CCore structure
 thread_local CCore* self;
 
@@ -131,20 +132,20 @@ void InterruptCore(usize core) {
 }
 
 void CreateCore(std::vector<void*>&& fps) {
-  static usize cnt = 0;
-  if (cnt == 0) // boot
-    cores.resize(sysconf(_SC_NPROCESSORS_ONLN));
-  auto& c = cores[cnt];
+  static usize core_num = 0;
+  if (core_num == 0) // boot
+    cores = new (std::nothrow) CCore[sysconf(_SC_NPROCESSORS_ONLN)];
+  auto& c = cores[core_num];
   // CoreAPSethTask(...) passed from SpawnCore or
   // IET_MAIN function pointers+kernel entry point from LoadHCRT
   c.fps = std::move(fps);
   pthread_create(&c.thread, nullptr, ThreadRoutine, &c);
   char buf[16];
-  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", c.core_num = cnt);
+  snprintf(buf, sizeof buf, "Seth(Core%" PRIu64 ")", c.core_num = core_num);
   pthread_setname_np(c.thread, buf);
+  ++core_num;
   // pthread_setname_np only works on glibc and FreeBSD
   // on OpenBSD it's pthread_set_name_np. damn, Theo.
-  ++cnt;
 }
 
 #define LOCK_STORE(dst, val) __atomic_store_n(&dst, val, __ATOMIC_SEQ_CST)
