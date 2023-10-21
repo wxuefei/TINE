@@ -1,6 +1,8 @@
-U0 __EditGet(CServer *srv,CDyadStream *stream,CURL *url,CHTTPRequest *req,U8 *file,U8 *edit_text=NULL) {
+U0 __EditGet(CServer *srv,CDyadStream *stream,CURL *url,CHTTPRequest *req,U8 *file,U8 *profan=NULL,U8 *edit_text=NULL) {
   if(!UserPrivCheck(srv,stream,url,req,file)) return;
   U8 *page=GetQueryValue(url->query,"PAGENAME"),*ptr,*ftxt,*t1,*ln,*t2;
+  if(profan)
+    profan=StrNew(profan);
   CConnection *con;
   if(!page||!file) {
 new_page:
@@ -73,6 +75,10 @@ new_page:
       Free(t1),Free(t2);
     }
     WriteLn(stream,NULL,"</TEXTAREA>");
+    if(profan) {
+      WriteLn(stream,NULL,"<DIV CLASS=\"alert alert-danger\">Use of profranity \"%s\"</DIV>",profan);
+    }
+    Free(profan);
     WriteLn(stream,NULL,"<FIELDSET CLASS=\"form-group\">");
     WriteLn(stream,NULL,"<LEGEND>Preview or Publish?</LEGEND>");
     WriteLn(stream,NULL,"<LABEL CLASS=\"paper-radio\" FOR=\"PREVIEW\">");
@@ -102,7 +108,7 @@ U0 EditGet(CServer *srv,CDyadStream *stream,CURL *url,CHTTPRequest *req) {
 U0 EditPost(CServer *srv,CDyadStream *stream,CURL *url,CHTTPRequest *req,CHashTable *tab) {
   CHashGeneric *hash=HashFind("PAGENAME",tab,-1),*hash2=HashFind("PAGETEXT",tab,-1),*hash3=HashFind("PREVIEW",tab,-1);
   CConnection *con;
-  U8 *link,*ftxt,*ptr,*t1,*ln,*plink,*t2;
+  U8 *link,*ftxt,*ptr,*t1,*ln,*plink,*t2,*profan=NULL;
   Bool first_run=TRUE;
   if(!hash&&!(t1=GetQueryValue(url->query,"PAGENAME"))) return;
   if(hash) {
@@ -147,6 +153,7 @@ loop:
       Free(ln);
     }
     *t1++=0;
+    profan=HasProfanity(ftxt);
     if(hash3&&!StrICmp(hash3->user_data1,"PREVIEW")) {
 //Is preview
       if(StrLastOcc(plink,"/")) {
@@ -163,15 +170,17 @@ loop:
         DirMk(t2);
         Free(t2);
       }
-      BackupFile(link+StrLen(WIKI_ROOT),ftxt,StrLen(ftxt),t2=GetCurrentUserName);
-      FileWrite(link,ftxt,StrLen(ftxt));
-      Free(t2);
+      if(!profan) {
+        BackupFile(link+StrLen(WIKI_ROOT),ftxt,StrLen(ftxt),t2=GetCurrentUserName);
+        FileWrite(link,ftxt,StrLen(ftxt));
+        Free(t2);
+      }
     }
     if(hash3)
       if(hash3&&!StrICmp(hash3->user_data1,"PREVIEW"))
-        __EditGet(srv,stream,url,req,plink,ftxt);
+        __EditGet(srv,stream,url,req,plink,profan,ftxt);
       else
-        __EditGet(srv,stream,url,req,link,ftxt);
+        __EditGet(srv,stream,url,req,link,profan,ftxt);
     Free(ftxt);
     goto en;
   }
@@ -194,7 +203,11 @@ loop:
     }
     Free(ftxt);
     WriteLn(stream,NULL,"</TEXTAREA>");
-    WriteLn(stream,NULL,"<FIELDSET CLASS=\"form-group\">");
+    if(profan) {
+      WriteLn(stream,NULL,"<DIV CLASS=\"alert alert-danger\">Use of profranity \"%s\"</DIV>",profan);
+    }
+    Free(profan);
+    WriteLn(stream,NULL,"<FIELDSET CLASS=\"form-group\">");
     WriteLn(stream,NULL,"<LEGEND>Preview or Publish?</LEGEND>");
     WriteLn(stream,NULL,"<LABEL CLASS=\"paper-radio\" FOR=\"PREVIEW\">");
     WriteLn(stream,NULL,"<INPUT TYPE=\"radio\" ID=\"PREVIEW\" NAME=\"PREVIEW\" VALUE=\"PREVIEW\" CHECKED=\"checked\">");

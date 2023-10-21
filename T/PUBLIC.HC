@@ -10,8 +10,8 @@ public extern CAutoCompleteGlbls ac;
 public extern CAutoCompleteDictGlbls acd;
 
 #help_index "Bit"
-#help_file "::/Doc/Bit"
-
+public extern I64 BCnt(I64 d);
+public extern U8 *rev_bits_table,*set_bits_table;
 
 #help_index "Boot"
 #help_file "::/Doc/Boot"
@@ -594,7 +594,6 @@ extern U0 MsInit();
 extern U0 MsUpdate(I64 x,I64 y,I64 z,Bool l,Bool r);
 
 #help_index "MultiCore"
-#help_file "::/Doc/MultiCore"
 public extern CTask *SpawnQue(U0 (*fp_addr)(U8 *data),U8 *data=NULL,
 	U8 *task_name=NULL,I64 target_cpu,
 	CTask *parent=NULL, //NULL means adam
@@ -1481,4 +1480,3 @@ public extern I64 HashEntrySize2(CHashSrcSym *tmph);
 public extern I64 HashTableSize2(CHashTable *table);
 
 #help_index ""
-

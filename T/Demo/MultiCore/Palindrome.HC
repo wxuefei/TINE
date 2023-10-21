@@ -71,7 +71,7 @@ U0 MPPalindrome(I64 dummy=0)
 
     src++;
   }
-  LBtr(&mp_not_done_flags,Gs->num);
+  LBtr(&mp_not_done_flags,Gs->num);
 }
 
 U0 Palindrome(U8 *filename)

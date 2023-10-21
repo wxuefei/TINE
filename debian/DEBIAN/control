@@ -1,0 +1,8 @@
+Package: 3days
+Version: 0.6.00
+Section: development
+Priority: optional
+Architecture: amd64
+Depends: libsdl2-dev,portaudio19-dev 
+Maintainer: nrootconauto@gmail.com
+Description: A HolyC Compiler.

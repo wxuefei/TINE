@@ -108,6 +108,7 @@ $FG,2$Prec$FG$	Precedence
 $FG,2$Prev$FG$	Previous
 $FG,2$Pri$FG$	Primary
 $FG,2$Prod$FG$	Product, Production
+$FG,2$Prof$FG$	Profile, Profiler
 $FG,2$Prs$FG$	Parse, Parser
 $FG,2$Prt$FG$	Partition
 $FG,2$FunSeg$FG$ Program Section

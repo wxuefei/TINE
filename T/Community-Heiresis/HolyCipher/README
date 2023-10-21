@@ -1,0 +1,8 @@
+	HolyCipher
+
+I was reading this article
+about Serpent and Rijndael
+and I had basically no idea
+how cryptography works so
+I decided to write a simple
+cipher in HolyC.

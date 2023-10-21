@@ -1,0 +1,14 @@
+name: 3days
+version:  0.6.00
+comment: A HolyC Compiler
+desc: <<EOD
+This is a 64bit HolyC JIT Compiler,it also includes an assembler.
+EOD
+arch: amd64
+maintainer: nrootconauto@gmail.com
+prefix: /
+origin: devel/3Days
+deps: {
+    portaudio: {origin: audio/portaudio},
+    sdl2: {origin: devel/sdl20},
+}

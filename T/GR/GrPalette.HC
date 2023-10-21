@@ -24,12 +24,6 @@ public CBGR48 gr_palette_gray[COLORS_NUM]={
 0x888888888888,0x999999999999,0xAAAAAAAAAAAA,0xBBBBBBBBBBBB,
 0xCCCCCCCCCCCC,0xDDDDDDDDDDDD,0xEEEEEEEEEEEE,0xFFFFFFFFFFFF};
 
-CBGR48 pal[16];
-
-CBGR48 GrPaletteColorGet(I64 i)  {
-	return pal[i];
-}
-
 public U0 GrPaletteGet(CBGR48 *bgr48)
 {//16 colors
   I64 i;
@@ -40,18 +34,9 @@ public U0 GrPaletteGet(CBGR48 *bgr48)
 public U0 GrPaletteSet(CBGR48 *bgr48)
 {//16 colors
   I64 i;
-  for (i=0;i<COLORS_NUM;i++) {
-    pal[i]=bgr48[i];
-    _GrPaletteColorSet(i,bgr48[i]);
-  }
+  for (i=0;i<COLORS_NUM;i++)
+    GrPaletteColorSet(i,bgr48[i]);
 }
-
-public U0 GrPaletteColorSet(I64 color,CBGR48 bgr48)
-{//16 colors
-  pal[color]=bgr48;
-  _GrPaletteColorSet(color,bgr48);
-}
-
 
 public U0 PaletteSetStd()
 {//Activate std palette.

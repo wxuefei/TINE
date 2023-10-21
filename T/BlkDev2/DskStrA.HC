@@ -308,14 +308,15 @@ returns default.
       ext=MStrPrint(".%s",_extension);
   } else
     ext=StrNew("");
-//Changed to >1 to avoid chopping off 'T:[/]' in 'T:/'
-  while (StrOcc(st,'/')>1&&!IsDir(st))
+  while (StrOcc(st,'/')&&!IsDir(st))
     StrLastRem(st,"/");
-//If we have a "T:/file",remove "file" to turn into "T:/"
-  if(StrOcc(st,'/')==1&&!IsDir(st)) {
-    st2=StrLastOcc(st,"/");
-    st2[0]='/';
-    st2[1]=0;
+//Changed by nroot,I made it this way so "T:/some_file" will strip down to "T:/".
+//This is important as EdCodeTools calls this to get the directory name
+//This may make bugs for ultra othodox code,but I think it will fix more bugs
+  if(StrLen(st)==2&&st[1]==':') {
+    st2=MStrPrint("%s/",st);
+    Free(st);
+    return st2;
   }
   while (StrOcc(st,'/')) {
     st2=StrNew(st);

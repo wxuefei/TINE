@@ -1,4 +1,5 @@
 #help_index "Snd/Music/Apps"
+//Option(OPTf_BOUNDS_CHECK,1);
 
 Cd(__DIR__);;
 #include "JukeBox"

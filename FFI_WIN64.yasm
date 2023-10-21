@@ -1,49 +1,27 @@
+;Poo Poo FFI for Windows64 to TempleOS
 SECTION .text
 GLOBAL FFI_CALL_TOS_0
 FFI_CALL_TOS_0:
 PUSH RBP
-MOV RBP,RSP;save current stack
-AND RSP,-0x10 ;This will chop off the first hex digit to align to 16(stack grows down so doesnt mess up stack)
-PUSH RAX ;Align to 16 because when i push rbx itd be rsp ≅ 16 (mod 8)
-PUSH RBX ;mandatory register to be saved in win32 abi
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-CALL RCX ;1st argument in win32 abi
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
+MOV RBP,RSP
+AND RSP,-0x10
+MOV RAX,RCX
+PUSH RAX ;Align to 16
+PUSH RBX
+CALL RAX
 POP RBX
 LEAVE
 RET
 
-;we dont push rax for functions with an even number of args
 GLOBAL FFI_CALL_TOS_1
 FFI_CALL_TOS_1:
 PUSH RBP
 MOV RBP,RSP
 AND RSP,-0x10
+MOV RAX,RCX
 PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
 PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
+CALL RAX
 POP RBX
 LEAVE
 RET
@@ -53,23 +31,12 @@ FFI_CALL_TOS_2:
 PUSH RBP
 MOV RBP,RSP
 AND RSP,-0x10
+MOV RAX,RCX
 PUSH RAX ; Align to 16
 PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
 PUSH R8
 PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
+CALL RAX
 POP RBX
 LEAVE
 RET
@@ -79,28 +46,17 @@ FFI_CALL_TOS_3:
 PUSH RBP
 MOV RBP,RSP
 AND RSP,-0x10
+MOV RAX,RCX
 PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
 PUSH R9
 PUSH R8
 PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
+CALL RAX
 POP RBX
 LEAVE
 RET
 
-; https://archive.md/4HDA0
+;https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-170
 ; Fist stack arg:0x30
 ; R9 HOME+0x28 
 ; R8 HOME+0x20
@@ -115,143 +71,11 @@ MOV RBP,RSP
 AND RSP,-0x10
 PUSH RAX ; align to 16
 PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
 PUSH QWORD [RBP+0x30]
 PUSH R9
 PUSH R8
 PUSH RDX
 CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
-POP RBX
-LEAVE
-RET
-
-GLOBAL FFI_CALL_TOS_5
-FFI_CALL_TOS_5:
-PUSH RBP
-MOV RBP, RSP
-AND RSP, -0x10
-PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-PUSH QWORD [RBP + 0x38]
-PUSH QWORD [RBP + 0x30]
-PUSH R9
-PUSH R8
-PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
-POP RBX
-LEAVE
-RET
-
-GLOBAL FFI_CALL_TOS_6
-FFI_CALL_TOS_6:
-PUSH RBP
-MOV RBP, RSP
-AND RSP, -0x10
-PUSH RAX ; 16 Align
-PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-PUSH QWORD [RBP + 0x40]
-PUSH QWORD [RBP + 0x38]
-PUSH QWORD [RBP + 0x30]
-PUSH R9
-PUSH R8
-PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
-POP RBX
-LEAVE
-RET
-
-GLOBAL FFI_CALL_TOS_7
-FFI_CALL_TOS_7:
-PUSH RBP
-MOV RBP, RSP
-AND RSP, -0x10
-PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-PUSH QWORD [RBP + 0x48]
-PUSH QWORD [RBP + 0x40]
-PUSH QWORD [RBP + 0x38]
-PUSH QWORD [RBP + 0x30]
-PUSH R9
-PUSH R8
-PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
-POP RBX
-LEAVE
-RET
-
-GLOBAL FFI_CALL_TOS_8
-FFI_CALL_TOS_8:
-PUSH RBP
-MOV RBP, RSP
-AND RSP, -0x10
-PUSH RAX ; 16 Align
-PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-PUSH QWORD [RBP + 0x50]
-PUSH QWORD [RBP + 0x48]
-PUSH QWORD [RBP + 0x40]
-PUSH QWORD [RBP + 0x38]
-PUSH QWORD [RBP + 0x30]
-PUSH R9
-PUSH R8
-PUSH RDX
-CALL RCX
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
 POP RBX
 LEAVE
 RET
@@ -260,24 +84,12 @@ GLOBAL FFI_CALL_TOS_0_ZERO_BP
 FFI_CALL_TOS_0_ZERO_BP:
 PUSH RBP
 PUSH RBX
-PUSH RDI ; i save everything here
-PUSH RSI ; just to be safe
-PUSH R12
-PUSH R13
-PUSH R14
-PUSH R15
-PUSH 0 ; Align stack to 16
-PUSH 0 ;fake return address so the stack trace deliberately ends here(doesn't matter since it'll be reset to normal after the function returns and rbp is popped)
-PUSH 0 ; make it look like it was called from null
+PUSH 0 ;Align stack to 16
+PUSH 0 ;"Empty enter function"
+PUSH 0 ;"old RBP"
 MOV RBP,RSP
 CALL RCX
 ADD RSP,24
-POP R15
-POP R14
-POP R13
-POP R12
-POP RSI
-POP RDI
 POP RBX
-POP RBP ; no need to leave because rbp == rsp(__cdecl)
+POP RBP
 RET

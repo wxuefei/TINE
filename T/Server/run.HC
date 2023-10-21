@@ -1,6 +1,6 @@
 Cd("T:/");; //We are not serving from RootFS
 Cd("/Server");;
-#define WIKI_ADMIN_EMAILS "enzymical@duck.com"
+#define WIKI_ADMIN_EMAILS "rnootconauto@gmail.com"
 #define WIKI_SERVER_PORT 8080
 
 U0 ServerYield() {
@@ -58,14 +58,17 @@ if(!FileFind(WIKI_PREVIEW))
   DirMk(WIKI_PREVIEW);
 if(!FileFind(WIKI_BACKUP))
   DirMk(WIKI_BACKUP);
+#include "AUTH.HC"
 #include "DynamStr.HC"
 #include "utils.HC"
 #include "etags.HC"
 #include "http.HC"
 #include "header_footer.HC"
 #include "find.HC"
+#include "filter.HC"
 #include "diff.HC"
-#include "backup.HC"
+#include "filter.HC"
+#include "backup.HC"
 #include "edit.HC"
 #include "index.HC"
 #include "cache.HC"

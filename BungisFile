@@ -1,0 +1,18 @@
+linenoise.c.o=gcc -c ext/ln/linenoise.c -o linenoise.c.o=ext/ln/linenoise.c
+sound.c.o=gcc -c `pkg-config --cflags portaudio-2.0` sound.c   -o sound.c.o=sound.c,3d.h
+main.c.o=gcc -c `pkg-config --cflags x11` main.c -o main.c.o=main.c,3d.h
+window.c.o=gcc -c `pkg-config --cflags x11` window.c -o window.c.o=window.c,3d.h
+dyad.c.o=gcc -c ext/dyad/src/dyad.c -o dyad.c.o=ext/dyad/src/dyad.c
+vec.c.o=gcc -c ext/vec/src/vec.c -o vec.c.o=ext/vec/src/vec.c
+map.c.o=gcc -c ext/map/src/map.c -o map.c.o=ext/map/src/map.c
+TOSPrint.c.o=gcc -c TOSPrint.c -o TOSPrint.c.o=TOSPrint.c,3d.h
+escaper.c.o=gcc -c ext/C_Unescaper/escaper.c -o escaper.c.o=ext/C_Unescaper/escaper.c
+dbg.c.o=gcc -c dbg.c -o dbg.c.o=dbg.c,3d.h
+vfs.c.o=gcc -c vfs.c -o vfs.c.o=vfs.c,3d.h
+multic.c.o=gcc -c multic.c -o multic.c.o=multic.c,3d.h
+tos_aot.c.o=gcc -c tos_aot.c -o tos_aot.c.o=tos_aot.c,3d.h
+poopalloc.c.o=gcc -c poopalloc.c -o poopalloc.c.o=poopalloc.c,3d.h
+runtime.c.o=gcc -c runtime.c -o runtime.c.o=runtime.c,3d.h
+argtable3.c.o=gcc -c ext/argtable3/argtable3.c -o argtable3.c.o=ext/argtable3/argtable3.c
+FFI_SYSV.yasm.o=yasm -f elf64 -o FFI_SYSV.yasm.o FFI_SYSV.yasm=FFI_SYSV.yasm 
+3d_loader=gcc -lX11 -lm -lXext -lpthread `pkg-config --libs portaudio-2.0` *.o -o 3d_loader=AllAbove

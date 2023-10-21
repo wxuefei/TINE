@@ -1,0 +1,22 @@
+CC=clang
+CPP=clang++
+CFLAGS=-DUSE_NETWORKING -DTARGET_WIN32 -Ofast -g3 -lm -m64 -fno-omit-frame-pointer -static -DUSE_OPENGL -Wno-int-conversion -Wno-int-conversion -flto=full
+CFILES=WIN_sound.c main.c ext/vec/src/vec.c ext/map/src/map.c TOSPrint.c ext/C_Unescaper/escaper.c ext/argtable3/argtable3.c runtime.c poopalloc.c tos_aot.c multic.c vfs.c  CommandLineToArgvA.c ext/dyad/src/dyad.c dbg.c
+CPPFILES=WIN_window.cpp
+AFILES=FFI_WIN64.yasm 
+CPPOBJS=$(foreach o,$(CPPFILES),$(o).obj)
+COBJS=$(foreach o,$(CFILES),$(o).obj)
+AOBJS=$(foreach o,$(AFILES),$(o).obj) 
+OBJS=$(COBJS) $(AOBJS) $(CPPOBJS)
+LIBS=ext/wineditline-2.206/lib64/libedit_static.a  -lm -lshlwapi -ldbghelp  -lopengl32 -lsynchronization -lshcore -lws2_32 -lwinmm -Ofast -ld2d1 -static-libstdc++  -o 3d_loader.exe 
+all: $(OBJS)
+	$(CPP)  -mwindows  $(OBJS) $(LIBS)  -o ./3d_loader.exe -static -flto=full -fuse-ld=lld
+clean:
+	rm $(OBJS)
+%.cpp.obj: %.cpp
+	$(CPP) $(CFLAGS) -fpermissive -c $< -o $@
+%.c.obj: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+%.yasm.obj: %.yasm
+	yasm -f win64 -o $@ $< 
+  

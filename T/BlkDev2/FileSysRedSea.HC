@@ -100,6 +100,7 @@ U0 RedSeaFmt(U8 drv_let,Bool quick=TRUE)
   I64 i,n,root_dir_blks;
   try {
     DrvLock(dv);
+//	DrvTypeSet(drv_let,FSt_REDSEA);
     DrvTypeSet(drv_let,FSt_FAT32);
     dv->fs_type=FSt_REDSEA;
     br->signature=MBR_PT_REDSEA;

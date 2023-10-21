@@ -206,6 +206,7 @@ U0 BlkDevsInitAll()
   if(__IsCmdLine) {
     bd=BlkDevNextFreeSlot('Z',BDT_VIRT);bd->unit=0;
     BlkDevAdd(bd,0,0,0);
+    blkdev.boot_drv_let='Z';
   }
 
 /*  #exe {
