@@ -23,7 +23,7 @@ U0 UnlockedInc()
   CJob *tmpm0,*tmpm1;
   glbl=0;
   tmpm0=JobQue(&MPUnlockedInc,NULL,0,0);
-  tmpm1=JobQue(&MPUnlockedInc,NULL,1,0);
+  tmpm1=JobQue(&MPUnlockedInc,NULL,1,0);
   JobResGet(tmpm0);
   JobResGet(tmpm1);
   "Correct Cnt:%X Actual Cnt:%X\n",CNT*2,glbl;

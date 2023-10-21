@@ -221,30 +221,6 @@ MALLOC_ALMOST_DONE:
 @@100:	POP	RAX*/
 
 @@105:
-#ifdef BC_ENABLE
-	PUSH R8
-	PUSH	RAX
-	MOV RAX,U64 CMemUsed.blk-CMemUsed.start[RAX]
-	MOV	RCX,U64 SF_ARG1[RBP] //size
-	//Heres the deal,eailer we added 16 to the size,8 belongs to "extra room",and 8 is "useless"(used for catching OOB's)
-	//Get rid of "useless" room
-	SUB	RCX,8
-	SHR	RCX,3 //Shadow is 8:1
-	MOV	RBX,U64 [RSP] //Return ptr
-	SUB	RBX,RAX //Get offset from ret_ptr to CMemBlk
-	MOV	R8,RAX
-	MOV	RAX,U64 CMemBlk.shadow[RAX]
-	SHR	RBX,3 //Shadow is 8:1
-	LEA	RAX,U64 [RAX+RBX*1]
-	PUSH	RDI
-	MOV	RDI,RAX
-	MOV	AL,8
-	REP_STOSB
-	POP	RDI
-	POP	RAX
-	POP	R8
-	
-#endif
 MALLOC_FINAL_EXIT:
 	CMP	U32 CTask.task_signature[R8],TASK_SIGNATURE_VAL
 	JNE @@01
@@ -366,29 +342,6 @@ _FREE::
 	MOV	RBX,U64 CHeapCtrl.heap_hash[RAX+RDX]
 	MOV	U64 CMemUnused.next[RSI],RBX
 	MOV	U64 CHeapCtrl.heap_hash[RAX+RDX],RSI
-#ifdef BC_ENABLE
-	PUSH	R8
-	PUSH	RDX
-	MOV RAX,U64 SF_ARG1[RBP]
-	MOV RAX,U64 CMemUsed.blk-CMemUsed.start[RAX]
-	//Dude CMemUnused.size includes internal size too,so subtract
-	MOV	RCX,U64 CMemUnused.size [RSI] //size
-	SUB	RCX,CMemUsed.start	
-	SHR	RCX,3 //Shadow is 8:1
-	MOV	RBX,SF_ARG1[RBP] //ptr
-	SUB	RBX,RAX //Get offset from ptr to CMemBlk
-	MOV	R8,RAX
-	MOV	RAX,U64 CMemBlk.shadow[RAX]
-	SHR	RBX,3 //Shadow is 8:1
-	LEA	RAX,U64 [RAX+RBX*1]
-	PUSH	RDI
-	MOV	RDI,RAX
-	MOV	AL,0
-	REP_STOSB
-	POP	RDI
-	POP	RDX
-	POP	R8
-#endif
 	JMP	@@55
 
 @@50:	SUB	RSI,sizeof(CMemBlk)

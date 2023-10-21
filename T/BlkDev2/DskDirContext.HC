@@ -3,13 +3,19 @@ U0 DirContextDel(CDirContext *dirc,Bool restore=TRUE)
   CBlkDev *bd;
   if (!dirc) return;
   if (restore) {
+    if(!DrvChk(dirc->old_dv,FALSE))
+      goto defacto;
     bd=dirc->old_dv->bd;
+    if(!BlkDevChk(bd,FALSE))
+       goto old_dv;
     if (!(bd->flags & BDF_INIT_IN_PROGRESS)) {
+old_dv:
       if (dirc->old_dir) {
 	Drv(Drv2Let(dirc->old_dv));
 	Cd(dirc->old_dir);
       }
     } else {
+defacto:
       Fs->cur_dv=dirc->old_dv;
       Free(Fs->cur_dir);
       Fs->cur_dir=StrNew("/");

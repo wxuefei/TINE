@@ -1,5 +1,5 @@
-#define COMPONET_COMPILER 1
-#define COMPONET_GRAPHICS 1
+#define COMPONENT_COMPILER 1
+#define COMPONENT_GRAPHICS 1
 #define IMPORT_BUILTINS 1
 #define INIT_EVERYTHING 1
 #define FPTRS 1
@@ -32,9 +32,6 @@ static U0 BootstrapImportSymbol(U8 *name,U8 *ptr,I64 type) {
 #endif
     }
 }
-static U0 __BootstrapForeachSymbol__(U0 *cptr) {
-    __BootstrapForeachSymbol(cptr);
-}
 asm {
 //I am embeding these into the binary so end-users don't mess up thier KERNEL*.HH files
   KERNELA_BIN::
@@ -47,76 +44,70 @@ asm {
 };
 U0 LoadImps() {
   try {
-    ExePutS2("#define FPTRS\n;;");
-    ExePutS2(KERNELA_BIN,"T:/KERNELA.HH");
+   ExePutS("#define FPTRS\n;;");
+    ExePutS(KERNELA_BIN,"KERNELA.HH");
     __BootstrapForeachSymbol(&BootstrapImportSymbol);
 #ifdef GEN_HEADERS
     DocWrite(unfound);
     DocDel(unfound);
 #endif
 //Load asm externs second
-    ExePrint2("#define BOOT_3DAYS\n;;");
-    ExePutS2(KERNELB_BIN,"T:/KERNELB.HH");
+    ExePrint("#define BOOT_TOS\n;;");
+    ExePutS(KERNELB_BIN,"KERNELB.HH");
   } catch {
     TOSPrint("FDSF:%s\n",&(Fs->except_ch));
     Fs->catch_except=TRUE;
   };
 }
-static U0 StartUpCore1(I64) {
-}
+
 U0 StartUpTasks()
 {
-  CTask *user1,*user2;
-  user1=User;
-  user2=User;
-  WinToTop(user1);
+  User;
   WinTileVert;
   try {
-    ExeFile("/WallPaper.HC");
+    ExeFile("WallPaper.HC");
     ExePrint("WallPaperInit;;");
-  } catch
-    PutExcept;
-  ACInit("T:/KERNEL*.HH*");
+    ExePrint("#include \"AMOUSE.HC\";;");
+  } catch PutExcept;
+  ACInit("KERNEL*.HH*");
   AutoComplete(ON);
 }
-U0 Adam(U8 *) {
-	I64 idx;
-	LoadImps;
-	CTask *user;
-	cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
-	for(idx=Gs->num+1;idx<mp_cnt;idx++) {
-		__SpawnCore(idx,&CoreAPSethTask);
-                while(!cpu_structs[idx])
-                  PAUSE;
-	}
-#ifndef BC_ENABLE
-    if(FileFind("HCRT.DBG.Z"))
-		DbgInfoRead("HCRT.DBG.Z");
-#else
-    if(FileFind("HCRT_BC.DBG.Z"))
-		DbgInfoRead("HCRT_BC.DBG.Z");
-#endif
-        if(__CmdLineBootText)
-          ExePrint2("%s;\n",__CmdLineBootText);
-	if(!__IsCmdLine) {
-		sys_winmgr_task=Spawn(&WinMgrTask);
-		//Grab pointer
-		ExePrint("#include \"AMOUSE.HC.Z\";;");
-	} else {
-		user=User;
-		DeathWait(&user);
-		Exit3Days;
-	}
-        Spawn(&StartUpCore1,NULL,,mp_cnt-1);
-	Refresh; //Wait for window manager.
-	StartUpTasks;
-	//We are "adam" task
-	SrvTaskCont;
+U0 __FreeCPUs() {
+  Free(cpu_structs),
+  Free(mp_cores);
+  Free(_boot_gs);
 }
+
+cpu_structs[Gs->num=__CoreNum]=Gs;//It should be 0
+SetFs(adam_task);
+//DEBUGGING INFORMATION WILL BE APPENDED TO THESE SYMBOLS
+LoadImps;
+//Load symbols into adam_task
+if(FileFind("HCRT.DBG.Z"))
+  DbgInfoRead("HCRT.DBG.Z");
 //Our entering thread doesnt have a cur_thrd,so spawn one
-adam_task=Spawn(&Adam,NULL,"Adam",,);
 Gs->seth_task=Spawn(&CoreAPSethTask,NULL,"Seth");
-//Dont Exit
-BirthWait(&adam_task);
-DeathWait(&adam_task);
+
+U0 __InitCPUs() {
+  I64 idx;
+  for (idx=Gs->num+1;idx<mp_cnt;++idx) {
+    __SpawnCore(idx,&CoreAPSethTask);
+    while (!Bt(&seth_tasks_ready,idx))
+      PAUSE;
+  }
+}
+__InitCPUs;
+try {
+  ExePrint("%s;\n",__CmdLineBootText);
+} catch PutExcept;
+if (__IsCmdLine) {
+  CTask *u=User;
+  DeathWait(&u);
+  ExitTOS;
+} else {
+  sys_winmgr_task=Spawn(&WinMgrTask);
+  Refresh; //Wait for window manager.
+  StartUpTasks;
+  SrvTaskCont;
+}
 #include "PUBLIC.HC";;

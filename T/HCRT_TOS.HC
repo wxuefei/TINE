@@ -1,9 +1,13 @@
+#exe {Cd(__DIR__);;};;
 #define FPTRS 1
 #include "KERNELA.HH"
 Bool dol_doc_inited=FALSE;
 Bool IsRaw() {
-	return __IsCmdLine;
+  return __IsCmdLine;
 }
+asm {
+  ALIGN 16,0; //MUST ALIGN SYS_FIXED_AREA TO 16 TO AVOID SEGUALTS WITH FXSAVE
+};
 CSysFixedArea sys_fixed_area,*SYS_FIXED_AREA;
 SYS_FIXED_AREA=&sys_fixed_area;
 U0 InitFX() {
@@ -13,72 +17,75 @@ U0 InitFX() {
   FXSAVE U64[RAX]
 }
 InitFX;
-extern U0 InitHeaps();
-InitHeaps;
 CHeapCtrl ahc,ahd;
+CTask _boot_task;
+SetFs(&_boot_task);
 HeapCtrlInit(&ahc,Fs,0);
 HeapCtrlInit(&ahd,Fs,1);
-SetFs(MAlloc(sizeof(CTask),&ahc));
 Fs->data_heap=&ahd;
 Fs->code_heap=&ahc;
-Fs->cur_dir=StrNew("T:/",&ahc);
+Fs->cur_dir=StrNew(_BootDrv,&ahd);
 U32 SYS_CTRL_ALT_FLAGS=0;
-CCPU *mp_cores[64];
+CCPU **mp_cores=CAlloc(mp_cnt*sizeof CCPU*,&ahd);
+CCPU *_boot_gs;
 CCPU *Gs() {
-	return GetGs;
+  if(!GetGs) // this part only will be executed on boot
+    SetGs(_boot_gs=CAlloc(sizeof CCPU,&ahd));
+  return GetGs;
 }
 mp_cores[0]=Gs;
 QueInit(&(Gs->next_dying));
 CTask *Fs() {
-	return GetFs;
+  return GetFs;
 }
 TaskInit(Fs,0);
-#include "KGLBLS.HC"
+#include "Kernel/KGLBLS.HC"
 #include "DOLDOC/DocExt.HC"
+#include "Kernel/KUTILS.HC"
+#include "Kernel/KMATH.HC"
+#include "Kernel/HASH.HC"
+#include "Kernel/STR.HC"
+#include "KERNELB.HH"
 #include "GR/Gr.HH"
 public extern I64 ExeCmdLine(CCmpCtrl *cc);
 CTask *adam_task=Fs;
-#include "KMATH.HC"
-#include "STR.HC"
-#include "HASH.HC"
-#include "CHASH.HC"
-#include "KUTILS.HC"
-#include "KERNELB.HH"
-#include "KDate.HC"
-#include "STRB.HC"
-#include "FUNSEG.HC"
-#include "STRPRINT.HC"
-#include "KDATATYPES.HC"
-#include "COMPRESS.HC"
-#include "QSORT.HC"
-#include "KDBG.HC"
-#include "KEXCEPT.HC"
-#include "DISPLAY.HC"
+#include "Kernel/KDate.HC"
+#include "Compiler/CHASH.HC"
+#include "Kernel/STRB.HC"
+#include "Kernel/FUNSEG.HC"
+#include "Kernel/STRPRINT.HC"
+#include "Kernel/KDATATYPES.HC"
+#include "Kernel/COMPRESS.HC"
+#include "Kernel/QSORT.HC"
+#include "Kernel/KDBG.HC"
+#include "Kernel/KEXCEPT.HC"
+#include "Kernel/DISPLAY.HC"
 #include "MAlloc2.HC"
 #include "BlkDev2/MakeBlkDev.HC"
-#ifdef COMPONET_COMPILER
-#include "CMP_PRJ.HC"
+#include "Kernel/Sched.HC"
+#ifdef COMPONENT_COMPILER
+#include "Compiler/CMP_PRJ.HC"
 CInit;
 #endif
-#include "AMATH.HC"
-#include "FONT.HC"
-#include "FONT2.HC"
-#include "KMISC.HC"
-#include "KBMESSAGE.HC"
-#include "MOUSE.HC"
-#include "JOB.HC"
-#include "KTASK.HC"
-#include "KDefine.HC"
-#include "KLOAD.HC"
-#include "KEND.HC"
-#include "EDLITE.HC"
-#ifdef COMPONET_GRAPHICS
-#include "TASK_SETTINGS.HC"
-#include "ASND.HC"
-#include "AMathODE.HC.Z";
+#include "Adam/AMATH.HC"
+#include "Kernel/FONT.HC"
+#include "Kernel/FONT2.HC"
+#include "Kernel/KMISC.HC"
+#include "Kernel/KBMESSAGE.HC"
+#include "Kernel/MOUSE.HC"
+#include "Kernel/JOB.HC"
+#include "Kernel/KTASK.HC"
+#include "Kernel/KDefine.HC"
+#include "Kernel/KLOAD.HC"
+#include "Kernel/KEND.HC"
+#include "Kernel/EDLITE.HC"
+#ifdef COMPONENT_GRAPHICS
+#include "Adam/TASK_SETTINGS.HC"
+#include "Adam/ASND.HC"
+#include "Adam/AMathODE.HC.Z";
 #include "GR/MakeGr.HC"
-#include "MENU.HC"
-#include "WIN.HC"
+#include "Adam/MENU.HC"
+#include "Adam/WIN.HC"
 #include "DOLDOC/MakeDoc.HC"
 //See KeyDev.HC in TempleOS
 U0 PutS(U8 *st)
@@ -130,44 +137,31 @@ U0 PutKey(I64 ch=0,I64 sc=0)
   }
 }
 #help_index "Ctrls"
-#include "CTRLSA.HC"
-#include "CTRLSBTTN.HC"
-#include "CTRLSSLIDER.HC"
-#include "WINMGR.HC"
+#include "Ctrls/CTRLSA.HC"
+#include "Ctrls/CTRLSBTTN.HC"
+#include "Ctrls/CTRLSSLIDER.HC"
+#include "Adam/WINMGR.HC"
 #include "AutoComplete/MakeAC.HC"
 #include "God/MakeGod.HC"
-#include "Find.HC"
-#include "ARegistry.HC"
-#include "AHash.HC"
-#include "ADskA.HC"
-#include "ADskB.HC"
-#include "ADBG.HC"
-#include "Sched.HC"
+#include "Adam/Opt/Find.HC"
+#include "Adam/ARegistry.HC"
+#include "Adam/AHash.HC"
+#include "Adam/ADskA.HC"
+#include "Adam/ADskB.HC"
+#include "Adam/ADBG.HC"
 #include "Diff.HC"
-#include "KeyDev.HC"
-#include "FILEMGR.HC"
-#include "Training.HC.Z"
-#include "InFile.HC"
-#include"Community-Heiresis/HolyCipher/CIPHER.HC";
-#include "Mount.HC"
-#include "TaskRep.HC"
-#include "DocUtils.HC"
-#include "StrUtils.HC"
-#include "Merge.HC"
+#include "CPURep.HC"
+#include "Kernel/KeyDev.HC"
+#include "Adam/FILEMGR.HC"
+#include "Adam/Training.HC"
+#include "Adam/InFile.HC"
+#include "Adam/Opt/Mount.HC"
+#include "Adam/TaskRep.HC"
+#include "Adam/Opt/DocUtils.HC"
+#include "Adam/Opt/StrUtils.HC"
+#include "Adam/Opt/Merge.HC"
 #include "HomeKeyPlugIns.HC"
-/*I64 CheckSum(U8 *data,I64 len) {
-  I64 sum=0;
-  while(--len>=0) sum+=data[len];
-  return sum;
-}
-Bool IsEncryptedRight(U8 *file) {
-  I64 len,ret;
-  U8 *data=__FileRead(file,&len),*tmp,*buf2=CAlloc(len);
-  tmp=GetCipherPasswd;
-  Decrypt(data,buf2,len-8,tmp,StrLen(tmp)); //See above blinking note
-  ret=data[len-8](U64)==CheckSum(buf2,len-8);
-  Free(data),Free(tmp);
-  return ret;
-}
-*/
+
 #endif
+
+#include "Boot/MakeBoot.HC"

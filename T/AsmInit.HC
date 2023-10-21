@@ -209,6 +209,5 @@ U0 AsmHashLoad()
     HashAdd(tmpc,cmp.asm_hash);
     cmp.internal_types[tmpc->raw_type]=tmpc;
   }
-  cmp.	asm_hash->next=adam_task->hash_table;
-  adam_task->hash_table=cmp.asm_hash;
+  adam_task->hash_table->next=cmp.asm_hash;
 }

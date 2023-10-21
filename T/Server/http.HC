@@ -371,7 +371,7 @@ U0 ParseRequest(CConnection *con) {
 	}
 }
 U0 SReadLine(CDyadStream *s,U8 *data,I64 len,CUniqueToken *ut) {
-  static I64 spawn_at=0;
+  static I64 spawn_at=0;
   CConnection *first,*con,*con2;
   CHashGeneric *hash;
   U8 *buf,*buf2;
@@ -442,6 +442,7 @@ qloop:
     if(!StrICmp(Trim(buf),"Content-Type")) {
       if(StrIMatch("multipart/form-data",buf2)) {
         t2=con->boundary;
+        if(!StrIMatch("boundary=",buf2)) goto malformed;
         StrScan(StrFirstOcc(buf2,";")+1,"%sboundary=%s\x0d\n",&t1,&t2);
         LBts(&con->state,CONf_AWAIT_BOUNDARY);
       } else if(StrIMatch("urlencoded",buf2)) {
@@ -454,6 +455,7 @@ qloop:
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
 etag_loop:
     t1=buf;
+    if(StrOcc(data,'\"')!=2) goto malformed;
     data=StrScan(data,"\"%s\"",&t1);
     if(ETagChanged(con->server,buf)){
       con->etag_changed=1;
@@ -473,14 +475,20 @@ cloop:;
       odata=data;
       StrCpy(buf,"");
       StrCpy(buf2,"");
+      if(!StrFirstOcc(data,"="))
+        goto malformed;
       t1=buf,t2=buf2;
-      data=StrScan(data,"%s=%s;",&t1,&t2);
+      if(StrOcc(data,';'))
+        data=StrScan(data,"%s=%s;",&t1,&t2);
+      else
+        data=StrScan(data,"%s=%s",&t1,&t2);
 //Im not allowing people to spam Cookies to my server,so only predefined ones will be accepted
       if(!StrCmp(buf,WIKI_SESSION_COOKIE)){
 	Free(con->session_cookie);
         con->session_cookie=MStrUtil(buf2,SUF_REM_SPACES);
 	con->session_cookie[16]=0;
       }
+      if(data)
       if(*data==' ') {
         data++;
 	goto cloop;
@@ -537,11 +545,15 @@ loop:
 	  data=SkipWhitespace(data);
 	  if(!StrNICmp(data,"name",StrLen("name"))) {
 	    t2=con->field;
+	    if(!StrFirstOcc(data,"\"")) goto malformed;
+	    if(StrOcc(data,'\"')!=2) goto malformed;
 	    data=StrScan(StrFirstOcc(data,"\""),"\"%s\"",&t2);
 	  } else if(!StrNICmp(data,"filename",StrLen("filename"))) {
 	    if(con->name) Free(con->name);
 	    con->name=MAlloc(len+1,con->hc);
 	    t2=con->name;
+	    if(!StrFirstOcc(data,"\"")) goto malformed;
+	    if(StrOcc(data,'\"')!=2) goto malformed;
 	    data=StrScan(StrFirstOcc(data,"\""),"\"%s\"",&t2);
 	  }
 	  if(data) data=StrFirstOcc(data,";");
@@ -574,6 +586,10 @@ en:
   if(len==2&&!Bt(&con->state,CONf_AWAIT_BOUNDARY)&&!(Bt(&con->state,CONf_URL_ENCODED)&&con->content_len))
     goto process;
   Free(buf),Free(buf2);
+  return;
+malformed:
+  Free(buf),Free(buf2);
+  DyadEnd(s);
   return;
 process:
   Free(buf),Free(buf2);

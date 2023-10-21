@@ -8,9 +8,29 @@ HolyC is a programming language and a dialect of C. The most notable features of
 * 8-bit unsigned ASCII
 * Different type names from C
 * Typecastable lvalues
+* Self-manipulatable code(coming from the fact that HolyC is the JIT language powering the whole OS)
+* #exe
 * C89-style for statements
 
 ==Features
+===On the fly manipulation of source code
+This is a simple hack that very elegantly demonstrates HolyC's flexibility:
+  #define SOME_DEFINE
+  #exe {HashRemDel(
+    HashFind("SOME_DEFINE",Fs->hash_table,HTT_DEFINE_STR),
+    Fs->hash_table
+  );}
+The code wrapped in #exe is equivalent to the ISO C preprocessor directive +#undef+.
+===#exe
+You can think of +#exe+ as constexpr in C++, but can manipulate the source code it's located in.
+This gives #exe immense powers, such as being able to implement unroll loops at compile-time like this, or generating useful helper code. This technique has been used in [https://github.com/contextswap/HolyTest HolyTest].
+  I64 arr[1024];
+  #exe {
+    I64 i;
+    for (i=0;i<1024;++i)
+      StreamPrint("arr[%d]=%d;\n",i,i+2);
+  }
+
 ===Classes instead of structs
 In C you would define a struct like
   typedef struct Man {

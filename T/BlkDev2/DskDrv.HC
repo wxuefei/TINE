@@ -141,7 +141,7 @@ U0 DrvFATBlkSet(CDrv *dv,I64 c,I64 fat_sel=3)
 
 CDrv *DrvChk(CDrv *dv,Bool except=TRUE)
 {//Check for valid drv. Throw exception.
-  if (!dv || dv->dv_signature!=DRV_SIGNATURE_VAL) {
+  if (!dv || dv->dv_signature!=DRV_SIGNATURE_VAL) {
     if (except) {
       throw('Drv');
     }

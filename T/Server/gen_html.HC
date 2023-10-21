@@ -21,7 +21,7 @@ U0 FileGet(CServer *srv,CDyadStream*stream,CURL *url,CHTTPRequest *req) {
     StrCpy(con->response_mime,mime);
     con->response_code=200;
     WriteNBytes(stream,NULL,f,len);
-    con->cache_age=24*60*60*3; //3Days lol
+    con->cache_age=24*60*60*3; //3 days
     Free(f);
   } else {
     R404(stream,&len,url->abs_path);
@@ -123,7 +123,7 @@ U8 *RemoveEscapedChars(U8 *t1) {
   for(;*t2;t2++) {
     if(t3!=t2)
       *t3=*t2;
-     if(*t2=='!'&&StrOcc("-_/*[}{|",t2[1]))
+     if(*t2=='!'&&StrOcc("-_/*[}+{|",t2[1]))
        ;
      else
        t3++;

@@ -1,9 +1,12 @@
 // Main TempleOS header
 //
-// These are modified for 3Days; they dont take CTask * as an argument
+// These are modified for tos; they dont take CTask * as an argument
 //
-#define __3DAYS__ TRUE
-extern class C3DaysDrawWin;
+#define __tos__ TRUE
+    // "tos"(lowercase)
+    // does not refer to TempleOS(TOS), it's the name
+    // of this emulator/runtime/loader/whatever
+extern class CDrawWin;
 extern class CTask;
 extern class CFile;
 #define FFB_NEXT_BLK		0x7FFFFFFFFFFFFFFF
@@ -141,245 +144,7 @@ extern class CFile;
 #define ARGT_XMM128	54 // Not implemented
 #define ARGT_XMM0	55 // Not implemented
 #define OCF_ALIAS	1
-extern class CCPU;
-extern class CDyadStream;
-#ifdef IMPORT_BUILTINS
-import U0 __3DaysSetVGAColor(I64i,U32i);
-import Bool __3DaysVGAMode();
-import U0 __3DaysEnableScaling(U8i);
-import U0 __SleepHP(I64i);
-import U0 __3DaysSwapRGB();
-import U0 VFsFTrunc(U8i*,I64i);
-import U0 __AwakeCore(I64i);
-import U0 SetVolume(F64);
-import F64 GetVolume();
-import U0i _3DaysScaleScrn();
-import U8i *_3DaysSetResolution(I64i w,I64i h);
-import U8i *VFsFOpenR(U8i*);
-import U8i *VFsFOpenW(U8i*);
-import U0 VFsFClose(U8i*);
-import Bool VFsFBlkRead(U8i*,I64i,I64i,U8i*);
-import Bool VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
-import U0 VFsFSeek(I64i,U8i*);
 
-import U0 VFsSetPwd(U8i*);
-import U0 VFsSetDrv(U8i);
-import Bool VFsExists(U8i*);
-import Bool VFsIsDir(U8i*);
-import I64i VFsFSize(U8i*);
-import U8i *VFsFRead(U8i*,I64i*);
-import U8i *VFsDirMk(U8i*);
-import U8i *VFsFWrite(U8i*,U8i*,I64i);
-import Bool VFsDel(U8i*);
-import U8i **VFsDir();
-
-import U8i __IsValidPtr(U8i *ptr);
-import U8i *GetCipherPasswd();
-import U64i UnixNow();
-import U0i InteruptCore(I64i);
-import U8i *NewVirtualChunk(I64i,I64i low32);
-import U8i *FreeVirtualChunk(U8i *,I64i sz);
-import U0i DyadInit();
-import U0i DyadUpdate();
-import U0i DyadShutdown();
-import CDyadStream *DyadNewStream();
-import I64i DyadListen(CDyadStream *,I64i port);
-import I64i DyadConnect(CDyadStream *,U8i*,I64i port);
-import U0i DyadWrite(CDyadStream *,U8i*,I64i);
-import U0i DyadEnd(CDyadStream *);
-import U0i DyadClose(CDyadStream *);
-import U8i *DyadGetAddress(CDyadStream *);
-import U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-import U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-import U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-import I64i mp_cnt();
-import U0i SetFs(CTask*);
-import CTask* GetFs();
-import CCPU *GetGs();
-import U0i FreeTaskMem(CTask*);
-import U0i Exit3Days();
-import I64i __IsCmdLine();
-import U8i __FExists(U8i *);
-import CCPU *Gs();
-import U0i SetPtrCallers(U8i *,I64i cnt=5,U8i *,U8i *,U8i *,U8i *,U8i *);
-import U8i *__MPSpawn(I64i,CTask *,U8i *,U8i *,U8i *);
-import I64i __CoreNum();
-import U0i __SpawnCore(I64i core,U0i(*fp_ptr)());
-import U0i __MAlloc32(I64i sz,CTask *t);
-import U0i __Free(U8i *);
-import I64i FSize(U8i *);
-import I64i FUnixTime(U8i *);
-import U8i *GetClipboardText();
-import U8i *SetClipboardText(U8i *);
-//public import I64i MSize(U8i *src);   //size of heap object
-//public import I64i MSize2(U8i *src); //Internal size
-public import U8i *CAlloc(I64i size,CTask *t=0);
-public import U0i TOSPrint(U8i *,...);
-public import U8 *__GetStr(U8 *pmt="");
-import U0i SndFreq(I64i freq);
-import U0 __BootstrapForeachSymbol(U0 *fptr);
-extern C3DaysDrawWin;
-import C3DaysDrawWin *DrawWindowNew();
-import U0i DrawWindowUpdate(C3DaysDrawWin *win,U8i *,I64i,I64i);
-import C3DaysDrawWin *DrawWindowDel(C3DaysDrawWin *);
-import I64i __ScanKey(I64i *ch,I64i *sc);
-import I64i __WaitKey(I64i *ch,I64i *sc);
-import I64i __GetTicks();
-import U0i *__Spawn(U0 *task,U0i *fp,U0i *,U8i *name);
-import U0i __WaitForSpawn(U0i *sp);
-import U0i SetKBCallback(U0i *,U0i *);
-import U0i __Suspend(U8i *spawn);
-import U0i __AwakeThread(U8i *spawn);
-import U0i __FreeThread(U8i *spawn);
-import U0i __Exit();
-import U0i __AwaitThread(U8i *thr);
-import U0i __KillThread(U8i *thr);
-import U0i SetMSCallback(U8i *fp);
-public import U0i __Sleep(I64i mS);
-import U0 __SetThreadPtr(U0 *_3dt,U8 *ptr);
-import I64i __InBounds(U8i *,I64i sz);
-import U8i *__CmdLineBootText();
-import U0i UnblockSignals();
-import U64i __GetTicksHP(); 
-#else
-extern U0 __SleepHP(I64i);
-extern U64i __GetTicksHP(); 
-extern U8i *GetCipherPasswd();
-extern U8i __IsValidPtr(U8i *ptr);
-extern U64i UnixNow();
-extern U0i UnblockSignals();
-extern U0i InteruptCore(I64i);
-extern U8i *NewVirtualChunk(I64i,I64i low32);
-extern U8i *FreeVirtualChunk(U8i *,I64i sz);
-extern U0i DyadInit();
-extern U0i DyadUpdate();
-extern U0i DyadShutdown();
-extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-extern U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
-extern U0 DyadSetOnReadyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnTimeoutCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnTickCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnErrorCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetOnDestroyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
-extern U0 DyadSetTimeout(CDyadStream *,F64);
-extern U0 DyadSetNoDelay(CDyadStream *,I64i);
-extern CDyadStream *DyadNewStream();
-extern I64i DyadListen(CDyadStream *,I64i port);
-extern I64i DyadConnect(CDyadStream *,U8i*,I64i port);
-extern U0i DyadWrite(CDyadStream *,U8i*,I64i);
-extern U0i DyadEnd(CDyadStream *);
-extern U0i DyadClose(CDyadStream *);
-extern U8i *DyadGetAddress(CDyadStream *);
-extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern U0i DyadSetOnListenCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
-extern I64i mp_cnt();
-extern U0i SetFs(CTask*);
-extern CTask* GetFs();
-extern CCPU *GetGs();
-extern U0i FreeTaskMem(CTask*);
-extern U8i *__CmdLineBootText();
-extern U0i Exit3Days();
-extern I64i __IsCmdLine();
-extern U8i __FExists(U8i *);
-extern CCPU *Gs();
-extern U0i SetPtrCallers(U8i *,I64i cnt=5,U8i *,U8i *,U8i *,U8i *,U8i *);
-extern U8i *__MPSpawn(I64i,CTask *,U8i *,U8i *,U8i *);
-extern I64i __CoreNum();
-extern U0i __SpawnCore(I64i core,U0i(*fp_ptr)());
-extern I64i __InBounds(U8i *,I64i sz);
-extern U0i SetPtrCallers(U8i *,I64i cnt=5,U8i *,U8i *,U8i *,U8i *,U8i *);
-extern U0i __MAlloc32(I64i sz,CTask *t);
-extern U0i __MAlloc(I64i sz,CTask *t);
-extern U0i __Free(U8i *);
-extern I64i FSize(U8i *);
-extern I64i FUnixTime(U8i *);
-extern U8i *GetClipboardText();
-extern U8i *SetClipboardText(U8i *);
-public extern U8i *CAlloc(I64i size,CTask *t=0);
-public extern U0i TOSPrint(U8i *,...);
-public extern U0 Exit();
-public extern U8 *__GetStr(U8 *pmt="");
-extern U0 __SetThreadPtr(U0 *_3dt,U8 *ptr);
-extern U0 __BootstrapForeachSymbol(U0 *fptr);
-extern C3DaysDrawWin *DrawWindowNew();
-extern U0i DrawWindowUpdate(C3DaysDrawWin *win,U8i *,I64i,I64i);
-extern C3DaysDrawWin *DrawWindowDel(C3DaysDrawWin *);
-extern I64i __ScanKey(I64i *ch,I64i *sc);
-extern I64i __WaitKey(I64i *ch,I64i *sc);
-extern I64i __GetTicks();
-extern U0i *__Spawn(U0 *t,U0i *fp,U0i *,U8i *name);
-extern U0i __WaitForSpawn(U0i *sp);
-extern U0i SetKBCallback(U0i *,U0i *);;
-extern U0i __Suspend(U8i *spawn);
-extern U0i __AwakeThread(U8i *spawn);
-extern U0i __FreeThread(U8i *spawn);
-extern U0i __Exit();
-extern U0i __AwaitThread(U8i *thr);
-extern U0i __KillThread(U8i *thr);
-extern U0i SetMSCallback(U8i *fp);
-public extern U0i __Sleep(I64i mS);
-extern U0i SndFreq(I64i freq);
-public extern Bool FBlkRead(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
-public extern Bool FBlkWrite(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
-public extern U0 FClose(CFile *f);
-public extern U8i *FOpen(U8i *filename,U8i *flags,I64i cnt=0,U8i *mem_task=0);
-#endif
-public extern I64i MSize(U8i *src);   //size of heap object
-public extern I64i MSize2(U8i *src); //Internal size
-extern U0i Exit();
-extern class CAOT;
-extern class CAOTHeapGlbl;
-extern class CAOTImportExport;
-extern class CDC;
-extern class CDirContext;
-extern class CDoc;
-extern class CFile;
-extern class CHashClass;
-extern class CHashFun;
-extern class CHeapCtrl;
-extern class CIntermediateCode;
-extern class CJobCtrl;
-
-#define NULL	0
-#define TRUE	1
-#define FALSE	0
-#define ON	1
-#define OFF	0
-#define I8_MIN (-0x80)
-#define I8_MAX 0x7F
-#define U8_MIN 0
-#define U8_MAX 0xFF
-#define I16_MIN (-0x8000)
-#define I16_MAX 0x7FFF
-#define U16_MIN 0
-#define U16_MAX 0xFFFF
-#define I32_MIN (-0x80000000)
-#define I32_MAX 0x7FFFFFFF
-#define U32_MIN 0
-#define U32_MAX 0xFFFFFFFF
-#define I64_MIN (-0x8000000000000000)
-#define I64_MAX 0x7FFFFFFFFFFFFFFF
-#define U64_MIN 0
-#define U64_MAX 0xFFFFFFFFFFFFFFFF
-#define INVALID_PTR	I64_MAX
-#define STR_LEN 144
-
-//(Int to F64 conversion is signed)
-//Turn off 80-bit float constants with \dLK,"OPTf_NO_BUILTIN_CONST",A="MN:OPTf_NO_BUILTIN_CONST"\d.
-#define U64_F64_MAX (0x43F0000000000000(F64))
-#define F64_MAX (0x7FEFFFFFFFFFFFFF(F64))
-#define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
-#define inf	(0x7FF0000000000000(F64))
-#define pi	(0x400921FB54442D18(F64))
-#define ã pi
-#define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
-#define log2_10 (0x400A934F0979A371(F64))
-#define log2_e	(0x3FF71547652B82FE(F64))
-#define log10_2	(0x3FD34413509F79FF(F64))
-#define loge_2	(0x3FE62E42FEFA39EF(F64))
-#define sqrt2	(0x3FF6A09E667F3BCD(F64))
-#define eps	(0x3CB0000000000000(F64))
 
 /*HolyC union structure is treated as a
 whole if no member is specified,
@@ -474,6 +239,215 @@ public class CD3 //Three dimensional F64 pt
 {
   F64	x,y,z;
 };
+
+extern class CCPU;
+extern class CDyadStream;
+#ifdef IMPORT_BUILTINS
+import U0 _GrPaletteColorSet(I64i,I64i);
+import U0 __SleepHP(I64i);
+import U0 __AwakeCore(I64i);
+import U0 SetVolume(F64);
+import F64 GetVolume();
+import U0 VFsFTrunc(U8i*,I64i);
+import U8i *VFsFOpenR(U8i*);
+import U8i *VFsFOpenW(U8i*);
+import U0 VFsFClose(U8i*);
+import Bool VFsFBlkRead(U8i*,I64i,I64i,U8i*);
+import Bool VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
+import U0 VFsFSeek(I64i,U8i*);
+import U0 VFsSetPwd(U8i*);
+import U0 VFsSetDrv(U8i);
+import Bool VFsExists(U8i*);
+import Bool VFsIsDir(U8i*);
+import I64i VFsFSize(U8i*);
+import U8i *VFsFRead(U8i*,I64i*);
+import U8i *VFsDirMk(U8i*);
+import U8i *VFsFWrite(U8i*,U8i*,I64i);
+import Bool VFsDel(U8i*);
+import U8i **VFsDir();
+import U8i __IsValidPtr(U8i *ptr);
+import U64i UnixNow();
+import U0i InterruptCore(I64i);
+import U8i *NewVirtualChunk(I64i,I64i low32);
+import U8i *FreeVirtualChunk(U8i *,I64i sz);
+import U0i DyadInit();
+import U0i DyadUpdate();
+import U0i DyadShutdown();
+import CDyadStream *DyadNewStream();
+import I64i DyadListen(CDyadStream *,I64i port);
+import I64i DyadConnect(CDyadStream *,U8i*,I64i port);
+import U0i DyadWrite(CDyadStream *,U8i*,I64i);
+import U0i DyadEnd(CDyadStream *);
+import U0i DyadClose(CDyadStream *);
+import U8i *DyadGetAddress(CDyadStream *);
+import U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
+import U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
+import U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
+import I64i mp_cnt();
+import U0i SetFs(CTask*);
+import CTask* GetFs();
+import CCPU *GetGs();
+import U0 SetGs(CCPU *);
+import U0i ExitTOS(I32i ec=0);
+import I64i __IsCmdLine();
+import U8i __FExists(U8i *);
+import CCPU *Gs();
+import I64i __CoreNum();
+import U0i __SpawnCore(I64i core,U0i(*fp_ptr)());
+import I64i FUnixTime(U8i *);
+import U8i *GetClipboardText();
+import U8i *SetClipboardText(U8i *);
+public import U8i *CAlloc(I64i size,CTask *t=0);
+public import U0i TOSPrint(U8i *,...);
+public import U8 *__GetStr(U8 *pmt="");
+import U0i SndFreq(I64i freq);
+import U0 __BootstrapForeachSymbol(U8 *fptr);
+import U0i DrawWindowUpdate(U8i *,I64i);
+import I64i __GetTicks();
+import U0i __WaitForSpawn(U8i *sp);
+import U0i SetKBCallback(U8i *,U8i *);
+import U0i __Suspend(U8i *spawn);
+import U0i SetMSCallback(U8i *fp);
+public import U0i __Sleep(I64i mS);
+import U8i *__CmdLineBootText();
+import U0i UnblockSignals();
+import U64i __GetTicksHP(); 
+import U8 *_BootDrv();
+#else
+extern U0 __SleepHP(I64i);
+extern U64i __GetTicksHP(); 
+extern U8i __IsValidPtr(U8i *ptr);
+extern U64i UnixNow();
+extern U0i UnblockSignals();
+extern U0i InterruptCore(I64i);
+extern U8i *NewVirtualChunk(I64i,I64i low32);
+extern U8i *FreeVirtualChunk(U8i *,I64i sz);
+extern U0 VFsFTrunc(U8i*,I64i);
+extern U8i *VFsFOpenR(U8i*);
+extern U8i *VFsFOpenW(U8i*);
+extern U0 VFsFClose(U8i*);
+extern Bool VFsFBlkRead(U8i*,I64i,I64i,U8i*);
+extern Bool VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
+extern U0 VFsFSeek(I64i,U8i*);
+extern U0 VFsSetPwd(U8i*);
+extern U0 VFsSetDrv(U8i);
+extern Bool VFsExists(U8i*);
+extern Bool VFsIsDir(U8i*);
+extern I64i VFsFSize(U8i*);
+extern U8i *VFsFRead(U8i*,I64i*);
+extern U8i *VFsDirMk(U8i*);
+extern U8i *VFsFWrite(U8i*,U8i*,I64i);
+extern Bool VFsDel(U8i*);
+extern U8i **VFsDir();
+extern U0i DyadInit();
+extern U0i DyadUpdate();
+extern U0i DyadShutdown();
+extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
+extern U0i DyadSetOnConnectCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
+extern U0i DyadSetOnCloseCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *),U8i *);
+extern U0 DyadSetOnReadyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern U0 DyadSetOnTimeoutCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern U0 DyadSetOnTickCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern U0 DyadSetOnErrorCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern U0 DyadSetOnDestroyCallback(CDyadStream *,U8i(*)(CDyadStream*,U8i*),U8i*);
+extern U0 DyadSetTimeout(CDyadStream *,F64);
+extern U0 DyadSetNoDelay(CDyadStream *,I64i);
+extern CDyadStream *DyadNewStream();
+extern I64i DyadListen(CDyadStream *,I64i port);
+extern I64i DyadConnect(CDyadStream *,U8i*,I64i port);
+extern U0i DyadWrite(CDyadStream *,U8i*,I64i);
+extern U0i DyadEnd(CDyadStream *);
+extern U0i DyadClose(CDyadStream *);
+extern U8i *DyadGetAddress(CDyadStream *);
+extern U0i DyadSetReadCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
+extern U0i DyadSetOnListenCallback(CDyadStream *,U0i(*fptr)(CDyadStream *,U8i *,I64i,U8i *),U8i *);
+extern I64i mp_cnt();
+extern U0i SetFs(CTask*);
+extern CTask* GetFs();
+extern CCPU *GetGs();
+extern U8i *__CmdLineBootText();
+extern U0i ExitTOS(I32i ec=0);
+extern I64i __IsCmdLine();
+extern U8i __FExists(U8i *);
+extern CCPU *Gs();
+extern I64i __CoreNum();
+extern U0i __SpawnCore(I64i core,U0i(*fp_ptr)());
+extern I64i FUnixTime(U8i *);
+extern U8i *GetClipboardText();
+extern U8i *SetClipboardText(U8i *);
+public extern U8i *CAlloc(I64i size,CTask *t=0);
+public extern U0i TOSPrint(U8i *,...);
+public extern U0 Exit();
+public extern U8 *__GetStr(U8 *pmt="");
+extern U0 __BootstrapForeachSymbol(U8 *fptr);
+extern U0i DrawWindowUpdate(U8i *,I64i);
+extern I64i __GetTicks();
+extern U0i SetKBCallback(U8i *,U8i *);;
+extern U0i SetMSCallback(U8i *fp);
+public extern U0i __Sleep(I64i mS);
+extern U0i SndFreq(I64i freq);
+public extern Bool FBlkRead(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
+public extern Bool FBlkWrite(CFile *f,U8i *buf,I64i blk=FFB_NEXT_BLK,I64i cnt=1);
+public extern U0 FClose(CFile *f);
+public extern U8i *FOpen(U8i *filename,U8i *flags,I64i cnt=0,U8i *mem_task=0);
+extern U8 *_BootDrv();
+#endif
+public extern I64 MSize(U8 *src);   //size of heap object
+public extern I64 MSize2(U8 *src); //Internal size
+extern U0i Exit();
+extern class CAOT;
+extern class CAOTHeapGlbl;
+extern class CAOTImportExport;
+extern class CDC;
+extern class CDirContext;
+extern class CDoc;
+extern class CFile;
+extern class CHashClass;
+extern class CHashFun;
+extern class CHeapCtrl;
+extern class CIntermediateCode;
+extern class CJobCtrl;
+
+#define NULL	0
+#define TRUE	1
+#define FALSE	0
+#define ON	1
+#define OFF	0
+#define I8_MIN (-0x80)
+#define I8_MAX 0x7F
+#define U8_MIN 0
+#define U8_MAX 0xFF
+#define I16_MIN (-0x8000)
+#define I16_MAX 0x7FFF
+#define U16_MIN 0
+#define U16_MAX 0xFFFF
+#define I32_MIN (-0x80000000)
+#define I32_MAX 0x7FFFFFFF
+#define U32_MIN 0
+#define U32_MAX 0xFFFFFFFF
+#define I64_MIN (-0x8000000000000000)
+#define I64_MAX 0x7FFFFFFFFFFFFFFF
+#define U64_MIN 0
+#define U64_MAX 0xFFFFFFFFFFFFFFFF
+#define INVALID_PTR	I64_MAX
+#define STR_LEN 144
+
+//(Int to F64 conversion is signed)
+//Turn off 80-bit float constants with \dLK,"OPTf_NO_BUILTIN_CONST",A="MN:OPTf_NO_BUILTIN_CONST"\d.
+#define U64_F64_MAX (0x43F0000000000000(F64))
+#define F64_MAX (0x7FEFFFFFFFFFFFFF(F64))
+#define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
+#define inf	(0x7FF0000000000000(F64))
+#define pi	(0x400921FB54442D18(F64))
+#define ã pi
+#define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
+#define log2_10 (0x400A934F0979A371(F64))
+#define log2_e	(0x3FF71547652B82FE(F64))
+#define log10_2	(0x3FD34413509F79FF(F64))
+#define loge_2	(0x3FE62E42FEFA39EF(F64))
+#define sqrt2	(0x3FF6A09E667F3BCD(F64))
+#define eps	(0x3CB0000000000000(F64))
+
 
 #define QUE_VECT_U8_CNT		512
 public class CQueVectU8
@@ -1864,7 +1838,6 @@ public class CAutoCompleteDictGlbls
 //Disable 10-byte float consts for ã,log2_10,log10_2,loge_2
 #define OPTf_NO_BUILTIN_CONST	0x24 //Applied to funs, not stmts
 #define OPTf_USE_IMM64		0x25 //Not completely implemented
-#define OPTf_BOUNDS_CHECK 0x26    
 
 #define OPTF_ECHO		(1<<OPTf_ECHO)
 extern CAutoCompleteGlbls ac;
@@ -2811,6 +2784,7 @@ class CISOPriDesc
 #define MT_DVD		2
 
 //CDirEntry flags (Used by \dLK,"FileMgr",A="MN:FileMgr"\d())
+//DO NOT CHANGE
 #define CDIR_FILENAME_LEN	38 //Must include terminator zero
 public class CDirEntry
 {
@@ -2896,8 +2870,8 @@ public class CDirEntry
 #define BDT_ATA			2
 #define BDT_ISO_FILE_READ	3
 #define BDT_ISO_FILE_WRITE	4
-#define BDT_ATAPI		5
-#define BDT_VIRT		6
+#define BDT_ATAPI		6
+#define BDT_VIRT		5
 #define BDT_TYPES_NUM		7
 
 #define BDF_REMOVABLE		0x001
@@ -3059,7 +3033,7 @@ public class CFile //See \dLK,"::/Demo/Dsk/DataBase.HC"\d.
   CDrv	*dv;
   I64	fblk_num,clus,file_clus_num,max_blk;
   U8	*clus_buf;
-  U8	*_3days_virt; //points to FILE * from C
+  U8	*_file_virt; //points to FILE * from C
 };
 
 #define _CFG_HEAP_DBG FALSE
@@ -3380,7 +3354,7 @@ class CBpt
   CBpt	*next;
   U8	*addr,
 	val,
-	is_tmp, //Changed by nroot
+	is_tmp, //Changed in tos
 	pad[6];
 };
 
@@ -3508,7 +3482,7 @@ public class CTaskSettings
 #define TASKf_KILL_AFTER_DBG	13
 
 #define TASKf_NONTIMER_RAND	14
-//Added by nroot
+//Added in tos 
 #define TASKf_JUST_STEPPED 15
 
 //CTask.display_flags
@@ -3582,7 +3556,7 @@ public class CTask //The Fs segment reg points to current CTask.
 	text_attr,border_attr;
   U16	win_z_num,pad;
 
-  U8 *stk; //CHANGED from CTaskStk to U8 * by nroot
+  U8 *stk; //CHANGED from CTaskStk to U8*
 
   CExcept *next_except,*last_except;
   I64	except_rbp,	//throw routine's RBP
@@ -3669,6 +3643,7 @@ public class CCPU //The Gs segment reg points to current CCPU.
   CTSS	*tss;
   I64	start_stk[16];
   I64	last_yield;
+  I64   ready;
 };
 
 #define MEM_MIN_MEG		512 //512 Meg minimum.
@@ -4131,6 +4106,7 @@ public class CInsReg
   I64	host_vm		format "Host VM:\dLS,D=\"ST_HOST_VMS\"\d\n";
   U8	initials[8]	format "\dDA-P,A=\"Your Initials:%s\"\d\n";
   I64	machine_num	format
+
 			"\dDA-TRM,A=\"This Machine Num (Choose Any):%d\"\d\n";
 };
 #ifdef FPTRS
@@ -4144,6 +4120,7 @@ public _intern IC_PUSH U0 Push(I64 d); //Push value on stk.
 public _intern IC_SET_RAX U0 SetRAX(I64 d); //Set RAX register value.
 public _intern IC_SET_RBP U0 SetRBP(U8 *d); //Set RBP register value.
 public _intern IC_SET_RFLAGS U0 SetRFlags(I64 d); //Set RFlags register value.
+#help_index "Bit"
 public _intern IC_BSF I64 Bsf(
 	I64 bit_field_val);//Scan fwd from lowest for 1st set. -1 if not found.
 public _intern IC_BSR I64 Bsr(
@@ -4162,6 +4139,12 @@ public _intern IC_LBTR Bool LBtr(
 	U8 *bit_field,I64 bit); //Locked bit test and reset to zero.
 public _intern IC_LBTS Bool LBts(
 	U8 *bit_field,I64 bit); //Locked bit test and set to one.
+public extern U8
+   *rev_bits_table,//Table with U8 bits revd
+   *set_bits_table;//Table with count of set bits in a U8
+public extern I64 BCnt(I64 d);//Count set bits in I64.
+#help_index ""
+
 public _intern IC_TOUPPER I64 ToUpper(U8 ch); //Cvt char to upper case.
 public _intern IC_STRLEN I64 StrLen(U8 *st); //String length.
 public _intern IC_QUE_INIT U0 QueInit(
@@ -4965,7 +4948,7 @@ extern U0 ICMov(CIntermediateCode *tmpi,
 	CICType t1,I64 r1,I64 d1,CICType t2,I64 r2,I64 d2,I64 rip);
 extern U0 ICLea(CIntermediateCode *tmpi,CICType t1,I64 r1,I64 d1,
 	CICType t2,I64 r2,I64 d2,CCmpCtrl *cc,U8 *buf,I64 rip);
-extern U0 ICDeref(CIntermediateCode *tmpi,I64 rip,Bool bounds_check=FALSE);
+extern U0 ICDeref(CIntermediateCode *tmpi,I64 rip);
 extern U0 LexPutToken(CCmpCtrl *cc);
 extern U8 *LexPutLine(CCmpCtrl *cc,U8 *start);
 extern U0 LexPutPos(CCmpCtrl *cc);
@@ -5831,7 +5814,6 @@ extern U8 *MAlloc32(I64 sz,CTask *t=0);
 extern U8 *MAlloc(I64 sz,CTask *t=0);
 extern U8 *StrScan(U8 *src,U8 *fmt,...);
 extern U0 DbgInfoRead(U8 *name);
-extern U0 __BoundsCheck(CIntermediateCode *tmpi,I64 rip,CICType t,I64 r,I64 disp);
 extern U0 TaskDerivedValsUpdate(CTask *task=NULL,Bool update_z_buf=TRUE);
 class CMusicGlbls
 {
@@ -5971,7 +5953,7 @@ public extern Bool WildMatch(U8 *test_str,U8 *wild_str);
 #define RIGHT_MOUNT	7
 #define RIGHT_PLAIN	8
 #define RIGHT_INFILE	9
-public CTask *Noise(I64 mS,F64 min_ona,F64 max_ona);
+public extern CTask *Noise(I64 mS,F64 min_ona,F64 max_ona);
 extern Bool Man(U8 *st,I64 edf_dof_flags=0);
 extern Bool E(U8 *addr,I64 cnt=512,I64 edf_dof_flags=0);
 extern Bool PutSrcLink(U8 *addr,I64 cnt=1,U8 *buf=NULL);
@@ -6097,7 +6079,7 @@ extern U0 ODERK4OneStep(CMathODE *ode);
 extern U0 ODECashKarp(CMathODE *ode);
 extern U0 ODERK5OneStep(CMathODE *ode);
 extern U0 ODEsUpdate(CTask *task);
-extern CCPU *cpu_structs[64];
+extern CCPU **cpu_structs;
 public extern I64 gr_x_offsets[8],
 	   gr_y_offsets[8],
 	  gr_x_offsets2[4],
@@ -6386,7 +6368,6 @@ public extern U8 *MAlloc(I64 size,CTask *mem_task=NULL);
 extern U8 *PopUpGetStr2(U8 *header,CTask *mem_task);
 extern U0 Decrypt(U8 *ciphertext=NULL,U8 *decryptedtext=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
 extern U0 Decrypt(U8 *ciphertext=NULL,U8 *decryptedtext=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
-extern U8i IsValidPtr(U8i *ptr,I64 sz=1);
 extern Bool IsEncryptedRight(U8 *file);
 extern U8 Drv2Let(CDrv *dv=NULL);
 extern CBlkDev *BlkDevChk(CBlkDev *bd,Bool except=TRUE);
@@ -6507,7 +6488,6 @@ public extern Bool FBlkRead(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1);
 public extern Bool FBlkWrite(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1);
 public extern U0 FClose(CFile *f);
 public extern CFile *FOpen(U8 *filename,U8 *flags,I64 cnt=0,CTask *mem_task=NULL);
-public extern I64 FSize(CFile *f);
 
 extern I64 RedSeaAllocClus(CDrv *dv,I64 cnt);
 extern Bool RedSeaDirNew(CDrv *dv,U8 *cur_dir,CDirEntry *tmpde,
@@ -6538,7 +6518,7 @@ extern U8 *FileRead(U8 *filename,I64 *_size=NULL,I64 *_attr=NULL);
 extern I64 FileWrite(U8 *filename,U8 *fbuf,I64 size,CDate cdt=0,I64 attr=0);
 extern CDirEntry *VirtFilesFind(U8 *files_find_mask,I64 fuf_flags,
 	CDirEntry *parent=NULL);
-public extern U8 MountFile(U8 *filename);
+public extern U8 MountFile(U8 *filename,U8 drv_let='M');
 public extern U0 Unmount(U8 drv_let=0);
 extern CDirEntry *FMRebuildDocDrv(U8 drv_let,CDoc *doc,CDirEntry **_head,Bool init);
 extern U0 FMRebuildDoc(CDoc **_doc,CDirEntry **_head,I64 mode);
@@ -6794,13 +6774,6 @@ extern Bool VirtCd(U8 *name,U8 *cur_dir);
 extern I64 VirtFilesDel(CDrv *dv,U8 *cur_dir,U8 *files_find_mask,I64 fuf_flags,		     Bool del_dir,Bool print_msg);
 extern I64 VirtFileWrite(CDrv *dv,U8 *cur_dir,U8 *name,U8 *buf,I64 size,	CDate cdt,I64 attr);
 extern Bool VirtMkDir(CDrv *dv,U8 *cur_dir,U8 *name,I64 entry_cnt);
-extern U0 XORCipher(U8 *res=NULL,U8 *text=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
-extern U0 OutShift(U8 *res=NULL,U64 textlen=0,U64 shift=0);
-extern U0 InShift(U8 *res=NULL,U64 textlen=0,U64 shift=0);
-extern U0 DumpNumerical(U8 *str=NULL,U8 *origstr=NULL,U64 textlen=0);
-extern U0 DumpRaw(U8 *str=NULL,U64 textlen=0);
-extern U0 Encrypt(U8 *ciphertext=NULL,U8 *plaintext=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
-extern U0 VariadicFree(...);
 extern CDocBin *DocBinFindNum(CDoc *haystack_doc,I64 needle_num);
 extern CDocBin *DocBinFindTag(CDoc *haystack_doc,U8 *needle_tag);
 extern I64 DocBinPtrRst(CDoc *doc,CDocEntry *doc_e);
@@ -7045,7 +7018,6 @@ extern U8 *MemPagAlloc(I64 pags,CBlkPool *bp=NULL);
 extern U0 MemPagFree(CMemBlk *m,CBlkPool *bp=NULL);
 extern CMemBlk *MemPagTaskAlloc(I64 pags,CHeapCtrl *hc);
 extern U0 MemPagTaskFree(CMemBlk *m,CHeapCtrl *hc);
-extern U0 InitHeaps() ;
 extern class CDiffItem;
 extern class CLine;
 extern CDiffItem *DiffSub(CDiffItem *res,CLine *str1,CLine *str2,I64 N,I64 M,CLine *sorted_a,CLine *sorted_b,I64 i1_lo,I64 i1_hi,I64 i2_lo,I64 i2_hi) ;
@@ -7108,13 +7080,6 @@ extern Bool VirtCd(U8 *name,U8 *cur_dir);
 extern I64 VirtFilesDel(CDrv *dv,U8 *cur_dir,U8 *files_find_mask,I64 fuf_flags,		     Bool del_dir,Bool print_msg);
 extern I64 VirtFileWrite(CDrv *dv,U8 *cur_dir,U8 *name,U8 *buf,I64 size,	CDate cdt,I64 attr);
 extern Bool VirtMkDir(CDrv *dv,U8 *cur_dir,U8 *name,I64 entry_cnt);
-extern U0 XORCipher(U8 *res=NULL,U8 *text=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
-extern U0 OutShift(U8 *res=NULL,U64 textlen=0,U64 shift=0);
-extern U0 InShift(U8 *res=NULL,U64 textlen=0,U64 shift=0);
-extern U0 DumpNumerical(U8 *str=NULL,U8 *origstr=NULL,U64 textlen=0);
-extern U0 DumpRaw(U8 *str=NULL,U64 textlen=0);
-extern U0 Encrypt(U8 *ciphertext=NULL,U8 *plaintext=NULL,U64 textlen=0,U8 *key=NULL,U64 keylen=0);
-extern U0 VariadicFree(...);
 extern CDocBin *DocBinFindNum(CDoc *haystack_doc,I64 needle_num);
 extern CDocBin *DocBinFindTag(CDoc *haystack_doc,U8 *needle_tag);
 extern I64 DocBinPtrRst(CDoc *doc,CDocEntry *doc_e);
@@ -7354,7 +7319,6 @@ extern U8 *MemPagAlloc(I64 pags,CBlkPool *bp=NULL);
 extern U0 MemPagFree(CMemBlk *m,CBlkPool *bp=NULL);
 extern CMemBlk *MemPagTaskAlloc(I64 pags,CHeapCtrl *hc);
 extern U0 MemPagTaskFree(CMemBlk *m,CHeapCtrl *hc);
-extern U0 InitHeaps() ;
 extern U0 DrawIt(CTask *task,CDC *dc);
 extern U0 UpdateRegVarImg(CHashFun *tmpf,U8 *_b,CTask *task);
 extern U8 *DBlk(I64 blk,Bool write=FALSE);
@@ -7403,10 +7367,10 @@ extern U0 FMRightClick();
 extern U0 FMFinalScrnUpdate(CDC *dc);
 extern U0 LoadImps() ;
 extern U0 StartUpTasks();
-extern U0 Adam(U8 *) ;
+extern I64 Adam(U8 *,...) ;
 extern Bool IsRaw() ;
 extern U0 InitFX() ;
-extern U0 PutS(U8 *st);
+extern U0 PutS(U8 *s);
 extern U0 TimeIns();
 extern Bool MyPutKey(I64 ch,I64 sc);
 extern Bool MyPutS(U8 *);
@@ -7523,13 +7487,12 @@ extern U0 FMRightClick();
 extern U0 FMFinalScrnUpdate(CDC *dc);
 extern U0 LoadImps() ;
 extern U0 StartUpTasks();
-extern U0 Adam(U8 *) ;
+extern I64 Adam(U8 *,...) ;
 extern U0 TrimComment(U8 *str) ;
 extern Bool NextLine(CDoc *doc) ;
 extern U0 GenHeadersForFile(U8 *file) ;
 extern Bool IsRaw() ;
 extern U0 InitFX() ;
-extern U0 PutS(U8 *st);
 extern U0 TimeIns();
 extern Bool MyPutKey(I64 ch,I64 sc);
 extern Bool MyPutS(U8 *);
@@ -7571,7 +7534,7 @@ extern U0 PrsSizeOf(CCmpCtrl *cc);
 extern U0 PrsOffsetOf(CCmpCtrl *cc);
 extern U0 PrsStreamBlk(CCmpCtrl *cc);
 extern U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,	U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass);
-extern U0 PutS(U8 *str) ;
+extern U0 PutS(U8 *s) ;
 extern U0 ScanFlags(U8 *_dst_flags,U8 *lst,U8 *src);
 extern U8 *StrPrintFlags(U8 *dst,U8 *lst,I64 flags);
 extern U0 GetOutOfDollar();
@@ -7602,6 +7565,11 @@ extern CDoc *WinCursorPosSet(CTask *task,I64 msx,I64 msy,Bool set_cursor=TRUE);
 extern Bool WinKeyNavMenu();
 extern U0 WinMgrTask(I64);
 extern U0 DrawIt(CTask *,CDC *dc);
+extern U0 CPURep(Bool full=FALSE);
+#help_index "Processor"
+public _intern IC_RDTSC I64 GetTSC();
+#help_index ""
+extern I64 FSize(CFile *);
 class CMeshEdVertex
 {
   CMeshEdVertex *next,*last,*copy;
@@ -7656,3 +7624,14 @@ extern CDoc *sys_registry_doc;
 extern U8 *ctrl_L_footer;
 extern U8  *(*fp_getstr2)(I64 flags=0);
 extern CDoc *(*fp_doc_put)(CTask *task=NULL);
+extern U0 MakeAll(U8 *dst_loc);
+extern U0 BootDVDIns(U8 *dst_loc,U8 drv_let=0);
+extern U0 FillU16Palindrome(CPalindromeU16 *dst,U16 w);
+extern U0 FillU32Palindrome(CPalindromeU32 *dst,I64 d);
+extern U0 RedSeaISO9660Stage1(U8 *iso_filename,U8 *stage2_filename);
+extern U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let);
+extern I64 RedSeaISOPass1(CDirEntry *tmpde);
+extern I64 RedSeaISO(U8 *_iso_filename=NULL,U8 *_src_dir,U8 *_stage2_filename=NULL);
+extern U8 Mount2(U8 boot_drv_let,CDoc *_doc,Bool _caller_is_prtdsk);
+extern U0 __EnableDbg();
+extern U0 __EnableAns();

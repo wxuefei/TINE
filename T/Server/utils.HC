@@ -1,3 +1,19 @@
+U64 FNV64(U8 *s) {
+  U64 hash=0xCBF29CE484222325;
+  while (*s) {
+    hash*=0x100000001B3;
+    hash^=*s++;
+  }
+  return hash;
+}
+
+U8 *FNV64Str(U8 *s) {
+  U8 *ret=CAlloc(17);
+  U64 res=FNV64(s);
+  StrPrintHex(ret,res,16);
+  return ret;
+}
+
 class CURL {
 	U8 *hostname;
 	U8 *abs_path;

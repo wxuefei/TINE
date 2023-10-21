@@ -60,7 +60,6 @@ public _extern _D3_SUB_EQU CD3 *D3SubEqu(CD3 *diff,CD3 *d); //diff-=d
 public _extern _D3_UNIT CD3 *D3Unit(CD3 *d); //To unit vect
 public _extern _D3_ZERO CD3 *D3Zero(CD3 *dst); //To zero
 
-
 public _extern _LXCHG_I64 I64 LXchgI64(I64 *dst,I64 d); //Locked eXchange I64s.
 public _extern _LXCHG_U16 U16 LXchgU16(U16 *dst,U16 d); //Locked eXchange U16s.
 public _extern _LXCHG_U32 U32 LXchgU32(U32 *dst,U32 d); //Locked eXchange U32s.
@@ -109,8 +108,7 @@ public _extern _MEMSET U8 *MemSetU8(
 public _extern _HASH_REM_DEL Bool HashRemDel(CHash *tmph,CHashTable *table,
 	I64 instance=1);//instance must match tmph's
 
-#ifdef BOOT_3DAYS
-_extern _SYS_WHINE_OOB U0 SYS_WHINE_OOB;
+#ifdef BOOT_TOS
 _extern _HASH_ADD_AFTER U0 HashAddAfter(CHash *tmph,
         CHash *pred,CHashTable *table); //Add hash entry after entry.
 _extern _HASH_STR I64 HashStr(U8 *st); //Hash a string.

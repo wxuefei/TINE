@@ -81,11 +81,11 @@ Bool BlkDevInit(CBlkDev *bd)
 	}
 	if (bd->max_blk<7)
 	  bd->max_blk=7;
-	bd->file_dsk=FOpen(bd->file_dsk_name,"wc",bd->max_blk+1,adam_task);
 	dv->fs_type=FSt_REDSEA;
 	dv->size=bd->max_blk+1-bd->drv_offset;
+	bd->file_dsk=FOpen(bd->file_dsk_name,"wc",bd->max_blk+1,adam_task);
 	RedSeaFmt(bd->first_drv_let);
-	CallExtStr("RedSeaISO9660",bd->file_dsk_name,bd->first_drv_let);
+	RedSeaISO9660(bd->file_dsk,bd->first_drv_let);
 	res=TRUE;
 	break;
     }
@@ -154,7 +154,7 @@ U0 BlkDevDel(CBlkDev *bd)
 CBlkDev *BlkDevChk(CBlkDev *bd,Bool except=TRUE)
 {//Check for valid BlkDev. Throw exception.
   if (!bd || bd->bd_signature!=BD_SIGNATURE_VAL ||
-	!(BDT_NULL<bd->type<BDT_TYPES_NUM)) {
+	!(BDT_NULL<bd->type<BDT_TYPES_NUM)) {
     if (except)
       throw('BlkDev');
     else
