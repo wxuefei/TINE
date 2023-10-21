@@ -331,7 +331,7 @@ int64_t STK_NewDrawWindow(int64_t *stk) {
     return (int64_t)NewDrawWindow();
 }
 int64_t STK_DrawWindowUpdate(int64_t *stk) {
-    DrawWindowUpdate((void*)stk[0],(void*)stk[1],stk[2],stk[3]);
+    DrawWindowUpdate((void*)stk[0],stk[1]);
     return 0;
 }
 int64_t STK_DrawWindowDel(int64_t *stk) {
@@ -587,6 +587,14 @@ int64_t STK__3DaysSetVGAColor(int64_t *stk) {
 int64_t STK__3DaysVGAMode(int64_t *stk) {
 	return __3DaysVGAMode();
 } 
+
+int64_t STK__GrPalColorSet(int64_t *stk) {
+	GrPaletteColorSet(stk[0],stk[1]);
+}
+
+int64_t STK_SetGs(int64_t *stk) {
+	SetGs(stk[0]);
+}
 void TOS_RegisterFuncPtrs() {
 	map_iter_t miter;
 	const char *key;
@@ -595,12 +603,15 @@ void TOS_RegisterFuncPtrs() {
 	vec_init(&ffi_blob);
 	STK_RegisterFunctionPtr(&ffi_blob,"__3DaysVGAMode",STK__3DaysVGAMode,0);
 	STK_RegisterFunctionPtr(&ffi_blob,"__3DaysSetVGAColor",STK__3DaysSetVGAColor,2);
+	STK_RegisterFunctionPtr(&ffi_blob,"_GrPaletteColorSet",STK__GrPalColorSet,2);
+	STK_RegisterFunctionPtr(&ffi_blob,"_BootDrv",BootDrv,0);
+	STK_RegisterFunctionPtr(&ffi_blob,"SetGs",STK_SetGs,1);
 	STK_RegisterFunctionPtr(&ffi_blob,"UnixNow",STK_Now,0);
-	STK_RegisterFunctionPtr(&ffi_blob,"InteruptCore",STK_InteruptCore,1);
+	STK_RegisterFunctionPtr(&ffi_blob,"InterruptCore",STK_InteruptCore,1);
 	STK_RegisterFunctionPtr(&ffi_blob,"NewVirtualChunk",STK_NewVirtualChunk,2);
 	STK_RegisterFunctionPtr(&ffi_blob,"FreeVirtualChunk",STK_FreeVirtualChunk,2);
 	STK_RegisterFunctionPtr(&ffi_blob,"__CmdLineBootText",CmdLineBootText,0);
-	STK_RegisterFunctionPtr(&ffi_blob,"Exit3Days",__Shutdown,0);
+	STK_RegisterFunctionPtr(&ffi_blob,"ExitTOS",__Shutdown,0);
 	STK_RegisterFunctionPtr(&ffi_blob,"__GetStr",STK___GetStr,1);
 	STK_RegisterFunctionPtr(&ffi_blob,"__IsCmdLine",IsCmdLine,0);
 	STK_RegisterFunctionPtr(&ffi_blob,"__FExists",STK___FExists,1);
@@ -625,7 +636,7 @@ void TOS_RegisterFuncPtrs() {
     STK_RegisterFunctionPtr(&ffi_blob,"__BootstrapForeachSymbol",STK_ForeachFunc,1);
     STK_RegisterFunctionPtr(&ffi_blob,"IsDir",STK_IsDir,1);
     STK_RegisterFunctionPtr(&ffi_blob,"DrawWindowDel",STK_DrawWindowDel,1);
-    STK_RegisterFunctionPtr(&ffi_blob,"DrawWindowUpdate",STK_DrawWindowUpdate,4);
+    STK_RegisterFunctionPtr(&ffi_blob,"DrawWindowUpdate",STK_DrawWindowUpdate,2);
     STK_RegisterFunctionPtr(&ffi_blob,"DrawWindowNew",STK_NewDrawWindow,0);
     STK_RegisterFunctionPtr(&ffi_blob,"UnblockSignals",UnblockSignals,0);
     //SPECIAL

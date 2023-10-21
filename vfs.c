@@ -60,6 +60,12 @@ static char *VFsInplaceRemoveRepeatSlashes(char *p) {
 }
 __thread char thrd_pwd[1024];
 __thread char thrd_drv;
+char* BootDrv() {
+  static char buf[4];
+  buf[0] = thrd_drv;
+  strcpy(buf + 1, ":/");
+  return buf;
+}
 void VFsThrdInit() {
 	strcpy(thrd_pwd,"/");
 	thrd_drv='T';

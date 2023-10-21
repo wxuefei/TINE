@@ -53,11 +53,8 @@ Module.symvers
 *~
 T/T/**
 T/TempleOS.ISO.C
-T/HCRT.BIN
-T/HCRT.DBG.Z
 T/Registry.HC.Z
 T/WikiBackups
-HCRT.BIN
 .ccls-cache
 T/Headers.HH
 T/unfound.DD

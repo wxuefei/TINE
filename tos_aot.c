@@ -247,7 +247,7 @@ void *Load(char *fn,int64_t ld_flags) {
 		#endif
 	}*/
 	#ifndef TARGET_WIN32
-	CHash yield=map_get(&TOSLoader,"__InteruptCoreRoutine")->data[0];
+	CHash yield=map_get(&TOSLoader,"__InterruptCoreRoutine")->data[0];
 	signal(SIGUSR2,yield.val);
 	#endif
 	SetupDebugger();

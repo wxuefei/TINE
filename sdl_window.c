@@ -9,6 +9,7 @@ typedef struct CDrawWindow {
     SDL_Window *window;
     SDL_Surface *surf;
     SDL_Renderer *rend;
+	SDL_Palette *pal;
     int64_t sz_x,sz_y;
     int64_t margin_x,margin_y;
 } CDrawWindow;
@@ -44,7 +45,9 @@ CDrawWindow *NewDrawWindow() {
 		SDL_UnlockSurface(icon);
 		SDL_SetWindowIcon(ret->window,icon);
 		SDL_FreeSurface(icon);
-		ret->surf=SDL_CreateRGBSurfaceWithFormat(0,640,480,32,SDL_PIXELFORMAT_RGB888);
+		ret->surf = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
+		ret->pal = SDL_AllocPalette(256);
+		SDL_SetSurfacePalette(ret->surf, ret->pal);
 		SDL_SetWindowMinimumSize(ret->window,640,480);
 		ret->rend=SDL_CreateRenderer(ret->window,-1,SDL_RENDERER_ACCELERATED);
 		ret->margin_y=ret->margin_x=0;
@@ -64,13 +67,13 @@ static void _DrawWindowUpdate(CDrawWindow *ul,int8_t *colors,int64_t internal_wi
 	if(!win) return;
     SDL_Surface *s=win->surf;
     int64_t x,y,c,i,i2;
-    uint32_t *src=colors;
-    uint32_t *dst=s->pixels;
+    char *src=colors;
+    char *dst=s->pixels;
     SDL_LockSurface(s);
 	for(y=0;y!=h;y++) {
-		memcpy(dst,src,640*4);
+		memcpy(dst,src,640);
 		src+=internal_width;
-		dst+=s->pitch/4;
+		dst+=s->pitch;
 	}
     SDL_UnlockSurface(s);
     int ww,wh,w2,h2;
@@ -104,7 +107,7 @@ top_margin:
 }
 
 
-void DrawWindowUpdate(struct CDrawWindow *w,int8_t *colors,int64_t internal_width,int64_t h) {
+void DrawWindowUpdate(int8_t *colors,int64_t internal_width) {
 	//https://stackoverflow.com/questions/27414548/sdl-timers-and-waitevent
 	SDL_Event event;
     SDL_UserEvent userevent;
@@ -577,4 +580,22 @@ void __3DaysSetSoftwareRender(int64_t s) {
 
 void *_3DaysSetResolution(int64_t w,int64_t h) {
 	return buf;
+}
+
+void GrPaletteColorSet(uint64_t i, uint64_t bgr48) {
+  if (!win)
+    return;
+  // 0xffff is 100% so 0x7fff/0xffff would be about .50
+  // this gets multiplied by 0xff to get 0x7f
+  char b = (bgr48&0xffff) / (double)0xffff * 0xff,
+        g = ((bgr48>>16)&0xffff) / (double)0xffff * 0xff,
+        r = ((bgr48>>32)&0xffff) / (double)0xffff * 0xff;
+  SDL_Color sdl_c;
+  sdl_c.r = r;
+  sdl_c.g = g;
+  sdl_c.b = b;
+  sdl_c.a = 0xff;
+  // set column
+  for (int repeat = 0; repeat < 256 / 16; ++repeat)
+    SDL_SetPaletteColors(win->pal, &sdl_c, i + repeat * 16, 1);
 }

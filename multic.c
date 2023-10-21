@@ -51,6 +51,10 @@ void SetFs(void *f) {
 int CoreNum() {
 	return __core_num;
 }
+void SetGs(void *g) {
+	__gs=g;
+}
+
 void *GetGs() {
 	if(!__gs)
 		__gs=TD_MALLOC(1024);
@@ -91,7 +95,7 @@ static void LaunchCore(void *c) {
 	FFI_CALL_TOS_2(init.val,GetFs(),0);
 	__core_num=c;
 	#ifndef TARGET_WIN32
-	CHash yield=map_get(&TOSLoader,"__InteruptCoreRoutine")->data[0];
+	CHash yield=map_get(&TOSLoader,"__InterruptCoreRoutine")->data[0];
 	signal(SIGUSR2,yield.val);
 	signal(SIGUSR1,&ExitCore);
 	#endif
@@ -103,7 +107,7 @@ void InteruptCore(int core) {
 	#else
 	vec_CHash_t *hash;
 	CONTEXT ctx;
-	hash=map_get(&TOSLoader,"__InteruptCoreRoutine");
+	hash=map_get(&TOSLoader,"__InterruptCoreRoutine");
 	if(hash) {
 		memset(&ctx,0 ,sizeof ctx);
 		ctx.ContextFlags=CONTEXT_FULL; 

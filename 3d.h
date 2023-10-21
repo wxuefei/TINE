@@ -77,7 +77,7 @@ typedef map_t(vec_CHash_t) map_vec_CHash_t;
 extern map_vec_CHash_t TOSLoader;
 struct CDrawWindow;
 void DrawWindowDel();
-void DrawWindowUpdate(struct CDrawWindow *win,int8_t *colors,int64_t internal_width,int64_t h);
+void DrawWindowUpdate(int8_t *colors,int64_t);
 struct CDrawWindow *NewDrawWindow();
 void *GetFs();
 void SetFs(void *f);
@@ -211,6 +211,9 @@ void __3DaysEnableScaling(int64_t s);
 void __3DaysSetSoftwareRender(int64_t s);
 void _3DaysSetVGAColor(int64_t i,uint32_t color);
 int64_t __3DaysVGAMode();
+void GrPaletteColorSet(uint64_t i, uint64_t bgr48);
+char* BootDrv();
+void SetGs(void *g);
 #ifdef __cplusplus
 };
 #endif

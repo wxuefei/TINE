@@ -243,7 +243,7 @@ public class CD3 //Three dimensional F64 pt
 extern class CCPU;
 extern class CDyadStream;
 #ifdef IMPORT_BUILTINS
-import U0 _GrPaletteColorSet(I64i,I64i);
+import U0 __3DaysSetVGAColor(I64i,I64i);
 import U0 __SleepHP(I64i);
 import U0 __AwakeCore(I64i);
 import U0 SetVolume(F64);
