@@ -1,6 +1,8 @@
 #include "alloc.hxx"
 
+#define max // for vc
 #include <windows.h>
+#undef max
 #include <memoryapi.h>
 #include <sysinfoapi.h>
 

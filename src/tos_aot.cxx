@@ -20,6 +20,12 @@ using std::ios;
 std::unordered_map<std::string, CSymbol> TOSLoader;
 
 namespace {
+template <typename T>
+T READ_NUM(u8* x) {
+    T val_;
+    memcpy(&val_, x, sizeof(T));
+    return val_;
+}
 // This code is mostly copied from TempleOS
 void LoadOneImport(u8** src_, u8* module_base) {
   u8* __restrict src = *src_;
@@ -32,14 +38,16 @@ void LoadOneImport(u8** src_, u8* module_base) {
   // anyway(compiles down to a mov call)
   // so it respects strict aliasing
   // while not compromising on speed
+#if 0
 #define READ_NUM(x, T)           \
   ({                             \
     T val_;                      \
     memcpy(&val_, x, sizeof(T)); \
     val_;                        \
   })
+#endif
   while ((etype = *src++)) {
-    ptr = module_base + READ_NUM(src, u32);
+    ptr = module_base + READ_NUM<u32>(src);
     src += sizeof(u32);
     auto st_ptr = (char*)src;
     src += strlen(st_ptr) + 1;
@@ -119,7 +127,7 @@ void LoadPass1(u8* src, u8* module_base) {
   u8* ptr;
   u8  etype;
   while ((etype = *src++)) {
-    uptr i = READ_NUM(src, u32);
+    uptr i = READ_NUM<u32>(src);
     src += sizeof(u32);
     auto st_ptr = (char*)src;
     src += strlen(st_ptr) + 1;
@@ -150,7 +158,7 @@ void LoadPass1(u8* src, u8* module_base) {
     // 32bit addrs
     case IET_ABS_ADDR:
       for (usize j = 0; j < i /*count*/; j++, src += sizeof(u32)) {
-        ptr = module_base + READ_NUM(src, u32);
+        ptr = module_base + READ_NUM<u32>(src);
         // compiles down to `add DWORD PTR[ptr],module_base`
         u32 off;
         memcpy(&off, ptr, sizeof(u32));
@@ -169,7 +177,7 @@ auto LoadPass2(u8* src, u8* module_base) -> std::vector<void*> {
   //
   u8 etype;
   while ((etype = *src++)) {
-    u32 i = READ_NUM(src, u32);
+    u32 i = READ_NUM<u32>(src);
     src += sizeof(u32);
     src += strlen((char*)src) + 1;
     switch (etype) {

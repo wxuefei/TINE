@@ -1,0 +1,14 @@
+E:/Projects/os/templeos/TINE/tine/b/CMakeFiles/tine.dir
+E:/Projects/os/templeos/TINE/tine/b/CMakeFiles/HCRT.dir
+E:/Projects/os/templeos/TINE/tine/b/CMakeFiles/edit_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/CMakeFiles/rebuild_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/CMakeFiles/dyad.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/CMakeFiles/argtable3.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/CMakeFiles/rebuild_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/CMakeFiles/edit_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/linenoise-ng/CMakeFiles/linenoise-ng.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/linenoise-ng/CMakeFiles/edit_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/vendor/linenoise-ng/CMakeFiles/rebuild_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/asm/CMakeFiles/FFI.dir
+E:/Projects/os/templeos/TINE/tine/b/asm/CMakeFiles/edit_cache.dir
+E:/Projects/os/templeos/TINE/tine/b/asm/CMakeFiles/rebuild_cache.dir

@@ -744,7 +744,7 @@ static Utf32String
 struct DynamicPrompt : public PromptBase {
   Utf32String searchText; // text we are searching for
   char* searchCharWidths; // character widths from mk_wcwidth()
-  ssize_t searchTextLen;  // chars in searchText
+  size_t searchTextLen;  // chars in searchText
   int direction;          // current search direction, 1=forward, -1=reverse
 
   DynamicPrompt(PromptBase& pi, int initialDirection)
@@ -983,7 +983,8 @@ static uint8_t** history = NULL;
 static int historyPreviousIndex = -2;
 static bool historyRecallMostRecent = false;
 
-__attribute__((used)) static void linenoiseAtExit(void);
+//__attribute__((used)) 
+static void linenoiseAtExit(void);
 
 static bool isUnsupportedTerm(void) {
   char* term = getenv("TERM");
@@ -1077,7 +1078,8 @@ static void disableRawMode(void) {
 }
 
 // At exit we'll try to fix the terminal to the initial conditions
-__attribute__((used)) static void linenoiseAtExit(void) {
+//__attribute__((used)) 
+static void linenoiseAtExit(void) {
   disableRawMode();
 }
 
